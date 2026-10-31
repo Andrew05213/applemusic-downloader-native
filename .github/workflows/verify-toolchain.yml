@@ -1,0 +1,40 @@
+name: Native Toolchain From Source
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'native-runtime/toolchain/**'
+      - 'native-runtime/inputs.lock.json'
+      - 'electron/native-toolchain.js'
+      - '.github/workflows/verify-toolchain.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'native-runtime/toolchain/**'
+      - 'native-runtime/inputs.lock.json'
+      - 'electron/native-toolchain.js'
+      - '.github/workflows/verify-toolchain.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-toolchain-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      # Built-in Node modules only; never imports a maintainer image or token.
+      - name: Build public toolchain without cached recipe layers
+        run: npm run build:native-toolchain -- --no-cache
+      - name: Revalidate the recorded image and locked inputs
+        run: npm run build:native-toolchain
+      # No image push, no NDK/runtime artifact upload, no account material.

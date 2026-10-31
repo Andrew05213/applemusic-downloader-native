@@ -1,6 +1,6 @@
-# Private build-only toolchain. The Node driver verifies this local image's
-# full immutable ID before and after build; it is never part of the runtime.
-ARG TOOLCHAIN_IMAGE=applemusic-downloader-v1215-wrapper-harness:retry
+# Source-built toolchain; the driver binds a unique tag to its verified image ID.
+# The public inputs and recipe are in toolchain/; no local harness is required.
+ARG TOOLCHAIN_IMAGE=scratch
 FROM ${TOOLCHAIN_IMAGE} AS guest-builder
 
 ARG SOURCE_DATE_EPOCH=1786320000
@@ -8,15 +8,8 @@ ENV SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH} TZ=UTC LC_ALL=C
 WORKDIR /native-build
 COPY inputs.lock.json /native-build/
 
-RUN set -eux; \
-    printf 'deb https://snapshot.debian.org/archive/debian/20260728T000000Z/ bookworm main\ndeb https://snapshot.debian.org/archive/debian-security/20260728T000000Z/ bookworm-security main\n' > /etc/apt/sources.list; \
-    find /etc/apt/sources.list.d -type f -delete; \
-    apt-get -o Acquire::Check-Valid-Until=false update; \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      linux-image-6.1.0-51-amd64=6.1.177-1 \
-      busybox-static=1:1.35.0-4+deb12u1+b1 \
-      cpio=2.13+dfsg-7.1 kmod=30+20221128-1 ca-certificates=20230311+deb12u1; \
-    rm -rf /var/lib/apt/lists/*
+# The source-built toolchain contains the locked kernel/BusyBox packages.
+# Compilation and guest assembly need no network access.
 
 COPY lite-native.patch lite-session.patch lite-store-bridge.patch native_login.h native_service.h native_store_bridge.h /native-build/
 COPY wrapper.tar.gz /native-build/wrapper.tar.gz

@@ -20,7 +20,7 @@ Go 路径相对 `apple-music-downloader/`。根包仍为 `package main`，会编
 
 `legacy/v1/` 的专属 Go 包已离开当前 Go 模块的测试和编译发现范围。部分兼容守卫测试仍读取归档锁文件，这是来源回归，不代表 runtime 从旧目录构建。
 
-`appliance/release-policy.json` 仍被打包和校验使用，保持关闭；原生策略单独管理。工具链镜像也有独立的锁定身份，归档配方不等于已提供其可复现构建方法。
+`appliance/release-policy.json` 仍被打包和校验使用，保持关闭；原生策略单独管理。工具链由 `native-runtime/toolchain/` 的公开配方构建，记录锁定输入与实际镜像身份，不读取归档镜像；本地回执不等同于远端签名证明。
 
 ## 修改时的约束
 

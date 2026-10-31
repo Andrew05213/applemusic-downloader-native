@@ -55,7 +55,7 @@ function cachedInput(cache, input, algorithm) {
   const file = path.join(cache, input.cacheName);
   if (!fs.existsSync(file)) {
     const temporary = file + '.' + crypto.randomUUID() + '.partial';
-    run('curl.exe', ['--fail', '--location', '--retry', '2', '--connect-timeout', '20', '--max-time', '600', '--output', temporary, input.url]);
+    run('curl.exe', ['--fail', '--location', '--retry', '2', '--connect-timeout', '20', '--max-time', '1800', '--output', temporary, input.url]);
     verifyFile(temporary, algorithm, input[algorithm]);
     fs.renameSync(temporary, file);
   }
@@ -101,8 +101,11 @@ function buildNativeRuntime(options = {}) {
   const output = path.resolve(root, options.output || runtimeOutput(root, id));
   const relative = path.relative(root, output);
   if (!relative || relative.startsWith('..') || path.isAbsolute(relative) || fs.existsSync(output)) throw new Error('native_output_must_be_new');
-  const toolchainID = () => run('docker', ['image', 'inspect', lock.toolchain.image, '--format', '{{.Id}}'], { capture: true });
-  if (toolchainID() !== lock.toolchain.id) throw new Error('native_toolchain_identity_mismatch');
+  const toolchain = require('./native-toolchain').ensureToolchain({repositoryRoot:root});
+  const toolchainReference = 'amdl-native-toolchain-runtime:' + id;
+  run('docker', ['tag', toolchain.imageID, toolchainReference]);
+  const toolchainID = () => run('docker', ['image', 'inspect', toolchainReference, '--format', '{{.Id}}'], { capture: true });
+  if (toolchainID() !== toolchain.imageID) throw new Error('native_toolchain_identity_mismatch');
   const cache = path.join(root, '.tmp-v2-native', 'cache');
   fs.mkdirSync(cache, { recursive: true });
   const source = cachedInput(cache, lock.wrapper, 'sha256');
@@ -124,9 +127,9 @@ function buildNativeRuntime(options = {}) {
   fs.writeFileSync(path.join(context, 'guest-agent-source.json'), JSON.stringify({ goVersion, binarySHA256: digest(agentBinary), sources: agentSources }, null, 2) + '\n');
   fs.copyFileSync(source, path.join(context, 'wrapper.tar.gz'));
   const image = 'amdl-v2-guest:' + id;
-  run('docker', ['build', '--pull=false', '--network=default', '--progress=plain', '--target', 'runtime-export', '--build-arg', 'TOOLCHAIN_IMAGE=' + lock.toolchain.image,
+  run('docker', ['build', '--pull=false', '--network=none', '--progress=plain', '--target', 'runtime-export', '--build-arg', 'TOOLCHAIN_IMAGE=' + toolchainReference,
     '--build-arg', 'GUEST_REPRO_RUN=' + id, '--tag', image, context], { cwd: root });
-  if (toolchainID() !== lock.toolchain.id) throw new Error('native_toolchain_identity_mismatch');
+  if (toolchainID() !== toolchain.imageID) throw new Error('native_toolchain_identity_mismatch');
   fs.mkdirSync(output, { recursive: true });
   const container = 'amdl-v2-export-' + id;
   run('docker', ['create', '--name', container, image, '/never-executed']);
@@ -134,17 +137,22 @@ function buildNativeRuntime(options = {}) {
     for (const directory of ['guest', 'notices', 'evidence']) run('docker', ['cp', container + ':/' + directory, path.join(output, directory)]);
   } finally { run('docker', ['rm', container]); }
   const extracted = path.join(context, 'qemu-extracted');
-  const sevenZip = options.sevenZip || path.join(process.env.ProgramFiles || 'C:\\Program Files', '7-Zip', '7z.exe');
-  run(sevenZip, ['x', '-y', '-o' + extracted, qemu, 'qemu-system-x86_64.exe', '*.dll', 'share/*', 'COPYING', 'COPYING.LIB']);
+  const sevenZip = options.sevenZip || require('./native-archive-tools').prepare(root);
+  // Keep input/output paths relative to the current checkout.
+  run(sevenZip, ['x', '-y', '-o' + path.relative(root,extracted), path.relative(root,qemu), 'qemu-system-x86_64.exe', '*.dll', 'share/*', 'COPYING', 'COPYING.LIB'], {cwd:root});
   copyQemu(extracted, output);
   const qemuVersion = run(path.join(output, 'qemu', 'qemu-system-x86_64.exe'), ['--version'], { capture: true });
   if (!qemuVersion.includes('version ' + lock.qemu.version)) throw new Error('native_qemu_version_mismatch');
   const manifest = makeManifest(output,{isolated:options.isolated});
   fs.writeFileSync(path.join(output, 'bundle.json'), JSON.stringify(manifest, null, 2) + '\n');
+  fs.writeFileSync(path.join(output, 'evidence', 'toolchain-build.json'), JSON.stringify(toolchain,null,2)+'\n');
   fs.writeFileSync(path.join(output, 'evidence', 'build.json'), JSON.stringify({ schemaVersion: 1, publicReleaseAllowed: false, sourceDateEpoch: lock.sourceDateEpoch,
-    toolchainID: lock.toolchain.id, wrapperCommit: lock.wrapper.commit, sourceSHA256: lock.wrapper.sha256,
+    toolchainID: toolchain.imageID, toolchainDefinitionSHA256:toolchain.definitionSHA256,
+    toolchainEvidenceSHA256:digest(path.join(output,'evidence','toolchain-build.json')),
+    wrapperCommit: lock.wrapper.commit, sourceSHA256: lock.wrapper.sha256,
     qemuInstallerSHA512: lock.qemu.sha512, qemuVersion, patchSHA256: digest(path.join(context, 'lite-native.patch')),
     recipeSHA256: digest(path.join(context, 'Dockerfile')), initSHA256: digest(path.join(context, 'init')),
+    extractionToolsLockSHA256:digest(path.join(root,'native-runtime/build-tools.lock.json')),
     assemblySHA256: digest(path.join(context, 'build-guest.sh')), inputsLockSHA256: digest(path.join(context, 'inputs.lock.json')),
     sessionPatchSHA256: digest(path.join(context, 'lite-session.patch')), nativeLoginSHA256: digest(path.join(context, 'native_login.h')),
     nativeServiceSHA256: digest(path.join(context, 'native_service.h')), guestAgentSHA256: digest(agentBinary), guestAgentSourceSHA256: digest(path.join(context, 'guest-agent-source.json')),

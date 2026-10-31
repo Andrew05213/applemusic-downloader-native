@@ -10,6 +10,7 @@
 | Debian Linux / BusyBox | 固定快照与二进制包版本在同一锁文件；部分源码资料包不等于完整对应源码提供 |
 | cJSON / Dobby | commit 分别为 `c859b25da02955fef659d658b8f324b5cde87be3`、`9d271803881f467aabfc24593c7dcaeb710fe861`，许可证在 third-party-licenses |
 | Electron | 标准 Electron 45.0.0，以 package.json/package-lock.json 为准，不是 Castlabs DRM 运行时 |
+| 开发用 7-Zip | 官方 25.01 归档、EXE/DLL 与许可证哈希在 native-runtime/build-tools.lock.json；仅开发解包使用，不运行安装器或随成品分发 |
 | Go / npm 依赖 | Go 模块以 go.mod、go.sum 和实际二进制 build info 为准；npm 依赖以根锁文件为准 |
 
 当前界面和播放器不加载官方 Apple 网页，也不通过网页 Cookie 抓取登录。工具链镜像的取得与可复现性限制见[开发指南](development/README.md)。

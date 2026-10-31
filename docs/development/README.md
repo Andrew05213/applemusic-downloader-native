@@ -1,59 +1,117 @@
-# 开发与构建
+# 从 clone 到运行与打包
 
-所有命令从仓库根目录执行。请先阅读[仓库结构](../REPOSITORY.md)，修改共享后端前阅读[依赖边界](dependency-boundaries.md)。
+本指南面向 Windows x64。只需要标准开发工具，不需要旧仓库、维护者的 Docker 镜像、账号目录或已有 runtime。
 
-## 环境
+## 1. 安装前置工具
 
-日常 CI 使用 Node.js 22、Go 1.25.0。桌面运行和 NSIS 安装器组装要求 Windows x64；Linux 可运行共享后端和 UI 测试。
+- Git。
+- Node.js 22.12 或更高的 22.x（含 npm）。
+- Go 1.25.0，与 guest 工具链锁一致。
+- Docker Desktop，使用 Linux containers，并等待引擎就绪。
 
-完整 runtime 构建还需要 Docker Linux 引擎、`curl.exe`、7-Zip，以及 `native-runtime/inputs.lock.json` 指定的工具链镜像。7-Zip 默认查找位置为 `C:\Program Files\7-Zip\7z.exe`。
+这些工具由开发者自行安装，项目不会自动申请管理员权限或改系统配置。首次准备需要网络和数 GB 空间；Docker 的镜像存储位置由 Docker Desktop 管理。不要为构建而关闭 TLS、来源或哈希校验。
 
-**完整构建目前不是仅凭 clone 即可复现的流程。** 工具链镜像的名称和 ID 已锁定，但仓库没有提供可直接取得该镜像的公共分发入口。缺少镜像时，不能任选镜像或跳过来源验证；这不妨碍阅读源码、运行单元测试和修改 UI。成品用户不需要 Docker 或 WSL。
+不需要安装 WSL 应用、系统 7-Zip、Android Studio、CMake、NDK、FFmpeg 或 MP4Box。完整 7-Zip 从锁定官方归档取得，只解包、不运行安装器；归档和实际工具分别校验，许可证保留在本地工具目录。Linux 工具链由下一步自动构建。Docker Desktop 自身使用的虚拟化后端与成品依赖是两回事。
 
-## 安装依赖与日常验证
+## 2. 克隆与安装依赖
+
+建议使用空间充足、长度适中的路径，不要放进多层嵌套的工作树：
 
 ```powershell
-npm ci
-npm run verify:native
-npm run verify:boundaries
-npm test
-npx playwright install chromium
-npm run test:web
-npm run build:native-backend
-npm run build:native-service
+git clone https://github.com/Andrew05213/applemusic-downloader-native.git
+cd applemusic-downloader-native
+$env:ELECTRON_CACHE = Join-Path $PWD '.tmp-v2-native/development/electron-cache'
+npm ci --cache .tmp-v2-native/development/npm-cache
+npm run doctor:native
 ```
 
-真实 AAC 用例还需媒体夹具和支持 AAC 的浏览器，见[测试指南](../testing/README.md)。未设置夹具时的跳过不能视为完整播放验收。
+环境检查逐项显示 Windows/Node/Go/Git/Docker/Buildx/Electron 包/7-Zip 引导工具状态及修复方法。不要从其他工作区复制 node_modules。[Electron 45 采用按需下载](https://www.electronjs.org/docs/latest/tutorial/installation)，setup 会显式安装锁定版本的二进制；npm ci 后尚无 electron.exe 是正常状态。
 
-项目脚本将开发临时文件和缓存放在仓库所在卷，不更改系统全局设置。Windows Go race 的环境适配和已知限制见测试指南。
+## 3. 验证与启动
 
-## 构建运行组件
+```powershell
+npm test
+npm run setup:native
+npm run dev:native
+```
+
+setup 会自动：
+
+1. 检查前置环境。
+2. 安装并校验锁定版本的 Electron 二进制（首次）。
+3. 从公开、锁定输入构建工具链镜像（首次）。
+4. 下载并校验 Lite/QEMU 输入，编译 guest 并导出联网 runtime。
+5. 编译 Windows backend/service，记录本次明确选定的 runtime。
+
+dev 会检查所选 runtime 的来源和完整性，必要时生成新组件，再启动开发界面。不需要复制 manifest 路径；不会扫描其他工作区寻找旧包。关闭应用后命令结束。使用自己的授权账号测试时，不将密码、验证码或诊断中的个人信息提交到 Git。
+
+已有有效组件时可直接运行 dev。setup/dev 的 Go 缓存在当前仓库卷，不需要维护者的 GOPATH；安装后的数据路径不因此改变。
+
+## 4. 构建安装包
+
+```powershell
+npm run package:native
+```
+
+该入口复用通过来源验证的**联网** runtime，编译所需服务并调用现有 dist:native 流程。输出为 `.artifacts/installers/<版本>-<唯一标识>/` 中的 EXE、SHA-256 和构建证据；不上传、不创建标签，也不替换已发布附件。默认本地测试模式。
+
+首次打包还会从锁定来源预取 WinCodeSign、NSIS 及 NSIS resources，并核对归档和解包内容；传输失败会重试。无需从维护者机器复制 electron-builder 缓存。
+
+安装包未签名。正式发行还需[发布审核](../RELEASE.md)，不能把打包成功视为授权、真实账号或覆盖安装验收已完成。
+
+## 工具链如何取得
+
+默认不拉取任何项目私有镜像，也不使用维护者本机镜像 ID。仓库内 `native-runtime/toolchain/` 提供完整构建入口：
+
+```powershell
+npm run build:native-toolchain
+# 镜像被手工清理，或需要重新执行配方时：
+npm run build:native-toolchain -- --no-cache
+```
+
+公开基础镜像固定到 linux/amd64 manifest 摘要；Debian 使用固定快照；NDK/CMake 校验 SHA-256；cJSON/Dobby 固定 Git commit 和递归子模块。当前保留的工具版本为 NDK r23b、CMake 3.25.3，版本身份见锁文件。
+
+构建记录绑定配方/锁文件哈希与实际镜像 ID，缓存命中后仍复验；guest 编译和组装在断网模式执行。工具链不包含 Apple runtime、账号或旧测试镜像。它只在开发构建中使用，不随成品安装。
+
+记录是本地完整性与新鲜度证据，**不是签名证明，也不承诺不同机器构建出相同 Docker image ID**。有意更新配方会使旧 runtime 失效并要求重建，不能改标签冒充相同输入。独立工作流 `Native Toolchain From Source` 从公开输入重新构建，不发布镜像或 NDK 附件。
+
+## 隔离验收与底层入口
+
+无账号验收可生成独立隔离 runtime：
+
+```powershell
+npm run setup:native -- --isolated
+```
+
+隔离选择与联网选择分别记录，package 不会使用隔离包。真实合成 AAC、打包应用与文件删除验收见[测试指南](../testing/README.md)。
+
+高级使用仍支持显式选择组件：
 
 ```powershell
 npm run build:native-runtime -- --allow-network
-```
-
-按命令输出选择本次 runtime 目录。以下 `<本次输出目录>` 是占位符，必须替换：
-
-```powershell
+# 用上一步实际输出替换占位符
 $env:AMDL_NATIVE_BUNDLE = (Resolve-Path '.artifacts/runtime/<本次输出目录>').Path
 $manifest = (Resolve-Path (Join-Path $env:AMDL_NATIVE_BUNDLE 'bundle.json')).Path
 npm run start:native -- --native-manifest $manifest
-```
-
-不带 `--allow-network` 的 runtime 用于隔离测试，不能用于联网发行包。构建和启动会检查锁文件、配方、guest 源码及文件身份；源码变化后应重建对应组件，不使用过期收据。
-
-## 构建安装器
-
-在已选择、验证联网 runtime 后：
-
-```powershell
-$env:AMDL_PUBLIC_RELEASE = '0'
 npm run dist:native
 ```
 
-此为本地测试模式，不上传附件。显式公开模式和发布步骤见[CI 与发布](../RELEASE.md)。`dist:win`、`dist:win:online`、`dist:win:offline` 只是 `dist:native` 的兼容别名。
+单元、UI、Go 与跨平台验证见[测试指南](../testing/README.md)。架构见[仓库结构](../REPOSITORY.md)和[依赖边界](dependency-boundaries.md)；安装/数据兼容名称见[兼容说明](compatibility.md)。
 
-安装包、资源阶段和测试缓存的位置见[构建存储](build-storage.md)。旧 WSL 构建不属于当前流程，`legacy/v1/` 仅供参考，见[归档说明](../legacy/README.md)。
+## 常见故障
 
-修改文件操作时需保留[句柄与文件身份约束](job-api-file-boundaries.md)；不要用真实账号、验证码或下载的音乐作为自动化夹具。
+| 提示或现象 | 处理 |
+| --- | --- |
+| Docker engine / Buildx 检查失败 | 启动 Docker Desktop，切换 Linux containers，等待引擎运行后重试 |
+| Go 版本不匹配 | 安装 Go 1.25.0，重新打开终端核对 PATH |
+| 依赖下载失败 | 检查 GitHub、Google 下载站、Docker Hub、Debian snapshot 和 Go 模块网络；需要代理时使用工具官方的代理配置，不绕过证书或校验 |
+| 输入 hash 或配方身份不匹配 | 停止使用该文件/镜像，核对来源；不要修改锁文件凑匹配 |
+| 本地工具链镜像被清理 | 显式执行 build:native-toolchain -- --no-cache 后重试 |
+| runtime 过期 | setup 会生成新的目录，旧证据不覆盖；不复制旧安装器中的组件来打包 |
+| QEMU 无法读取 BIOS | 检查目录长度，避免深层嵌套；不要移动个人会话来当测试夹具 |
+| 编译/打包失败 | 保留版本、失败阶段和脱敏日志；不要上传整个账号目录 |
+| npm audit 报告安全告警 | 当前依赖锁仍有待升级项，构建通过不等于依赖审计通过；先评估影响，不直接使用 audit fix --force 做破坏性升级 |
+
+更多存储与清理规则见[构建存储](build-storage.md)。第三方材料仍有未完成核查，见[状态清单](../compliance/native-status.md)。
+
+旧源码仅供[归档参考](../legacy/README.md)，`legacy/v1/` 不是本指南的构建输入。

@@ -19,7 +19,7 @@ function compareBundles(first, second) {
   assert.match(evidence[0].guestAssemblyRun, /^[a-f0-9-]{36}$/);
   assert.match(evidence[1].guestAssemblyRun, /^[a-f0-9-]{36}$/);
   assert.notEqual(evidence[0].guestAssemblyRun, evidence[1].guestAssemblyRun);
-  for (const field of ['toolchainID', 'sourceDateEpoch', 'sourceSHA256', 'qemuInstallerSHA512', 'patchSHA256', 'recipeSHA256', 'initSHA256', 'assemblySHA256', 'inputsLockSHA256', 'sessionPatchSHA256', 'nativeLoginSHA256', 'nativeServiceSHA256', 'guestAgentSHA256', 'guestAgentSourceSHA256', 'storeBridgeSHA256', 'storeBridgePatchSHA256']) {
+  for (const field of ['toolchainID', 'toolchainDefinitionSHA256', 'toolchainEvidenceSHA256', 'extractionToolsLockSHA256', 'sourceDateEpoch', 'sourceSHA256', 'qemuInstallerSHA512', 'patchSHA256', 'recipeSHA256', 'initSHA256', 'assemblySHA256', 'inputsLockSHA256', 'sessionPatchSHA256', 'nativeLoginSHA256', 'nativeServiceSHA256', 'guestAgentSHA256', 'guestAgentSourceSHA256', 'storeBridgeSHA256', 'storeBridgePatchSHA256']) {
     assert.notEqual(evidence[0][field], undefined);
     assert.equal(evidence[0][field], evidence[1][field]);
   }

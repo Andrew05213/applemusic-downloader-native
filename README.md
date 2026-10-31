@@ -33,9 +33,13 @@ git clone https://github.com/Andrew05213/applemusic-downloader-native.git
 cd applemusic-downloader-native
 npm ci
 npm test
+npm run doctor:native
+npm run dev:native
+# 构建本地安装包，不上传
+npm run package:native
 ```
 
-源码运行和安装包构建还需要准备锁定的运行组件，详见[开发与构建](docs/development/README.md)；跨平台验证见[测试入口](docs/testing/README.md)。
+运行与打包需 Windows x64 和已就绪的 Docker Linux 引擎；所需工具链会从公开锁定输入构建，不依赖维护者本机镜像。首次完整准备及环境检查见[从 clone 到运行与打包](docs/development/README.md)，跨平台验证见[测试指南](docs/testing/README.md)。
 
 欢迎通过 Issue 反馈问题或提交 Pull Request。反馈请附版本、复现步骤和已脱敏的诊断；提交改动前运行相关测试，不上传账号、验证码、Token、会话或下载的音乐。
 

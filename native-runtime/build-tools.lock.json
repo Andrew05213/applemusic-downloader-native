@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "sevenZip": {
+    "version": "25.01",
+    "url": "https://github.com/ip7z/7zip/releases/download/25.01/7z2501-x64.exe",
+    "sha256": "78afa2a1c773caf3cf7edf62f857d2a8a5da55fb0fff5da416074c0d28b2b55f",
+    "files": {
+      "7z.exe": "4cd7d776c686427226a151789d2d61f0b2ed2c392148cc4e69c0238362fafecf",
+      "7z.dll": "5bd20fb38499d95c39594f41d4781b6181b3304b7f1f4d06b0182f514e7eaa74",
+      "License.txt": "3a184aa13dc8ad30734e28ff901b478ccbcb5b41be52427a5e7609c8fd9e5ddb"
+    }
+  }
+}

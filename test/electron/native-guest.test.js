@@ -16,7 +16,8 @@ test('native guest inputs pin sources, package snapshot and QEMU publisher diges
   assert.equal(lock.wrapper.commit, '2fd7e0eaef081f93cf687428b965674937832ba4');
   assert.equal(lock.wrapper.sha256, 'cc9fca1a70692ee7feb73c1aa74805cd6749d29200dad34ddbab3d17467464e8');
   assert.equal(lock.qemu.sha512, '5bcf9eed634e8575a37b74f445af41a2fe4106da512d0c30c368301d4c105037fdfab40a5287367a28a957624cddebbc8c07e16c88ab6634f554cdf3d16bf543');
-  assert.match(lock.toolchain.id, /^sha256:[a-f0-9]{64}$/);
+  assert.equal(lock.toolchain.definition, 'native-runtime/toolchain/inputs.lock.json');
+  assert.match(require('../../electron/native-toolchain').definition().definitionSHA256, /^[a-f0-9]{64}$/);
   assert.equal(lock.debianSnapshot, '20260728T000000Z');
   assert.equal(lock.packages['linux-image-6.1.0-51-amd64'], '6.1.177-1');
 });
@@ -62,7 +63,7 @@ test('native guest recipe preserves strict TLS, source pins and a fail-closed da
   assert.doesNotMatch(patch.split('\n').filter((line) => line.startsWith('+')).join('\n'), /SSL_VERIFYPEER, 0|SSL_VERIFYHOST, 0|g_ssl_verify_disabled = true/);
   assert.match(dockerfile, /CMAKE_BUILD_TYPE=Release/);
   assert.match(dockerfile, /FETCHCONTENT_FULLY_DISCONNECTED=ON/);
-  assert.match(dockerfile, /snapshot\.debian\.org/);
+  assert.match(fs.readFileSync(path.join(root,'native-runtime/toolchain/Dockerfile'),'utf8'), /snapshot\.debian\.org/);
   assert.match(init, /mount -t ext4 \/dev\/vda \/data \|\| fail/);
   assert.match(init, /crc32c_generic ext4/);
   const assembly = fs.readFileSync(path.join(root, 'native-runtime/build-guest.sh'), 'utf8');
@@ -81,7 +82,7 @@ test('guest export comparison refuses changed bytes or reused assembly evidence'
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'amdl-native-repro-'));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
   const bundles = ['a', 'b'].map((name) => path.join(directory, name));
-  const evidence = { toolchainID: 'fixture', sourceDateEpoch: 1786320000, sourceSHA256: 'source', qemuInstallerSHA512: 'qemu',
+  const evidence = { toolchainID: 'fixture', toolchainDefinitionSHA256:'definition',toolchainEvidenceSHA256:'toolchain',extractionToolsLockSHA256:'extraction',sourceDateEpoch: 1786320000, sourceSHA256: 'source', qemuInstallerSHA512: 'qemu',
     patchSHA256: 'patch', recipeSHA256: 'recipe', initSHA256: 'init', assemblySHA256: 'assembly', inputsLockSHA256: 'lock', sessionPatchSHA256:'session',nativeLoginSHA256:'login',nativeServiceSHA256:'service',guestAgentSHA256:'agent',guestAgentSourceSHA256:'source',
     storeBridgeSHA256:'store',storeBridgePatchSHA256:'store-patch' };
   for (const bundle of bundles) {

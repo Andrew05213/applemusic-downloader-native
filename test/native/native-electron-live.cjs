@@ -107,6 +107,13 @@ async function main(){
   assert.equal(new DiagnosticJournal(path.join(profile,'auth-diagnostics.json')).snapshot().lastFailure.stage,'device_login');
   evidence.diagnosticsExportVerified=true;evidence.retainedFailureVerified=true;evidence.syntheticPriorFailure=true;
   evidence.passed=true;evidence.automaticUnifiedLogin=true;evidence.noEmbeddedWeb=true;evidence.dismissDoesNotReopen=true;
+ }catch(error){
+  evidence.failure=error.message;
+  const page=app.windows().find(win=>win.url().endsWith('/native-index.html'));
+  try{evidence.failureState=await page.evaluate(async()=>{try{const state=await window.nativeDesktop.api('/api/native/state');return {runtime:state.runtime?.phase,code:state.runtime?.code,session:state.session?.state};}catch(error){return {apiError:error.message};}});}catch{evidence.failureState={apiError:'fixture_state_unavailable'};}
+  const visible=app.windows().find(win=>win.url().endsWith('/native-startup.html'))||page;
+  if(visible)await visible.screenshot({path:path.join(profile,'failure.png')}).catch(()=>{});
+  throw error;
  }finally{if(!exited)await app.close();fs.writeFileSync(path.join(profile,'evidence.json'),JSON.stringify(evidence,null,2)+'\n');process.stdout.write(JSON.stringify({...evidence,evidence:path.join(profile,'evidence.json')})+'\n');}
 }
 main().catch(error=>{process.stderr.write('native_electron_fixture_failed: '+error.message+'\n');process.exitCode=1;});

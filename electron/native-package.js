@@ -6,7 +6,7 @@ const UI_FILES=['src/main/native-main.js','src/preload/native-preload.js','src/p
 const hash=file=>crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 const SOURCE_FIELDS={patchSHA256:'lite-native.patch',recipeSHA256:'Dockerfile',initSHA256:'init',assemblySHA256:'build-guest.sh',
  sessionPatchSHA256:'lite-session.patch',nativeLoginSHA256:'native_login.h',nativeServiceSHA256:'native_service.h',
- storeBridgeSHA256:'native_store_bridge.h',storeBridgePatchSHA256:'lite-store-bridge.patch'};
+ storeBridgeSHA256:'native_store_bridge.h',storeBridgePatchSHA256:'lite-store-bridge.patch',extractionToolsLockSHA256:'build-tools.lock.json'};
 const AGENT_DIRECTORIES=['internal/nativeauth','internal/guestagent','cmd/amdl-guest'];
 
 // A wrapper pin alone cannot distinguish an old guest from the current
@@ -19,9 +19,12 @@ function verifyBundleSources(bundle,repository=ROOT){
   const agentLock=JSON.parse(fs.readFileSync(path.join(native,'guest-agent.lock.json'),'utf8'));
   const build=JSON.parse(fs.readFileSync(path.join(bundle,'evidence/build.json'),'utf8'));
   if(build.schemaVersion!==1||build.publicReleaseAllowed!==false||build.wrapperCommit!==lock.wrapper.commit||build.sourceSHA256!==lock.wrapper.sha256||
-   build.sourceDateEpoch!==lock.sourceDateEpoch||build.toolchainID!==lock.toolchain.id||build.qemuInstallerSHA512!==lock.qemu.sha512||
+   build.sourceDateEpoch!==lock.sourceDateEpoch||build.qemuInstallerSHA512!==lock.qemu.sha512||
    build.inputsLockSHA256!==hash(path.join(native,'inputs.lock.json'))||build.manifestSHA256!==hash(path.join(bundle,'bundle.json')))
    throw new Error();
+  const toolchainFile=path.join(bundle,'evidence/toolchain-build.json');
+  const toolchain=require('./native-toolchain').verifyEvidence(JSON.parse(fs.readFileSync(toolchainFile,'utf8')),repository);
+  if(build.toolchainID!==toolchain.imageID||build.toolchainDefinitionSHA256!==toolchain.definitionSHA256||build.toolchainEvidenceSHA256!==hash(toolchainFile))throw new Error();
   for(const [field,file]of Object.entries(SOURCE_FIELDS))if(build[field]!==hash(path.join(native,file)))throw new Error();
   const sourceFile=path.join(bundle,'evidence/guest-agent-source.json');
   if(build.guestAgentSourceSHA256!==hash(sourceFile))throw new Error();

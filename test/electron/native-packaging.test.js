@@ -71,9 +71,11 @@ function freshnessFixture(t){
  const write=(file,value)=>{fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,value);};
  const inputs=require('../../native-runtime/inputs.lock.json');const agentLock=require('../../native-runtime/guest-agent.lock.json');
  write(path.join(repository,'native-runtime/inputs.lock.json'),JSON.stringify(inputs));write(path.join(repository,'native-runtime/guest-agent.lock.json'),JSON.stringify(agentLock));
+ for(const file of require('../../electron/native-toolchain').FILES)write(path.join(repository,'native-runtime/toolchain',file),fs.readFileSync(path.join(root,'native-runtime/toolchain',file)));
+ const toolchain={...require('../../electron/native-toolchain').definition(repository),imageID:'sha256:'+'a'.repeat(64)};
  const sourceFields={patchSHA256:'lite-native.patch',recipeSHA256:'Dockerfile',initSHA256:'init',assemblySHA256:'build-guest.sh',
   sessionPatchSHA256:'lite-session.patch',nativeLoginSHA256:'native_login.h',nativeServiceSHA256:'native_service.h',
-  storeBridgeSHA256:'native_store_bridge.h',storeBridgePatchSHA256:'lite-store-bridge.patch'};
+  storeBridgeSHA256:'native_store_bridge.h',storeBridgePatchSHA256:'lite-store-bridge.patch',extractionToolsLockSHA256:'build-tools.lock.json'};
  for(const file of Object.values(sourceFields))write(path.join(repository,'native-runtime',file),'fixture '+file);
  const sources={};for(const part of ['internal/nativeauth','internal/guestagent','cmd/amdl-guest']){
   const name=part+'/fixture.go';write(path.join(repository,'apple-music-downloader',name),'package fixture\n');sources[name]=hash(path.join(repository,'apple-music-downloader',name));
@@ -85,7 +87,9 @@ function freshnessFixture(t){
  write(path.join(bundle,'bundle.json'),JSON.stringify(makeManifest(bundle,{isolated:false})));
  const guestSource={goVersion:'go version '+agentLock.goVersion+' fixture/amd64',binarySHA256:'c'.repeat(64),sources};
  write(path.join(bundle,'evidence/guest-agent-source.json'),JSON.stringify(guestSource));
- const evidence={schemaVersion:1,publicReleaseAllowed:false,sourceDateEpoch:inputs.sourceDateEpoch,toolchainID:inputs.toolchain.id,
+ write(path.join(bundle,'evidence/toolchain-build.json'),JSON.stringify(toolchain));
+ const evidence={schemaVersion:1,publicReleaseAllowed:false,sourceDateEpoch:inputs.sourceDateEpoch,toolchainID:toolchain.imageID,
+  toolchainDefinitionSHA256:toolchain.definitionSHA256,toolchainEvidenceSHA256:hash(path.join(bundle,'evidence/toolchain-build.json')),
   wrapperCommit:inputs.wrapper.commit,sourceSHA256:inputs.wrapper.sha256,qemuInstallerSHA512:inputs.qemu.sha512,
   inputsLockSHA256:hash(path.join(repository,'native-runtime/inputs.lock.json')),
   guestAgentSHA256:guestSource.binarySHA256,guestAgentSourceSHA256:hash(path.join(bundle,'evidence/guest-agent-source.json')),
@@ -129,6 +133,17 @@ test('native installer requires explicit bundle selection and has no historical 
  assert.throws(()=>selectBundle({}),/native_bundle_selection_required/);assert.throws(()=>selectBundle({AMDL_NATIVE_BUNDLE:'  '}),/native_bundle_selection_required/);
  assert.equal(selectBundle({AMDL_NATIVE_BUNDLE:'new guest bundle'}),path.join(root,'new guest bundle'));
  assert.doesNotMatch(fs.readFileSync(path.join(root,'electron/dist-native.js'),'utf8'),/20261021-network-dev/);
+});
+
+test('native installer rejects changed toolchain provenance or a stale public build recipe',t=>{
+ const {createReceipt}=require('../../electron/native-package');
+ for(const mode of ['missing','image','recipe']){
+  const fixture=freshnessFixture(t),file=path.join(fixture.bundle,'evidence/toolchain-build.json');
+  if(mode==='missing')fs.unlinkSync(file);
+  if(mode==='image'){const value=JSON.parse(fs.readFileSync(file));value.imageID='sha256:'+'f'.repeat(64);fixture.write(file,JSON.stringify(value));}
+  if(mode==='recipe')fixture.write(path.join(fixture.repository,'native-runtime/toolchain/install.py'),'changed recipe');
+  assert.throws(()=>createReceipt(fixture.stage,fixture.bundle,fixture.repository),/native_bundle_source_stale/,mode);
+ }
 });
 
 test('installer audit accepts a directly extracted application payload',t=>{

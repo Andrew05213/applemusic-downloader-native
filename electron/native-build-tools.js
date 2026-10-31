@@ -17,5 +17,5 @@ async function prepareWindowsTools(){
  if(result.status!==0||!fs.existsSync(path.join(target,'rcedit-x64.exe'))||fs.existsSync(path.join(target,'darwin')))throw new Error('native_windows_tool_extract_failed');
  fs.writeFileSync(path.join(target,'native-build-tool.json'),JSON.stringify({url:URL,sha512:SHA512,windowsOnly:true})+'\n',{flag:'wx'});return target;
 }
-if(require.main===module)prepareWindowsTools().then(directory=>process.stdout.write(directory+'\n')).catch(error=>{process.stderr.write(error.message+'\n');process.exitCode=1;});
+if(require.main===module)prepareWindowsTools().then(directory=>{process.stdout.write(directory+'\n');process.stdout.write(JSON.stringify(require('./native-nsis-tools').prepare())+'\n');}).catch(error=>{process.stderr.write(error.message+'\n');process.exitCode=1;});
 module.exports={prepareWindowsTools};

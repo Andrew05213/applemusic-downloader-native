@@ -10,6 +10,8 @@
 
 runner 和 Actions 提交锁定在工作流内，项目工具使用 Node.js 22、Go 1.25.0。测试步骤见[测试指南](testing/README.md)。普通 CI 不上传 runtime 或安装包。
 
+工具链配方改动另触发 `.github/workflows/verify-toolchain.yml`，在新的 Linux runner 上执行无配方缓存的源码构建，再复验工具链回执；不推送镜像、不上传 NDK 或 runtime。日常本地准备与安装器构建使用 `npm run setup:native`、`npm run package:native`，不依赖维护者本机镜像。详见[新开发者流程](development/README.md)。
+
 ## 构建与分发前置
 
 完整 runtime 构建需要锁定镜像及输入，当前可复现性限制见[开发指南](development/README.md)。成品用户无需 Docker 或 WSL。

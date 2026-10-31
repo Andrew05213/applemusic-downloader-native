@@ -17,6 +17,8 @@
 | `test/`、`e2e/` | 单元、UI 与隔离应用测试 |
 | `web/` | Go serve 兼容界面，不进入桌面安装包 |
 | `scripts/` | 文档、边界与本地构建存储维护 |
+| `scripts/native-dev.js` | 环境检查、工作区 runtime 选择与开发/打包入口 |
+| `native-runtime/toolchain/` | 从公开锁定输入构建 Linux 工具链的配方 |
 | `docs/` | 用户、开发、架构、测试与发布文档 |
 | `legacy/v1/` | 旧桌面/WSL 代码、工具和专属测试的冻结参考 |
 

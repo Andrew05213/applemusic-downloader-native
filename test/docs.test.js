@@ -55,7 +55,7 @@ test('public guides do not reintroduce internal logs, machine paths or obsolete 
  assert(!fs.existsSync(plans) || !fs.readdirSync(plans,{recursive:true,withFileTypes:true}).some(entry=>entry.isFile()));
  assert(!fs.readdirSync(path.join(root,'docs/testing')).some(name=>/^\d{4}-|^v2\./.test(name)));
  assert(!fs.existsSync(path.join(root,'NATIVE-TEST-NOTICE.md')));
- assert.match(read('docs/development/README.md'),/没有提供.*公共分发入口/);
+ for(const entry of ['doctor:native','setup:native','dev:native','package:native','build:native-toolchain'])assert(read('docs/development/README.md').includes(entry));
  assert.match(read('NOTICE'),/docs\/compliance\/native-status\.md/);
  assert.match(read('docs/compliance/native-status.md'),/不是整套安装包的完整对应源码提供/);
 });
