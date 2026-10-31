@@ -2,7 +2,7 @@
 
 ## 安装与登录
 
-本仓库尚未提供 1.0.0 安装包，以下说明针对现有功能。后续从[本仓库 Releases](https://github.com/Andrew05213/applemusic-downloader-native/releases)下载 Windows x64 安装包，并按[首页说明](../README.md#下载与安装)核对附带的 SHA-256。
+从[本仓库 Releases](https://github.com/Andrew05213/applemusic-downloader-native/releases)获取已发布的 Windows x64 安装包，并按[首页说明](../README.md#下载与安装)核对附带的 SHA-256；版本与可用附件以 Release 页面为准。
 安装包未签名；请确认下载来源，不要为了安装而关闭安全软件。
 运行软件后使用原生登录窗口；需要二次验证时，在已登录同一 Apple 账户的受信任设备上批准登录，填写本次六位验证码。
 当前不提供软件内发送短信的登录流程。不需要安装 WSL、Docker 或内置 Apple 网页。

@@ -1,6 +1,6 @@
 # 仓库结构与维护边界
 
-当前默认入口为 Native 1.0 原生版，尚未发布本仓库安装包。
+当前默认入口为 Native 1.0 原生版，已发布产物以[本仓库 Releases](https://github.com/Andrew05213/applemusic-downloader-native/releases)为准。
 源码来自旧项目 2.0 的最新快照，但 Git 历史从新根提交开始，详见[迁移边界](development/native-1.0-migration.md)。
 
 ## 源码导航

@@ -1,29 +1,53 @@
 # Apple Music Downloader Native
 
-Windows 原生 Apple Music 客户端与下载工具。新仓库从 **1.0.0** 开始；沿用旧项目 2.0 的原生实现，不带入旧 Git 提交历史。
+[![CI](https://github.com/Andrew05213/applemusic-downloader-native/actions/workflows/verify.yml/badge.svg)](https://github.com/Andrew05213/applemusic-downloader-native/actions/workflows/verify.yml)
 
-界面、登录、队列和文件管理在本机运行；媒体能力由随包携带的 Lite/QEMU 组件提供，用户无需安装 WSL、Docker 或使用内置官方网页。
+用于浏览 Apple Music、播放音乐和管理下载的 Windows 桌面工具。提供原生登录界面、ALAC 下载与分片流式播放，无需安装 WSL、Docker 或使用内置官方网页。
 
-> 第三方源码、许可证及授权核查仍未完成。只访问和保存你有权使用的内容，详见[核查清单](docs/compliance/native-2.0-status.md)。本项目与 Apple 无隶属关系。
+[下载与发布记录](https://github.com/Andrew05213/applemusic-downloader-native/releases) · [使用指南](docs/USER-GUIDE.md) · [开发文档](docs/development/README.md) · [问题反馈](https://github.com/Andrew05213/applemusic-downloader-native/issues)
+
+## 功能
+
+- **浏览与搜索**：首页推荐、排行榜、歌单、专辑和音乐人详情，支持页面缓存与预加载。
+- **播放**：AAC 分片流式播放，支持进度拖动；完整播放不可用时回退到试听。
+- **下载**：默认 ALAC，支持并行队列、实时速度与进度、失败重试。
+- **文件管理**：选择保存位置、点击生成文件名模板、定位文件夹，分别支持仅删除任务或同时删除文件。
+- **登录**：原生账号登录与受信任设备验证码验证，保存会话以便后续使用。
+
+播放、下载和目录可用性取决于账号授权、订阅与地区；部分资源可能不可用。
 
 ## 下载与安装
 
-本仓库目前提供源码，**尚未发布 1.0.0 安装包或 Release**。后续安装包将在[本仓库 Releases](https://github.com/Andrew05213/applemusic-downloader-native/releases)提供，Windows x64，安装向导支持选择位置。
+在 [Releases](https://github.com/Andrew05213/applemusic-downloader-native/releases) 页面获取已发布的 Windows x64 安装包及 SHA-256 校验文件，版本和附件以该页面为准。
 
-正式提供安装包时会同时提供 SHA-256。不要将旧仓库的 2.0.0 安装包、哈希或源码附件视为本仓库的 1.0.0 产物。
+运行安装器并选择安装位置，启动后登录账号。完整操作见[用户指南](docs/USER-GUIDE.md)。
 
-## 功能与边界
+安装包未签名，Windows 可能显示未知发布者提示。请核对下载来源和 SHA-256，不要为安装而关闭系统安全防护。
 
-- 单一播放入口，AAC 分片流式播放；不可用时明确回退到试听。
-- 下载独立运行，默认 ALAC，支持任务管理、保存目录、文件名模板和缓存调整。
-- 原生设备验证码登录；下载、完整播放和资源可用性受账号、订阅及地区限制。
-- 自动测试不等于所有真实账号或地区均已验收。
+## 参与开发
 
-## 从哪里开始
+开发验证使用 Node.js 22 和 Go 1.25.0。在仓库根目录执行：
 
-- [开发与构建](docs/development/README.md)：准备环境、源码运行和构建前置。
-- [用户指南](docs/USER-GUIDE.md)：登录、播放、下载、设置与诊断。
-- [CI 与发布流程](docs/RELEASE.md)：跨平台验证和显式审核后发包。
-- [文档导航](docs/README.md)、[仓库结构](docs/REPOSITORY.md)、[源码基线与兼容说明](docs/development/native-1.0-migration.md)。
+```powershell
+git clone https://github.com/Andrew05213/applemusic-downloader-native.git
+cd applemusic-downloader-native
+npm ci
+npm test
+```
 
-旧仓库的标签、Release 和维护分支未移动。必要的历史来源材料仍保存在源码树中，并明确标为归档；新仓库不包含旧分支或旧标签。
+源码运行和安装包构建还需要准备锁定的运行组件，详见[开发与构建](docs/development/README.md)；跨平台验证见[测试入口](docs/testing/README.md)。
+
+欢迎通过 Issue 反馈问题或提交 Pull Request。反馈请附版本、复现步骤和已脱敏的诊断；提交改动前运行相关测试，不上传账号、验证码、Token、会话或下载的音乐。
+
+## 项目文档
+
+- [仓库结构](docs/REPOSITORY.md)与[后端接口边界](docs/development/job-api-file-boundaries.md)
+- [构建与发布流程](docs/RELEASE.md)
+- [依赖与上游来源](docs/UPSTREAMS.md)
+- [完整文档导航](docs/README.md)
+
+## 第三方说明
+
+本项目与 Apple 无隶属关系。请只访问和保存你有权使用的内容。
+
+第三方组件的版权、许可证和来源见 [NOTICE](NOTICE)；对应源码与授权核查尚未全部完成，具体事项保留在[第三方材料清单](docs/compliance/native-2.0-status.md)中。

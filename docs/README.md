@@ -1,6 +1,6 @@
 # 文档导航
 
-当前源码版本：[Native 1.0.0](releases/1.0.0.md)，尚未发布本仓库安装包。
+当前版本：[Native 1.0.0](releases/1.0.0.md)。安装包与校验文件见[本仓库 Releases](https://github.com/Andrew05213/applemusic-downloader-native/releases)。
 新仓库不导入旧 Git 历史，来源与兼容边界见[迁移说明](development/native-1.0-migration.md)。
 公开发布不代表第三方源码与授权核查已经完成，详见[核查状态](compliance/native-2.0-status.md)。
 
@@ -8,7 +8,7 @@
 
 - [下载与安装](../README.md#下载与安装)：安装包、校验和及未签名提示。
 - [用户指南与故障反馈](USER-GUIDE.md)：登录、播放、下载、设置与诊断。
-- [1.0.0 源码基线](releases/1.0.0.md)：当前状态，不代表已经发布安装包。
+- [1.0.0 版本说明](releases/1.0.0.md)：功能、兼容边界与发布身份入口。
 
 ## 开发和维护
 

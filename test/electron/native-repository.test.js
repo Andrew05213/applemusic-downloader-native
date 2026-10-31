@@ -18,7 +18,10 @@ test('new repository has native 1.0 identity without changing source module or u
 
 test('current documentation distinguishes new source baseline from old releases and provenance',()=>{
  const read=file=>fs.readFileSync(path.join(root,file),'utf8');
- assert.match(read('README.md'),/尚未发布 1\.0\.0 安装包或 Release/);
+ const homepage=read('README.md');
+ assert.match(homepage,/applemusic-downloader-native\/releases/);
+ assert.match(homepage,/## 参与开发/);
+ assert.doesNotMatch(homepage.split('## 功能')[0],/旧项目|Git 提交历史|核查仍未完成/);
  assert.doesNotMatch(read('README.md'),/applemusic_downloader\/releases\/download/);
  assert.match(read('docs/releases/1.0.0.md'),/81e5c388347478b19e99137777abab33e769ca61/);
  assert.match(read('docs/legacy/README.md'),/不是本仓库 Native 1\.0/);
