@@ -6,6 +6,54 @@ const { EventEmitter } = require('node:events');
 const { PassThrough } = require('node:stream');
 const { NativeService, allowedAPI } = require('../../electron/native-service');
 
+function pendingService() {
+  const child = new EventEmitter();
+  for (const name of ['stdout','stderr','stdin']) child[name] = new PassThrough();
+  child.kill = () => child.emit('close', 1);
+  const service = new NativeService({executable:'fixture.exe',manifest:'fixture.json',dataDirectory:'fixture-data',outputDirectory:'fixture-output',guestPort:12340,spawnChild:()=>child});
+  const receipt = () => child.stdout.write(JSON.stringify({nativeServer:true,version:require('../../package.json').version,port:12345})+'\n');
+  return {child,service,receipt};
+}
+
+test('bootstrap deadline fails closed and ignores late receipts without resetting its timer', async t => {
+  t.mock.timers.enable({apis:['setTimeout']});
+  const {child,service,receipt} = pendingService();
+  const rejected = assert.rejects(service.ready, /native_service_timeout/);
+  t.mock.timers.tick(29000);
+  child.stdout.write('not a receipt\n');
+  t.mock.timers.tick(1000);
+  await rejected;
+  assert.equal(service.failed, true);
+  assert.equal(child.stdin.writableEnded, true);
+  receipt();
+  assert.equal(service.origin, '');
+  await assert.rejects(service.api('/api/native/state'), /native_api_unavailable/);
+  child.emit('close', 0); await service.completion;
+});
+
+test('a fresh service can start after a timed-out bootstrap; valid readiness clears deadline', async t => {
+  t.mock.timers.enable({apis:['setTimeout']});
+  const first = pendingService();
+  const rejected = assert.rejects(first.service.ready, /native_service_timeout/);
+  t.mock.timers.tick(30000); await rejected;
+  first.child.emit('close', 0); await first.service.completion;
+  const next = pendingService();
+  t.mock.timers.tick(29999); next.receipt();
+  assert.equal(await next.service.ready, 'http://127.0.0.1:12345');
+  t.mock.timers.tick(60000);
+  assert.equal(next.service.failed, false);
+  assert.equal(next.child.stdin.writableEnded, false);
+  next.child.emit('close', 0); await next.service.completion;
+});
+
+test('oversized bootstrap output fails closed before any receipt can be accepted', async () => {
+  const {child,service,receipt} = pendingService();
+  const rejected = assert.rejects(service.ready, /native_service_protocol_invalid/);
+  child.stdout.write('x'.repeat(131073)); await rejected; receipt();
+  assert.equal(service.origin, ''); assert.equal(service.failed, true);
+  child.emit('close', 0); await service.completion;
+});
+
 test('native service uses fixed argv, stdin capability, private headers and complete receipts', async (t) => {
   let token; let call;
   const server = http.createServer((req, res) => {

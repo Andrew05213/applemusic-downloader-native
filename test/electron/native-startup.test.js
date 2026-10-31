@@ -110,3 +110,21 @@ test('closing during the pending main-page load cannot reveal windows later', as
   vm.runInContext('closing=true;', f.context); release(); await pending;
   assert.deepEqual(f.calls, []);
 });
+
+test('recheck disposes failed bootstrap before one replacement, including concurrent clicks', async () => {
+  const f = mainFixture(); let release;
+  f.context.fixtureClose = new Promise(resolve => { release = resolve; });
+  vm.runInContext('service={failed:true,closed:false,async close(){fixtureCalls.push("close-old");await fixtureClose;this.closed=true;}};start=async()=>{fixtureCalls.push("start-new");service={closed:false,failed:false}};refresh=async()=>{fixtureCalls.push("refresh")};', f.context);
+  const first = f.handlers.get('native:recheck')(f.event(f.owner));
+  const second = f.handlers.get('native:recheck')(f.event(f.owner));
+  assert.deepEqual(f.calls, ['close-old']);
+  release(); await Promise.all([first,second]);
+  assert.deepEqual(f.calls, ['close-old','start-new','refresh']);
+});
+
+test('polling cannot overwrite the retained bootstrap failure with generic API errors', async () => {
+  const f = mainFixture();
+  vm.runInContext('service={failed:true,closed:false,api(){throw Error("must not poll a failed service")}};journal={record(){fixtureCalls.push("generic-error")}};', f.context);
+  await vm.runInContext('refresh()', f.context);
+  assert.deepEqual(f.calls, []);
+});

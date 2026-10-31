@@ -4,8 +4,8 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),{spawnSync}=require('node:child_process');
 const ROOT=path.resolve(__dirname,'..');
 const SPECS=[
- {name:'nsis-3.0.4.1',source:'nsisUtil.js',sha512:'VKMiizYdmNdJOWpRGz4trl4lD++BvYP2irAXpMilheUP0pc93iKlWAoP843Vlraj8YG19CVn0j+dCo/hURz9+Q=='},
- {name:'nsis-resources-3.4.1',source:'NsisTarget.js',sha512:'Dqd6g+2buwwvoG1Vyf6BHR1b+25QMmPcwZx40atOT57gH27rkjOei1L0JTldxZu4NFoEmW4kJgZ3DlSWVON3+Q=='}
+ {name:'nsis-3.0.4.1',source:'out/toolsets/windows.js',builderSHA256:'9877df902530f96357d13a7a31ae2b9df67f48b11ffc9a1700a7c961574ec5fa',sha512:'VKMiizYdmNdJOWpRGz4trl4lD++BvYP2irAXpMilheUP0pc93iKlWAoP843Vlraj8YG19CVn0j+dCo/hURz9+Q=='},
+ {name:'nsis-resources-3.4.1',source:'out/toolsets/windows.js',builderSHA256:'593a9a92ef958321293ac6a2ee61e64bf1bd543142a5bd6b3d310709cc924103',sha512:'Dqd6g+2buwwvoG1Vyf6BHR1b+25QMmPcwZx40atOT57gH27rkjOei1L0JTldxZu4NFoEmW4kJgZ3DlSWVON3+Q=='}
 ];
 const hash=(file,algorithm='sha256',encoding='hex')=>crypto.createHash(algorithm).update(fs.readFileSync(file)).digest(encoding);
 function tree(directory,prefix=''){
@@ -29,16 +29,16 @@ function prepare(root=ROOT){
  const directories={};
  function run(executable,args){const result=spawnSync(executable,args,{cwd:root,shell:false,windowsHide:true,stdio:'inherit'});if(result.error||result.status!==0)throw Error('native_nsis_prepare_failed');}
  for(const spec of SPECS){
-  const source=fs.readFileSync(path.join(library,'out/targets/nsis',spec.source),'utf8');
-  if(!source.includes(spec.sha512))throw Error('native_nsis_builder_version_mismatch');
+  const source=fs.readFileSync(path.join(library,spec.source),'utf8');
+  if(!source.includes(spec.builderSHA256))throw Error('native_nsis_builder_version_mismatch');
   const archive=path.join(cache,spec.name+'.7z');
   if(!fs.existsSync(archive)){
    const partial=archive+'.'+crypto.randomUUID()+'.partial';
    const url='https://github.com/electron-userland/electron-builder-binaries/releases/download/'+spec.name+'/'+spec.name+'.7z';
    run('curl.exe',['--fail','--location','--retry','3','--connect-timeout','20','--max-time','600','--output',partial,url]);
-   if(hash(partial,'sha512','base64')!==spec.sha512)throw Error('native_nsis_identity_mismatch');fs.renameSync(partial,archive);
+   if(hash(partial,'sha512','base64')!==spec.sha512||hash(partial)!==spec.builderSHA256)throw Error('native_nsis_identity_mismatch');fs.renameSync(partial,archive);
   }
-  if(hash(archive,'sha512','base64')!==spec.sha512)throw Error('native_nsis_identity_mismatch');
+  if(hash(archive,'sha512','base64')!==spec.sha512||hash(archive)!==spec.builderSHA256)throw Error('native_nsis_identity_mismatch');
   const stage=path.join(cache,'extract-'+crypto.randomUUID());
   run(path.join(root,'node_modules/7zip-bin/win/x64/7za.exe'),['x','-y',path.relative(root,archive),'-o'+path.relative(root,stage)]);
   const expected=tree(stage),target=path.join(cache,spec.name);

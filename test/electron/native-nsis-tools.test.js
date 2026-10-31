@@ -3,7 +3,7 @@ const {test}=require('node:test'),assert=require('node:assert/strict'),fs=requir
 const {SPECS,tree,verifyCache}=require('../../electron/native-nsis-tools');
 test('NSIS artifact pins match the currently locked builder, without system installations',()=>{
  const library=path.dirname(require.resolve('app-builder-lib/package.json'));
- for(const spec of SPECS)assert(fs.readFileSync(path.join(library,'out/targets/nsis',spec.source),'utf8').includes(spec.sha512));
+ for(const spec of SPECS){assert(fs.readFileSync(path.join(library,spec.source),'utf8').includes(spec.builderSHA256));assert.match(spec.sha512,/^[A-Za-z0-9+/]{86}==$/);}
 });
 test('NSIS cache verification rejects both changed and extra files',t=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'native-nsis-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));

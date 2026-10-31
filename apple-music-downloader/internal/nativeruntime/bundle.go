@@ -101,7 +101,22 @@ func copyContext(ctx context.Context, dst io.Writer, src io.Reader) error {
 	}
 }
 
-func LoadBundle(ctx context.Context, manifestPath string) (*Bundle, error) {
+// BundleInfo describes the bounded manifest only. It is not an execution
+// capability: payload identity must still pass LoadBundle before any launch.
+type BundleInfo struct {
+	Isolated        bool
+	ControlProtocol int
+}
+
+func ReadBundleInfo(ctx context.Context, manifestPath string) (BundleInfo, error) {
+	b, err := readBundleManifest(ctx, manifestPath)
+	if err != nil {
+		return BundleInfo{}, err
+	}
+	return BundleInfo{Isolated: b.Isolated, ControlProtocol: b.ControlProtocol}, nil
+}
+
+func readBundleManifest(ctx context.Context, manifestPath string) (*Bundle, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -155,7 +170,7 @@ func LoadBundle(ctx context.Context, manifestPath string) (*Bundle, error) {
 	}
 	seen := map[string]bool{}
 	for name, identity := range b.Files {
-		if seen[strings.ToLower(name)] || len(identity.SHA256) != 64 || identity.Size <= 0 {
+		if !safeRelative(name) || seen[strings.ToLower(name)] || len(identity.SHA256) != 64 || identity.Size <= 0 {
 			return nil, ErrBundleInvalid
 		}
 		seen[strings.ToLower(name)] = true
@@ -163,6 +178,19 @@ func LoadBundle(ctx context.Context, manifestPath string) (*Bundle, error) {
 		if err != nil || len(decoded) != sha256.Size || strings.ToLower(identity.SHA256) != identity.SHA256 {
 			return nil, ErrBundleInvalid
 		}
+	}
+	return &b, nil
+}
+
+func LoadBundle(ctx context.Context, manifestPath string) (*Bundle, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	b, err := readBundleManifest(ctx, manifestPath)
+	if err != nil {
+		return nil, err
+	}
+	for name, identity := range b.Files {
 		file, err := b.resolve(name)
 		if err != nil {
 			return nil, err
@@ -186,7 +214,7 @@ func LoadBundle(ctx context.Context, manifestPath string) (*Bundle, error) {
 			return nil, ErrBundleIdentity
 		}
 	}
-	return &b, nil
+	return b, nil
 }
 
 func prepareState(ctx context.Context, b *Bundle, stateDir string) (io.Closer, error) {

@@ -109,8 +109,15 @@ npm run dist:native
 | 本地工具链镜像被清理 | 显式执行 build:native-toolchain -- --no-cache 后重试 |
 | runtime 过期 | setup 会生成新的目录，旧证据不覆盖；不复制旧安装器中的组件来打包 |
 | QEMU 无法读取 BIOS | 检查目录长度，避免深层嵌套；不要移动个人会话来当测试夹具 |
+| 首次启动停留在启动画面 | 首次需完整校验、复制空白运行数据并启动组件；失败后可进入设置导出诊断并重试。不要关闭完整性校验，也不要删除账号目录来排错 |
 | 编译/打包失败 | 保留版本、失败阶段和脱敏日志；不要上传整个账号目录 |
-| npm audit 报告安全告警 | 当前依赖锁仍有待升级项，构建通过不等于依赖审计通过；先评估影响，不直接使用 audit fix --force 做破坏性升级 |
+| npm audit 报告安全告警 | 执行 npm run audit:native；CI 阻止 high/critical。构建成功不代表所有级别审计通过，剩余告警见下文，不使用 audit fix --force 降级或破坏接口 |
+
+### npm 依赖审计
+
+锁定的打包与测试工具已升级，`npm run audit:native` 会检查包括开发依赖在内的完整依赖树，并在出现 high/critical 时失败。不要通过忽略开发依赖或关闭审计掩盖告警。
+
+当前仍有 moderate 告警，主要来自 electron-builder 的 ASAR、macOS/Squirrel 打包辅助链，以及旧 glob/minimatch。它们是构建时依赖，不是桌面运行时模块，但在处理不可信目录或匹配模式时仍需防范拒绝服务；只构建可信源码，不接收外部提供的打包模板/匹配表达式。上游部分调用依赖旧版可调用的 minimatch 接口，不能全局强制替换为导出对象的新版。后续需跟进兼容的上游更新，再做实际 Windows 打包验证。审计结果会随公告更新，以当天输出为准。
 
 更多存储与清理规则见[构建存储](build-storage.md)。第三方材料仍有未完成核查，见[状态清单](../compliance/native-status.md)。
 

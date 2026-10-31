@@ -13,7 +13,13 @@ function main(){
  const buildEnv=require('./native-build-environment').buildEnvironment(ROOT);
  run(process.execPath,['electron/build-native-backend.js'],buildEnv);run(process.execPath,['electron/build-native-service.js'],buildEnv);run(process.execPath,['electron/native-build-tools.js'],buildEnv);prepare(stage,bundle);
  const temporary=path.join(ROOT,'.tmp-v2-native','builder-'+id);fs.mkdirSync(temporary,{recursive:true});
- const env={...buildEnv,AMDL_NATIVE_STAGE:stage,AMDL_NATIVE_OUTPUT:output,TEMP:temporary,TMP:temporary,TMPDIR:temporary,CSC_IDENTITY_AUTO_DISCOVERY:'false'};
+ // Builder 26.18 moved tool downloads to a new cache layout. Pass only the
+ // artifacts our bootstrap has just hash-verified, not an ambient/system cache.
+ const tools=path.join(ROOT,'.tmp-v2-native/builder-cache');
+ const env={...buildEnv,AMDL_NATIVE_STAGE:stage,AMDL_NATIVE_OUTPUT:output,TEMP:temporary,TMP:temporary,TMPDIR:temporary,CSC_IDENTITY_AUTO_DISCOVERY:'false',
+  ELECTRON_BUILDER_RCEDIT_PATH:path.join(tools,'winCodeSign/winCodeSign-2.6.0'),
+  ELECTRON_BUILDER_NSIS_DIR:path.join(tools,'nsis/nsis-3.0.4.1'),
+  ELECTRON_BUILDER_NSIS_RESOURCES_DIR:path.join(tools,'nsis/nsis-resources-3.4.1')};
  run(process.execPath,['node_modules/electron-builder/cli.js','--win','nsis','--x64','--config','electron-builder.native.cjs','--publish','never'],env);
  const verification=require('./verify-native-package').verifyPackage(path.join(output,'win-unpacked'));const filename='AppleMusicDownloader-'+VERSION+'-Setup.exe';
  const installer=path.join(output,filename);const digest=hash(installer);fs.writeFileSync(installer+'.sha256',digest+'  '+filename+'\n',{flag:'wx'});

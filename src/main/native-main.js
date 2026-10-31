@@ -53,7 +53,7 @@ function observe(input) {
   if (owner && !owner.isDestroyed()) owner.webContents.send('native:session-state', state);
 }
 async function refresh() {
-  if (polling || closing || !service) return;
+  if (polling || closing || !service || service.failed || service.closed) return;
   polling = true;
   try { const current = await service.api('/api/native/state'); observe(current.runtime.phase === 'failed' ? { state: 'runtime_unavailable' } : current.session); }
   catch { journal?.record('desktop_service','failed','native_runtime_unavailable');observe({ state: 'runtime_unavailable' }); }
@@ -69,8 +69,11 @@ async function start() {
   const guestPort = await unusedPort();
   if (closing) return;
   service = new NativeService({ executable, manifest, dataDirectory: data, outputDirectory: output, guestPort, toolDirectory });
-  service.on('closed', () => { if (!closing) observe({ state: 'runtime_unavailable' }); });
-  await service.ready; if(closing)return; if(owner&&!owner.isDestroyed())owner.webContents.send('native:backend-ready'); await refresh();
+  const started = service;
+  service.on('closed', () => { if (!closing && service === started) observe({ state: 'runtime_unavailable' }); });
+  try { await service.ready; }
+  catch(error) { journal?.record('desktop_service','failed',error?.message); throw error; }
+  if(closing)return; if(owner&&!owner.isDestroyed())owner.webContents.send('native:backend-ready'); await refresh();
 }
 function bindIPC() {
   for (const [name, action] of [
@@ -128,7 +131,17 @@ function bindIPC() {
   });
   handle('native:two-factor', async (event, code) => { if (!owns(event, login.window, loginURL) || typeof code !== 'string' || !/^\d{6}$/.test(code)) throw new Error('native_code_rejected'); const next = await service.api('/api/native/two-factor', { method: 'POST', body: { code } }); observe(next); return state; });
   handle('native:cancel-login', async () => { try { observe(await service.api('/api/native/cancel-login', { method: 'POST' })); } catch {} if (login.window && !login.window.isDestroyed()) login.window.close(); return true; });
-  handle('native:recheck', async () => { if (!service || service.closed) await start(); else await service.api(state.state === 'runtime_unavailable' ? '/api/native/retry' : '/api/native/recheck', { method: 'POST' }); await refresh(); return state; });
+  let rechecking;
+  handle('native:recheck', () => {
+    if (rechecking) return rechecking;
+    rechecking = (async () => {
+      if (service?.failed && !service.closed) await service.close();
+      if (!service || service.closed) await start();
+      else await service.api(state.state === 'runtime_unavailable' ? '/api/native/retry' : '/api/native/recheck', { method: 'POST' });
+      await refresh(); return state;
+    })().finally(() => { rechecking = null; });
+    return rechecking;
+  });
   handle('native:export-diagnostics', async () => {
     const result = await dialog.showSaveDialog(owner, { defaultPath: 'AMDL-native-diagnostics.txt', filters: [{ name: '诊断日志', extensions: ['txt'] }] });
     if (result.canceled || !result.filePath) return false;

@@ -43,12 +43,21 @@ type Controller struct {
 	cancel                     context.CancelFunc
 	generation                 uint64
 	stopEpoch                  uint64
+	requireControl             bool
 }
 
 func NewController(manifestPath, stateDir string, port int) *Controller {
 	probe, _ := wrapperlite.NewClient(port)
 	return &Controller{manifestPath: manifestPath, stateDir: stateDir, port: port, probe: probe, start: startProcess, readyTimeout: 60 * time.Second, pollInterval: 100 * time.Millisecond,
 		state: State{Runtime: "native-lite", Phase: "stopped", Regions: []string{}}}
+}
+
+// Desktop clients never accept the retired unauthenticated guest protocol,
+// including if the manifest changes between metadata inspection and startup.
+func NewDesktopController(manifestPath, stateDir string, port int) *Controller {
+	c := NewController(manifestPath, stateDir, port)
+	c.requireControl = true
+	return c
 }
 
 func (c *Controller) Snapshot() State {
@@ -122,6 +131,9 @@ func (c *Controller) Start(parent context.Context) (result error) {
 	bundle, err := LoadBundle(ctx, c.manifestPath)
 	if err != nil {
 		return err
+	}
+	if c.requireControl && bundle.ControlProtocol != 1 {
+		return ErrBundleInvalid
 	}
 	if ctx.Err() != nil {
 		return ErrCancelled

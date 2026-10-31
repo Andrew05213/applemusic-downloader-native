@@ -15,6 +15,7 @@ async function main(){
  ];
  new DiagnosticJournal(path.join(profile,'auth-diagnostics.json')).observe({diagnostics:{events:synthetic}});
  const env={SystemRoot:process.env.SystemRoot,WINDIR:process.env.WINDIR,TEMP:process.env.TEMP,TMP:process.env.TMP,PATH:'',LOCALAPPDATA:process.env.LOCALAPPDATA,APPDATA:process.env.APPDATA};
+ const startedAt=Date.now();
  const app=await electron.launch({executablePath:executable,args:[...(mode==='--packaged'?[]:[path.join(root,'src/main/native-main.js')]),'--native-manifest',path.resolve(manifest),'--native-fixture-profile',profile],env,timeout:30000});
  let exited=false;app.on('close',()=>{exited=true;});
  const evidence={scope:'real-electron-native-entry-isolated',realAccountsUsed:0,mediaRequestsAttempted:0};
@@ -44,9 +45,15 @@ async function main(){
     await splash.close();await closed;
     evidence.startupCloseExits=true;evidence.passed=true;return;
   }
+  const preparingOwner=app.windows().find(win=>win.url().endsWith('/native-index.html'));
+  await preparingOwner.waitForFunction(()=>typeof window.nativeDesktop?.api==='function');
+  const preparingState=await preparingOwner.evaluate(()=>window.nativeDesktop.api('/api/native/state'));
+  assert.ok(['stopped','starting','ready'].includes(preparingState.runtime.phase),JSON.stringify(preparingState.runtime));
+  evidence.controlAPIElapsedMs=Date.now()-startedAt;
   const deadline=Date.now()+90000;let login;
   while(Date.now()<deadline){login=app.windows().find(win=>win.url().endsWith('/native-login.html'));if(login)break;await new Promise(resolve=>setTimeout(resolve,250));}
   assert.ok(login,'missing automatic login window');const owner=app.windows().find(win=>win.url().endsWith('/native-index.html'));assert.ok(owner);
+  evidence.automaticLoginElapsedMs=Date.now()-startedAt;
   assert.equal(app.windows().some(win=>win.url().endsWith('/native-startup.html')),false);
   assert.equal(await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(win=>win.webContents.getURL().endsWith('/native-index.html')).isVisible()),true);
   await owner.getByRole('button',{name:'设置与状态',exact:true}).click();await owner.getByRole('button',{name:'登录',exact:true}).click();

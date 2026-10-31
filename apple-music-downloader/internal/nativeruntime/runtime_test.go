@@ -55,6 +55,47 @@ func TestBundleCheckAndMutation(t *testing.T) {
 	}
 }
 
+func freePort(t *testing.T) int {
+	t.Helper()
+	l, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	port := l.Addr().(*net.TCPAddr).Port
+	_ = l.Close()
+	return port
+}
+
+func TestMetadataDoesNotReadPayloadButLaunchStillRequiresFullIdentity(t *testing.T) {
+	manifest := testBundle(t)
+	// The bounded metadata read must not touch cold or missing payload files.
+	if err := os.Remove(filepath.Join(filepath.Dir(manifest), "guest", "kernel")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ReadBundleInfo(context.Background(), manifest); err != nil {
+		t.Fatal(err)
+	}
+	c := NewDesktopController(manifest, t.TempDir(), freePort(t))
+	c.start = func(Command) (Process, error) { t.Fatal("executed an unverified payload"); return nil, nil }
+	if err := c.Start(context.Background()); !errors.Is(err, ErrBundleInvalid) {
+		t.Fatalf("unverified bundle: %v", err)
+	}
+	if c.Snapshot().Phase != "failed" {
+		t.Fatal("invalid payload did not retain a failed state")
+	}
+	if _, err := c.Agent(); err == nil {
+		t.Fatal("unverified guest exposed an authenticated agent")
+	}
+}
+
+func TestDesktopControllerRejectsRetiredProtocol(t *testing.T) {
+	c := NewDesktopController(testBundle(t), t.TempDir(), freePort(t))
+	c.start = func(Command) (Process, error) { t.Fatal("executed a retired protocol"); return nil, nil }
+	if err := c.Start(context.Background()); !errors.Is(err, ErrBundleInvalid) {
+		t.Fatalf("retired protocol: %v", err)
+	}
+}
+
 func TestBundleRejectsInvalidSchemaAndPaths(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
@@ -78,6 +119,9 @@ func TestBundleRejectsInvalidSchemaAndPaths(t *testing.T) {
 			_ = os.WriteFile(manifest, raw, 0600)
 			if _, err := LoadBundle(context.Background(), manifest); err == nil {
 				t.Fatal("invalid bundle accepted")
+			}
+			if _, err := ReadBundleInfo(context.Background(), manifest); err == nil {
+				t.Fatal("invalid metadata accepted")
 			}
 		})
 	}

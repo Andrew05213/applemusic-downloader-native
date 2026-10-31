@@ -1,6 +1,13 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os');
 const {doctor,argumentsFor,validateSelection,environment}=require('../../scripts/native-dev');
+
+test('archive bootstrap is an explicit locked dependency, not a builder implementation detail',()=>{
+ const root=path.resolve(__dirname,'../..'),pkg=require(path.join(root,'package.json')),lock=require(path.join(root,'package-lock.json'));
+ assert.equal(pkg.devDependencies['7zip-bin'],'5.2.0');
+ assert.equal(lock.packages['node_modules/7zip-bin'].version,pkg.devDependencies['7zip-bin']);
+ assert.equal(lock.packages[''].devDependencies['7zip-bin'],pkg.devDependencies['7zip-bin']);
+});
 test('developer commands have explicit isolated mode and never publish',()=>{
  assert.deepEqual(argumentsFor(['setup','--isolated']),{action:'setup',isolated:true});
  assert.deepEqual(argumentsFor(['package']),{action:'package',isolated:false});

@@ -15,6 +15,7 @@
     "start": "node electron/start-native.js",
     "start:native": "node electron/start-native.js",
     "test": "node electron/native-build-environment.js electron/native-ci.js unit",
+    "audit:native": "npm audit --audit-level=high",
     "test:all": "node electron/native-build-environment.js --test \"test/**/*.test.js\"",
     "verify:native": "node electron/native-build-environment.js electron/native-ci.js contract",
     "verify:boundaries": "node electron/native-build-environment.js scripts/check-native-boundaries.js",
@@ -40,11 +41,12 @@
   "author": "Andrew05213",
   "license": "ISC",
   "devDependencies": {
-    "@electron/asar": "3.2.18",
+    "7zip-bin": "5.2.0",
+    "@electron/asar": "4.3.1",
     "@electron/fuses": "1.8.0",
-    "@playwright/test": "^1.54.1",
+    "@playwright/test": "1.64.1",
     "electron": "45.0.0",
-    "electron-builder": "^26.0.12"
+    "electron-builder": "26.18.0"
   },
   "build": {
     "extends": "./electron-builder.native.cjs"

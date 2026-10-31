@@ -15,7 +15,7 @@ function allowedAPI(method, target) {
 }
 class NativeService extends EventEmitter {
   constructor({ executable, manifest, dataDirectory, outputDirectory, guestPort, toolDirectory, spawnChild = spawn }) {
-    super(); this.token = crypto.randomBytes(32).toString('hex'); this.origin = ''; this.closed = false; this.buffer = ''; this.requests = new Set(); this.catalog = null;this.playbackRequests=new Map();
+    super(); this.token = crypto.randomBytes(32).toString('hex'); this.origin = ''; this.closed = false; this.failed = false; this.buffer = ''; this.requests = new Set(); this.catalog = null;this.playbackRequests=new Map();
     this.child = spawnChild(executable, ['__native-desktop', '--manifest', manifest, '--data-dir', dataDirectory, '--output-dir', outputDirectory, '--guest-port', String(guestPort)], {
       shell: false, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'],
       env: { SystemRoot: process.env.SystemRoot, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP, PATH: toolDirectory || '' },
@@ -25,21 +25,28 @@ class NativeService extends EventEmitter {
       this.closed = true; for (const request of this.requests) request.abort(); this.requests.clear();this.cancelPlaybackChunks(); this.emit('closed'); resolve(code);
     }));
     this.ready = new Promise((resolve, reject) => {
-      const timer = setTimeout(() => { reject(new Error('native_service_timeout')); this.child.stdin.end(); }, 30000);
-      this.child.once('error', () => { clearTimeout(timer); reject(new Error('native_service_unavailable')); });
-      this.child.once('close', () => { clearTimeout(timer); reject(new Error('native_service_closed')); });
+      let settled = false;
+      const fail = code => {
+        if (settled) return;
+        settled = true; this.failed = true; this.buffer = ''; clearTimeout(timer);
+        reject(new Error(code)); this.child.stdin.end();
+      };
+      const timer = setTimeout(() => fail('native_service_timeout'), 30000);
+      this.child.once('error', () => fail('native_service_unavailable'));
+      this.child.once('close', () => fail('native_service_closed'));
       this.child.stdout.setEncoding('utf8');
       this.child.stdout.on('data', (chunk) => {
+        if (settled) return;
         this.buffer += chunk;
-        if (this.buffer.length > 131072) { this.buffer = ''; reject(new Error('native_service_protocol_invalid')); this.child.stdin.end(); return; }
+        if (this.buffer.length > 131072) { fail('native_service_protocol_invalid'); return; }
         let newline;
         while ((newline = this.buffer.indexOf('\n')) !== -1) {
           const line = this.buffer.slice(0, newline); this.buffer = this.buffer.slice(newline + 1);
           if (this.origin) continue;
           let receipt; try { receipt = JSON.parse(line); } catch { continue; }
-          if (receipt.nativeServer === false) { clearTimeout(timer); reject(new Error('native_service_unavailable')); this.child.stdin.end(); return; }
+          if (receipt.nativeServer === false) { fail('native_service_unavailable'); return; }
           if (receipt.nativeServer === true && receipt.version === VERSION && Number.isInteger(receipt.port) && receipt.port > 0 && receipt.port <= 65535) {
-            this.origin = 'http://127.0.0.1:' + receipt.port; clearTimeout(timer); resolve(this.origin);
+            settled = true; this.origin = 'http://127.0.0.1:' + receipt.port; this.buffer = ''; clearTimeout(timer); resolve(this.origin); return;
           }
         }
       });
@@ -52,7 +59,7 @@ class NativeService extends EventEmitter {
   }
   async api(target, options = {}) {
     const method = options.method || 'GET';
-    if (!allowedAPI(method, target) || this.closed) throw new Error('native_api_unavailable');
+    if (!allowedAPI(method, target) || this.closed || this.failed) throw new Error('native_api_unavailable');
     await this.ready;
     if(this.closed)throw new Error('native_api_unavailable');
     if(target==='/api/native/playback'){this.playbackPrepare?.abort();this.cancelPlaybackChunks();}

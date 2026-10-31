@@ -81,7 +81,7 @@ func (n *nativeDesktop) downloadCredentials(ctx context.Context) (secretfd.Crede
 func (n *nativeDesktop) session(ctx context.Context) nativeauth.Snapshot {
 	state, err := n.control.Session(ctx)
 	if err != nil {
-		if n.control.Snapshot().Phase == "starting" {
+		if phase := n.control.Snapshot().Phase; phase == "starting" || phase == "stopped" {
 			return nativeauth.Snapshot{State: "checking"}
 		}
 		return nativeauth.Snapshot{State: "unverified", Code: "native_session_unverified"}
@@ -109,6 +109,10 @@ func (n *nativeDesktop) routes(capability string) *mux.Router {
 	router.Use(auth.middleware)
 	router.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(r.URL.Path, "/api/v1/catalog/") && n.control.Snapshot().Phase != "ready" {
+				writeAPIError(w, 503, "native_runtime_unavailable", "正在准备运行组件", "请稍后重试")
+				return
+			}
 			if n.isolated && strings.HasPrefix(r.URL.Path, "/api/v1/catalog/") {
 				writeAPIError(w, 503, "native_runtime_isolated", "离线验证模式不访问在线目录", "使用启用网络的资源包")
 				return
@@ -280,16 +284,19 @@ func serveNativeDesktop(args []string, input io.Reader, output io.Writer) error 
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
-	bundle, err := nativeruntime.LoadBundle(ctx, *manifest)
-	if err != nil || bundle.ControlProtocol != 1 {
-		return errors.New("native_bundle_invalid")
-	}
 	go func() {
 		for scanner.Scan() {
 			break
 		}
 		cancel()
 	}()
+	// Publish the capability-protected control API before expensive cold-disk
+	// hashing/copying. Controller.Start performs the single full validation
+	// before executing any guest; this descriptor exposes no executable paths.
+	bundle, err := nativeruntime.ReadBundleInfo(ctx, *manifest)
+	if err != nil || bundle.ControlProtocol != 1 {
+		return errors.New("native_bundle_invalid")
+	}
 	Config = runtimeconfig.Defaults()
 	resolvedConfigPath = ""
 	if os.MkdirAll(*data, 0700) != nil || os.MkdirAll(*destination, 0755) != nil {
@@ -297,7 +304,7 @@ func serveNativeDesktop(args []string, input io.Reader, output io.Writer) error 
 	}
 	_ = os.Setenv("AMDL_DOWNLOAD_DIR", *destination)
 	_ = os.Setenv("AMDL_DATA_DIR", *data)
-	native := &nativeDesktop{control: nativeruntime.NewController(*manifest, filepath.Join(*data, "runtime"), *guestPort), output: *destination}
+	native := &nativeDesktop{control: nativeruntime.NewDesktopController(*manifest, filepath.Join(*data, "runtime"), *guestPort), output: *destination}
 	native.isolated = bundle.Isolated
 	defer native.control.Stop()
 	store, err := OpenJobStore(filepath.Join(*data, "jobs.db"))
