@@ -7,6 +7,7 @@ function testFiles(root=ROOT){
  return [...shared,...desktop].sort();
 }
 async function contract(root=ROOT){
+ require('../scripts/npm-build-compat').prepare(root,{checkOnly:true});
  const pkg=require(path.join(root,'package.json')),policy=require(path.join(root,'appliance/release-policy.json'));
  if(pkg.main!=='src/main/native-main.js'||!/^1\.0\./.test(pkg.version)||pkg.build.extends!=='./electron-builder.native.cjs'||policy.publicReleaseAllowed!==false)throw Error('native_ci_contract_invalid');
  const config=require(path.join(root,'electron-builder.native.cjs'));

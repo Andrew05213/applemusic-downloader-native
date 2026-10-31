@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "patches": [
+    {
+      "package": "@electron/asar",
+      "version": "3.4.1",
+      "unmodifiedVersions": ["4.3.1"],
+      "file": "lib/asar.js",
+      "beforeSHA256": "91e89e96324626b140f3e897dffaca6e3cbb1135c4192ce6ceaa0e84af4ba152",
+      "afterSHA256": "5a0088341bcd90df3249a17da7b1852b5997fcc8bf600824dd3740a6021d7dab",
+      "from": "__importDefault(require(\"minimatch\"))",
+      "to": "{ default: require(\"minimatch\").minimatch }"
+    },
+    {
+      "package": "dir-compare",
+      "version": "4.2.0",
+      "file": "build/src/FilterHandler/defaultFilterHandler.js",
+      "beforeSHA256": "6b753f018576fc270dc93e2be35d98a50431bd7f1e373b98acbec5e7acf381d2",
+      "afterSHA256": "26eca3b45e7cdb2a6ef3d085fb5230555ecd14eee802bfda041530b88f42bf4b",
+      "from": "__importDefault(require(\"minimatch\"))",
+      "to": "{ default: require(\"minimatch\").minimatch }"
+    },
+    {
+      "package": "glob",
+      "version": "7.2.3",
+      "unmodifiedVersions": ["14.0.3"],
+      "file": "glob.js",
+      "beforeSHA256": "b8f35657ca927593d0f9e1aae3a8cfe9c33c697bf3c5733c2f6727f25ae25be1",
+      "afterSHA256": "4caeca5af34b662a1598d6975bf6541a478443e6e79765095cf24479c3dbcaa4",
+      "edits": [
+        {"from": "var rawGlob = pn._glob", "to": "var rawGlob = pn.pattern", "count": 1},
+        {"from": "e.match(pn)", "to": "pn.test(e)", "count": 2}
+      ]
+    },
+    {
+      "package": "glob",
+      "version": "7.2.3",
+      "unmodifiedVersions": ["14.0.3"],
+      "file": "sync.js",
+      "beforeSHA256": "0f61227f4b55297f1ad16798c53e6a6dd55d633856f153133716413b7c5f61ad",
+      "afterSHA256": "fea0ef6613ef0bcb7d103a37383cecb80f12797539e4c76604d57d5e15bce7a5",
+      "edits": [
+        {"from": "var rawGlob = pn._glob", "to": "var rawGlob = pn.pattern", "count": 1},
+        {"from": "e.match(pn)", "to": "pn.test(e)", "count": 2}
+      ]
+    }
+  ]
+}

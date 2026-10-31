@@ -34,8 +34,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Reject high and critical npm advisories
-        run: npm audit --audit-level=high
+      - name: Reject moderate, high and critical npm advisories
+        run: npm run audit:native
       - name: Native delivery and private distribution gates
         run: npm run verify:native
       - name: Native and shared JavaScript unit tests
@@ -80,8 +80,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Reject high and critical npm advisories
-        run: npm audit --audit-level=high
+      - name: Reject moderate, high and critical npm advisories
+        run: npm run audit:native
       - run: npm run verify:native
       - run: npm test
       - run: npm run verify:boundaries

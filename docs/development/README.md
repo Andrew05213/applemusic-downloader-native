@@ -111,13 +111,19 @@ npm run dist:native
 | QEMU 无法读取 BIOS | 检查目录长度，避免深层嵌套；不要移动个人会话来当测试夹具 |
 | 首次启动停留在启动画面 | 首次需完整校验、复制空白运行数据并启动组件；失败后可进入设置导出诊断并重试。不要关闭完整性校验，也不要删除账号目录来排错 |
 | 编译/打包失败 | 保留版本、失败阶段和脱敏日志；不要上传整个账号目录 |
-| npm audit 报告安全告警 | 执行 npm run audit:native；CI 阻止 high/critical。构建成功不代表所有级别审计通过，剩余告警见下文，不使用 audit fix --force 降级或破坏接口 |
+| npm audit 报告安全告警 | 执行 npm run audit:native；CI 阻止 moderate 及以上。构建成功不等于依赖审计通过，不使用 audit fix --force 降级或忽略开发依赖 |
+| native_build_compat_* | 重新执行 npm ci；如有意使用 --ignore-scripts，随后执行 npm run prepare:build-deps。版本或哈希仍不匹配时停止构建并核对锁文件，不手动绕过校验 |
+| native_build_dependencies_linked | node_modules 是共享链接；在独立 clone 安装依赖。不要直接用 npm ci 清理共享目标，若需移除链接，先确认操作对象只是链接而不是目标目录 |
 
 ### npm 依赖审计
 
-锁定的打包与测试工具已升级，`npm run audit:native` 会检查包括开发依赖在内的完整依赖树，并在出现 high/critical 时失败。不要通过忽略开发依赖或关闭审计掩盖告警。
+`npm run audit:native` 检查包括开发依赖在内的完整依赖树，CI 在出现 moderate、high 或 critical 时失败。不要通过省略开发依赖、重命名易受影响的实现或关闭审计掩盖告警。结果会随公告更新，以当天输出为准。
 
-当前仍有 moderate 告警，主要来自 electron-builder 的 ASAR、macOS/Squirrel 打包辅助链，以及旧 glob/minimatch。它们是构建时依赖，不是桌面运行时模块，但在处理不可信目录或匹配模式时仍需防范拒绝服务；只构建可信源码，不接收外部提供的打包模板/匹配表达式。上游部分调用依赖旧版可调用的 minimatch 接口，不能全局强制替换为导出对象的新版。后续需跟进兼容的上游更新，再做实际 Windows 打包验证。审计结果会随公告更新，以当天输出为准。
+依赖覆盖锁定真实上游 `minimatch 11.0.3` 和现代异步扫描链的 `glob 14.0.3`，分别包含 [globparts 放大修复](https://github.com/isaacs/minimatch/commit/77a0f5c)和[取消后停止扫描修复](https://github.com/isaacs/node-glob/commit/4682e8c)。包名、版本和注册表完整性保持原样，不使用审计排除表。
+
+少数旧构建工具尚未适配这些接口。`npm ci` 的 `postinstall` 会运行 `scripts/npm-build-compat.js`，仅适配两类旧调用：ASAR/dir-compare 的默认函数导入，以及 glob 7 对模式对象的读取与测试。旧 glob 7 的同步/回调接口保留，匹配仍交给安全版 minimatch 的非递归实现，不转回旧正则算法。适配清单及前后 SHA-256 在 `scripts/npm-build-compat.lock.json`；未知版本、改动文件或共享 node_modules 链接均拒绝修改。重复执行会核对已适配内容，`verify:native` 和实际打包也会只读复验。
+
+更新依赖时应同步检查是否可以移除适配；不可只修改预期哈希凑匹配。回归测试覆盖漏洞输入、扫描取消、旧 glob 同步/回调、ASAR 打包/解包、目录过滤和临时文件清理。发行仍只支持 Windows 原生 NSIS，不据此宣称已验证 macOS 或 Squirrel 安装器。上述依赖用于构建，不进入原生桌面运行时；构建仍应只使用可信源码和模板。
 
 更多存储与清理规则见[构建存储](build-storage.md)。第三方材料仍有未完成核查，见[状态清单](../compliance/native-status.md)。
 

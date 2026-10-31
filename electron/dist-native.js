@@ -7,6 +7,7 @@ function installerOutput(root,version,id){return path.join(root,'.artifacts','in
 function main(){
  if(process.env.AMDL_PUBLIC_RELEASE==='1' && require('../native-runtime/release-policy.json').publicReleaseAllowed!==true)throw new Error('native_public_release_blocked');
  if(process.platform!=='win32')throw new Error('native_windows_build_required');
+ require('../scripts/npm-build-compat').prepare(ROOT,{checkOnly:true});
  const bundle=selectBundle();verifyBundleSources(bundle);
  const id=crypto.randomUUID();const stage=path.join(ROOT,'electron/generated/native-'+id);const output=installerOutput(ROOT,VERSION,id);
  if(fs.existsSync(output))throw new Error('native_output_must_be_new');

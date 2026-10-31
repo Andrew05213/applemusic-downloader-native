@@ -1,0 +1,14 @@
+{
+  "files": ["main.js", ".hidden.js", "another.JS", "foo.txt", "bar.txt", "nested/歌曲 (Live).js", "nested/skip.map", "literal[1].txt"],
+  "cases": [
+    {"pattern":"**/*.js","options":{"dot":true,"nodir":true,"ignore":"**/*.map"},"expected":[".hidden.js","main.js","nested/歌曲 (Live).js"]},
+    {"pattern":"**/*.{js,JS}","options":{"nodir":true},"expected":["another.JS","main.js","nested/歌曲 (Live).js"]},
+    {"pattern":"**/*.JS","options":{"nocase":true,"nodir":true},"expected":["another.JS","main.js","nested/歌曲 (Live).js"]},
+    {"pattern":"+(main|another).*","options":{"nodir":true},"expected":["another.JS","main.js"]},
+    {"pattern":"**/*.js","options":{"dot":true,"ignore":"nested/**"},"expected":[".hidden.js","main.js"]},
+    {"pattern":"literal[[]1].txt","options":{},"expected":["literal[1].txt"]},
+    {"pattern":"*.js","options":{"matchBase":true,"nodir":true},"expected":["main.js","nested/歌曲 (Live).js"]},
+    {"pattern":"nested","options":{"mark":true},"expected":["nested/"]},
+    {"pattern":"missing-*","options":{"nonull":true},"expected":["missing-*"]}
+  ]
+}
