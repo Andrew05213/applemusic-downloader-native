@@ -1,0 +1,45 @@
+# Copy this file to config.yaml only for direct CLI use. The WSL Appliance uses
+# its own non-secret configuration and receives credentials through protected
+# file descriptors. Never commit tokens or account credentials here.
+storefront: us
+# Empty follows the supplied link. Only public catalog URLs can change region.
+download-region: ""
+# Optional text-tag/lyrics regions. No reliable ISRC/version match means fallback.
+metadata-region: ""
+lyrics-region: ""
+language: ""
+save-lrc-file: true
+lrc-type: lyrics
+lrc-format: lrc
+save-animated-artwork: false
+emby-animated-artwork: false
+embed-lrc: true
+embed-cover: true
+save-artist-cover: false
+cover-size: 5000x5000
+cover-format: jpg
+alac-save-folder: ../downloads/AM-DL downloads
+atmos-save-folder: ../downloads/AM-DL-Atmos downloads
+aac-save-folder: ../downloads/AM-DL-AAC downloads
+album-folder-format: "{AlbumName}"
+playlist-folder-format: "{PlaylistName}"
+artist-folder-format: "{UrlArtistName}"
+song-file-format: "{SongNumer}. {SongName}"
+explicit-choice: "[E]"
+clean-choice: "[C]"
+apple-master-choice: "[M]"
+max-memory-limit: 256
+decrypt-m3u8-port: 127.0.0.1:10020
+get-m3u8-port: 127.0.0.1:20020
+get-m3u8-mode: hires
+get-m3u8-from-device: true
+aac-type: aac-lc
+alac-max: 192000
+atmos-max: 2768
+limit-max: 200
+use-songinfo-for-playlist: false
+# Legacy compatibility only. With embed-cover enabled, each playlist song now
+# embeds its own artwork regardless of this old option.
+dl-albumcover-for-playlist: false
+mv-audio-type: atmos
+mv-max: 2160

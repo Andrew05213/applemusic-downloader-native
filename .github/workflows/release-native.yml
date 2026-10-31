@@ -1,0 +1,64 @@
+name: Native Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      runtime_asset_id:
+        description: 'Same repository Release asset ID: amdl-native-runtime-*.zip'
+        required: true
+        type: string
+      runtime_sha256:
+        description: 'Exact SHA256 of the selected native runtime ZIP'
+        required: true
+        type: string
+      create_draft:
+        description: 'Create a NEW draft prerelease after validation (never replace an existing tag)'
+        default: false
+        type: boolean
+      public_release:
+        description: 'Explicitly enable public release mode; default requires a private repository'
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-private-release
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    uses: ./.github/workflows/verify.yml
+  installer:
+    needs: verify
+    runs-on: windows-2025
+    timeout-minutes: 60
+    environment: native-private-release
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      AMDL_RUNTIME_ASSET_ID: ${{ inputs.runtime_asset_id }}
+      AMDL_RUNTIME_SHA256: ${{ inputs.runtime_sha256 }}
+      AMDL_CREATE_DRAFT: ${{ inputs.create_draft }}
+      AMDL_PUBLIC_RELEASE: ${{ inputs.public_release && '1' || '0' }}
+      GOMAXPROCS: '2'
+      GOFLAGS: '-p=2'
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, Node 24
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0, Node 24
+        with:
+          go-version: '1.25.0'
+          cache-dependency-path: apple-music-downloader/go.sum
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0, Node 24
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run verify:native
+      - name: Verify selected runtime, build and audit NSIS, optionally create draft
+        run: npm run release:native -- run
+      # No automatic Actions artifact upload.
+      # Publishing a draft is a separate, deliberate maintainer operation.

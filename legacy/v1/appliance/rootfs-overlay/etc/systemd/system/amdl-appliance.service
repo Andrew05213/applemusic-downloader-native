@@ -1,0 +1,35 @@
+[Unit]
+Description=Apple Music Downloader WSL appliance supervisor
+Documentation=file:/opt/applemusic-downloader/current/APPLIANCE-METADATA.json
+After=local-fs.target
+ConditionPathIsExecutable=/opt/applemusic-downloader/current/amdl-appliance
+
+[Service]
+Type=simple
+User=root
+Group=root
+UMask=0077
+WorkingDirectory=/var/lib/applemusic-downloader
+Environment=AMDL_RUNTIME=wsl-appliance
+Environment=AMDL_RELEASE_ROOT=/opt/applemusic-downloader/current
+Environment=AMDL_DATA_DIR=/var/lib/applemusic-downloader/data
+Environment=AMDL_WRAPPER_STATE_DIR=/var/lib/applemusic-downloader/wrapper-state
+Environment=AMDL_DOWNLOAD_DIR=/srv/applemusic-downloader/downloads
+Environment=AMDL_RUN_DIR=/run/applemusic-downloader
+ExecStart=/opt/applemusic-downloader/current/amdl-appliance supervisor
+Restart=on-failure
+RestartSec=3s
+TimeoutStartSec=180s
+TimeoutStopSec=30s
+KillMode=mixed
+RuntimeDirectory=applemusic-downloader
+RuntimeDirectoryMode=0700
+StateDirectory=applemusic-downloader
+StateDirectoryMode=0700
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=amdl-appliance
+
+[Install]
+WantedBy=multi-user.target
+

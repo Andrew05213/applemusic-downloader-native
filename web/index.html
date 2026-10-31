@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; img-src 'self' data: https://*.mzstatic.com; media-src https://*.mzstatic.com https://audio-ssl.itunes.apple.com; style-src 'self'; script-src 'self'">
+  <title>Apple Music 下载器</title>
+  <link rel="stylesheet" href="styles.css?v=1.4.3-styles1">
+  <link rel="stylesheet" href="client.css?v=1.4.3-styles1">
+</head>
+<body class="nav-collapsed" data-view="browse" data-browse-mode="native">
+  <div class="container">
+    <nav class="client-nav collapsed" aria-label="主导航">
+      <div class="client-nav-header"><span class="client-brand"><svg class="chrome-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13M9 8l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="16" rx="3" ry="2"/></svg><span>Music</span></span><button id="sidebar-toggle" class="secondary-button" type="button" aria-label="展开侧边栏" aria-expanded="false" aria-controls="client-nav-links"><svg class="chrome-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M10 5v14"/></svg></button></div>
+      <div id="client-nav-links" class="client-nav-links">
+        <a href="#browse" data-view="browse" aria-label="浏览" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg class="chrome-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg></span><span class="nav-label">浏览</span></a>
+        <a href="#tasks" data-view="tasks" aria-label="下载任务"><span class="nav-icon" aria-hidden="true"><svg class="chrome-icon" viewBox="0 0 24 24"><path d="M12 3v11m-4-4 4 4 4-4M5 15v5h14v-5"/></svg></span><span class="nav-label">下载任务</span></a>
+        <a href="#settings" data-view="settings" aria-label="设置与状态"><span class="nav-icon" aria-hidden="true"><svg class="chrome-icon" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16M8 4v4m8 2v4m-6 2v4"/></svg></span><span class="nav-label">设置与状态</span></a>
+      </div>
+      <a id="download-readiness" class="readiness-light not-ready" href="#settings" aria-live="polite" aria-label="当前不可下载；打开设置与状态" title="打开设置与状态"><span class="readiness-dot" aria-hidden="true"></span><span class="readiness-label">不可下载</span></a>
+      <span class="client-nav-note">你的音乐，保存在本机</span>
+    </nav>
+    <header class="hero">
+      <div class="hero-topline">
+        <div class="brand">
+          <div>
+            <p class="eyebrow">APPLE MUSIC DOWNLOADER</p>
+            <h1>下载任务</h1>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section id="browse-section" class="browse-section surface" aria-labelledby="browse-title">
+        <h2 id="browse-title" class="visually-hidden">浏览 Apple Music</h2>
+        <div id="catalog-panel" data-page="catalog">
+          <div id="catalog-toolbar" class="catalog-toolbar" aria-label="目录导航">
+            <div class="catalog-navigation"><button id="catalog-back" class="catalog-icon-button" type="button" aria-label="返回目录" title="返回目录" disabled></button><button id="catalog-refresh" class="catalog-icon-button" type="button" aria-label="刷新目录" title="刷新目录"></button><span class="catalog-toolbar-name">Music</span></div>
+            <div class="catalog-toolbar-actions"><label class="catalog-storefront"><span class="visually-hidden">目录地区</span><select id="catalog-region" aria-label="目录地区"><option value="us">美国 · US</option><option value="cn">中国大陆 · CN</option><option value="hk">香港 · HK</option><option value="tw">台湾 · TW</option><option value="jp">日本 · JP</option><option value="gb">英国 · GB</option><option value="ca">加拿大 · CA</option><option value="au">澳大利亚 · AU</option><option value="kr">韩国 · KR</option></select></label><button id="catalog-open-web" class="catalog-web-button" type="button" aria-label="打开官方网页" title="打开官方网页"><span>官方网页</span></button><details class="catalog-account-details"><summary aria-label="查看账号 API 状态" title="查看账号 API 状态">账号</summary><p id="catalog-account" role="status">正在确认账号 API 状态…</p></details></div>
+          </div>
+          <div class="catalog-content">
+          <div class="catalog-topline"><h2 id="catalog-page-title">主页</h2><span class="catalog-caption">Apple Music 目录</span></div>
+          <div class="catalog-tabs catalog-destinations" aria-label="浏览内容"><button id="catalog-home" type="button" aria-pressed="true">主页推荐</button><button id="catalog-charts" type="button" aria-pressed="false">排行榜</button><button id="catalog-library" type="button" aria-pressed="false">我的歌单</button></div>
+          <form id="catalog-search-form" class="catalog-search-form" role="search">
+            <label class="catalog-query"><span class="visually-hidden">搜索 Apple Music</span><input id="catalog-search-input" type="search" maxlength="200" placeholder="搜索歌曲、专辑、艺人或歌单" autocomplete="off"></label>
+            <button type="submit" aria-label="搜索目录" title="搜索目录">搜索</button>
+          </form>
+          <div class="catalog-tabs" aria-label="目录类型"><button type="button" data-catalog-type="" aria-pressed="true">全部</button><button type="button" data-catalog-type="songs" aria-pressed="false">歌曲</button><button type="button" data-catalog-type="albums" aria-pressed="false">专辑</button><button type="button" data-catalog-type="playlists" aria-pressed="false">歌单</button><button type="button" data-catalog-type="music-videos" aria-pressed="false">音乐视频</button></div>
+          <div id="catalog-detail" hidden></div><div id="catalog-results"></div>
+          <p id="catalog-status" class="catalog-status" role="status" aria-live="polite"></p>
+          </div>
+          <section id="playback-player" class="playback-player" aria-label="Apple Music 播放" hidden>
+            <div class="playback-copy"><strong id="playback-title"></strong><span id="playback-status" role="status" aria-live="polite"></span></div>
+            <div id="playback-media"></div><button id="playback-stop" type="button" aria-label="停止播放" title="停止播放">×</button>
+          </section>
+        </div>
+        <div id="browse-web-panel" hidden>
+          <div class="browse-web-toolbar" aria-label="网页控制">
+            <button id="browse-return-native" class="secondary-button" type="button" aria-label="返回原生目录" title="返回原生目录"><svg class="chrome-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5-7 7 7 7"/></svg></button>
+            <button id="browse-web-back" class="secondary-button" type="button" aria-label="后退" title="后退"><svg class="chrome-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m13 5-7 7 7 7M6 12h14"/></svg></button>
+            <button id="browse-web-forward" class="secondary-button" type="button" aria-label="前进" title="前进"><svg class="chrome-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m11 5 7 7-7 7M4 12h14"/></svg></button>
+            <button id="browse-web-reload" class="secondary-button" type="button" aria-label="刷新网页" title="刷新网页"><svg class="chrome-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10a8 8 0 1 0-1 7M20 4v6h-6"/></svg></button>
+            <button id="browse-current-download" data-feedback="idle" type="button" aria-label="下载当前页面" title="下载当前页面" aria-describedby="browse-web-status"><svg class="chrome-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m-4-4 4 4 4-4M5 15v5h14v-5"/></svg><span data-download-feedback aria-hidden="true"></span></button>
+            <p id="browse-web-status" class="browse-status visually-hidden" role="status" aria-live="polite">正在打开 Apple Music 公开页面。下载按钮仅对当前支持的页面有效。</p>
+          </div>
+          <div id="embedded-browser-viewport" class="embedded-browser-viewport" aria-label="Apple Music 网页显示区域"></div>
+        </div>
+      </section>
+
+      <div class="dashboard-grid">
+        <div class="primary-column">
+          <section class="download-section surface">
+            <div class="section-heading">
+              <div class="section-title">
+                <span class="section-icon section-icon-create" aria-hidden="true">＋</span>
+                <div><p class="section-kicker">开始下载</p><h2>新建下载任务</h2></div>
+              </div>
+              <span class="section-badge">最多 100 个链接</span>
+            </div>
+            <form id="job-form">
+              <div class="field-group url-field">
+                <label for="music-urls">Apple Music 链接</label>
+                <p class="field-description">支持单曲、专辑、公开歌单和个人资料库歌单（个人歌单需要已配置 Media-User-Token）；多个链接请每行填写一个。</p>
+                <textarea id="music-urls" rows="5" required spellcheck="false" placeholder="https://music.apple.com/cn/album/…"></textarea>
+              </div>
+              <div class="form-grid">
+                <label class="field-group">音质
+                  <select id="quality" name="quality" aria-describedby="quality-help">
+                    <option value="aac-lc">AAC-LC 256kbps</option>
+                    <option value="alac">ALAC 无损</option>
+                    <option value="aac">AAC 256kbps</option>
+                    <option value="atmos">Dolby Atmos</option>
+                  </select>
+                </label>
+                <label class="field-group">已有文件
+                  <select id="existing-policy" name="existingPolicy">
+                    <option value="skip">跳过有效文件（推荐）</option>
+                    <option value="overwrite">验证后覆盖</option>
+                    <option value="fail">遇到已有文件即失败</option>
+                  </select>
+                </label>
+              </div>
+              <p id="quality-help" class="hint quality-help" role="status"></p>
+              <button id="download-btn" class="download-button" type="submit"><span aria-hidden="true">＋</span>加入队列</button>
+            </form>
+          </section>
+
+          <section class="history-section surface">
+            <div class="section-heading">
+              <div class="section-title">
+                <span class="section-icon section-icon-history" aria-hidden="true">≡</span>
+                <div><p class="section-kicker">实时进度</p><h2>任务队列与历史</h2></div>
+              </div>
+              <button id="refresh-btn" class="secondary-button refresh-button" type="button">刷新</button>
+            </div>
+            <p id="jobs-empty" class="empty-state">还没有下载任务。添加 Apple Music 链接后，任务进度会显示在这里。</p>
+            <div id="jobs" class="jobs" aria-live="polite"></div>
+          </section>
+        </div>
+
+        <aside class="side-column">
+          <section class="files-section surface">
+            <div class="section-heading">
+              <div class="section-title">
+                <span class="section-icon section-icon-files" aria-hidden="true">♫</span>
+                <div><p class="section-kicker">本地音乐库</p><h2>下载文件</h2></div>
+              </div>
+              <!-- v1 compatibility placeholder; task archives are downloaded from their own task cards. -->
+              <a id="archive-link" class="secondary-button" aria-hidden="true" hidden></a>
+            </div>
+            <p id="files-empty" class="empty-state">下载完成后，安全的本地文件链接会显示在这里。</p>
+            <div id="files" class="files-container"></div>
+          </section>
+
+          <section id="twofa-section" class="twofa-section surface" aria-labelledby="twofa-title" hidden><div class="twofa-copy"><span class="section-icon section-icon-warning" aria-hidden="true">!</span><div><p class="section-kicker">需要操作</p><h2 id="twofa-title">完成两步验证</h2><p>Apple ID 正在等待验证，请输入设备上显示的六位验证码。</p></div></div><div class="inline-form"><label class="visually-hidden" for="twofa-code">六位验证码</label><input id="twofa-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000"><button id="twofa-submit" type="button">提交</button></div></section>
+          <section class="settings-section" aria-label="设置">
+            <section id="download-preferences-card" class="settings-card surface" aria-labelledby="download-settings-title">
+            <h2 id="download-settings-title">下载偏好</h2>
+            <div class="settings-group">
+            <h3>任务与默认选项</h3>
+            <div class="settings-concurrency-row">
+              <label for="download-concurrency">并行下载数</label>
+              <div class="settings-concurrency-controls">
+              <input id="download-concurrency" type="number" min="1" max="8" step="1" inputmode="numeric" value="3">
+              <button id="download-concurrency-save" class="secondary-button" type="button">保存</button>
+              <button id="download-concurrency-reset" class="secondary-button" type="button">恢复默认</button>
+              </div>
+            </div>
+            <p id="download-concurrency-status" class="hint" role="status"></p>
+            <div class="form-grid"><label class="field-group">默认音质<select id="default-quality"><option value="aac-lc">AAC-LC 256kbps</option><option value="alac">ALAC 无损</option><option value="aac">AAC 256kbps</option><option value="atmos">Dolby Atmos</option></select></label><label class="field-group">已有文件<select id="default-existing-policy"><option value="skip">跳过有效文件</option><option value="overwrite">验证后覆盖</option><option value="fail">遇到已有文件即失败</option></select></label></div>
+            <p id="default-download-status" class="hint" role="status" aria-live="polite"></p>
+            </div>
+            <form id="download-preferences-form">
+              <fieldset id="download-preferences-fields" class="preferences-fields" disabled>
+                <legend class="visually-hidden">下载内容偏好</legend>
+                <div class="settings-group">
+                <h3>地区与歌词</h3>
+                <div class="preferences-grid">
+                  <label class="field-group">下载地区<select id="preference-downloadRegion"><option value="">跟随链接（推荐）</option><option value="us">美国 · US</option><option value="cn">中国大陆 · CN</option><option value="jp">日本 · JP</option><option value="hk">香港 · HK</option><option value="tw">台湾 · TW</option><option value="gb">英国 · GB</option></select></label>
+                  <label class="field-group">元数据语言<select id="preference-language"><option value="">地区默认语言</option><option value="zh-Hans-CN">简体中文</option><option value="zh-Hant-TW">繁体中文</option><option value="en-US">英语</option><option value="ja-JP">日语</option></select></label>
+                  <label class="field-group">歌词类型<select id="preference-lyricsType"><option value="lyrics">逐行歌词</option><option value="syllable-lyrics">逐字歌词（视曲目支持）</option></select></label>
+                  <label class="field-group">歌词文件格式<select id="preference-lyricsFormat"><option value="lrc">LRC</option><option value="ttml">TTML</option></select></label>
+                </div>
+                <div class="preferences-checks"><label><input id="preference-saveLyrics" type="checkbox">保存独立歌词文件</label><label><input id="preference-embedLyrics" type="checkbox">将歌词写入歌曲标签</label></div>
+                <p class="hint">歌词需要用户授权；语言选项不提供自动翻译。</p>
+                </div>
+                <div class="settings-group">
+                <h3>封面与质量</h3>
+                <div class="preferences-grid">
+                  <label class="field-group">封面格式<select id="preference-coverFormat"><option value="jpg">JPEG</option><option value="png">PNG</option></select></label>
+                  <label class="field-group">封面尺寸<select id="preference-coverSize"><option value="500x500">500 × 500</option><option value="1000x1000">1000 × 1000</option><option value="2000x2000">2000 × 2000</option><option value="3000x3000">3000 × 3000</option><option value="5000x5000">5000 × 5000</option></select></label>
+                  <label class="field-group">ALAC 采样率上限<select id="preference-alacMax"><option value="44100">44.1 kHz</option><option value="48000">48 kHz</option><option value="88200">88.2 kHz</option><option value="96000">96 kHz</option><option value="176400">176.4 kHz</option><option value="192000">192 kHz</option></select></label>
+                  <label class="field-group">MV 分辨率上限<select id="preference-mvMax"><option value="720">720p</option><option value="1080">1080p</option><option value="2160">2160p</option></select></label>
+                </div>
+                <div class="preferences-checks"><label><input id="preference-embedCover" type="checkbox">嵌入单曲封面</label><label><input id="preference-saveArtistCover" type="checkbox">保存艺人封面</label><label><input id="preference-saveAnimatedArtwork" type="checkbox">保存动态封面（如可用）</label><label><input id="preference-useSongInfoForPlaylist" type="checkbox">歌单歌曲使用原专辑标签与序号</label></div>
+                </div>
+                <div class="settings-group">
+                <h3>跨区元数据匹配</h3>
+                <div class="preferences-grid">
+                  <label class="field-group">歌曲标签匹配地区<select id="preference-metadataRegion"><option value="">关闭，保留原信息</option><option value="cn">中国大陆 · CN</option><option value="us">美国 · US</option><option value="jp">日本 · JP</option><option value="hk">香港 · HK</option><option value="tw">台湾 · TW</option><option value="gb">英国 · GB</option></select></label>
+                  <label class="field-group">歌词匹配地区<select id="preference-lyricsRegion"><option value="">原歌曲地区</option><option value="cn">中国大陆 · CN</option><option value="us">美国 · US</option><option value="jp">日本 · JP</option><option value="hk">香港 · HK</option><option value="tw">台湾 · TW</option><option value="gb">英国 · GB</option></select></label>
+                </div>
+                <p class="hint">仅匹配同一录音，未匹配时保留原信息；不改变音频，不适用于 MV。</p>
+                </div>
+                <div class="settings-group">
+                <h3>文件名</h3>
+                <label class="field-group">单曲文件名模板<input id="preference-songFileFormat" type="text" maxlength="256" spellcheck="false" placeholder="{disk}-{tracknum:02d}. {title}"></label>
+                <div id="filename-builder" class="filename-builder" role="group" aria-label="文件名模板拼装器">
+                  <p class="hint">点击模板或字段组合文件名。</p>
+                  <div id="filename-presets" class="filename-chip-row" aria-label="常用文件名模板"></div>
+                  <div id="filename-fields" class="filename-chip-row" aria-label="添加文件名字段"></div>
+                  <div id="filename-separators" class="filename-chip-row" aria-label="分隔符与编辑"></div>
+                  <p class="filename-example">示例：<output id="filename-example" for="preference-songFileFormat"></output></p>
+                </div>
+                <p class="hint">扩展名自动添加；仅影响新下载。</p>
+                </div>
+                <div class="preferences-actions"><button id="download-preferences-save" type="submit">保存下载偏好</button><button id="download-preferences-reset" class="secondary-button" type="button">恢复配置默认值</button></div>
+              </fieldset>
+              <p id="download-preferences-status" class="hint" role="status" aria-live="polite">请先连接下载服务。</p>
+            </form>
+            </section>
+            <section id="desktop-settings" class="settings-card surface" aria-labelledby="account-settings-title" hidden>
+              <h2 id="account-settings-title">本机与账户</h2>
+              <div class="settings-action-list">
+                <div class="settings-action-row"><div><h4>Apple 官方登录与后台播放</h4><p>登录后经确认保存用户授权；完整播放需要订阅。</p></div><button id="settings-playback-login" class="secondary-button" type="button">官方登录与播放</button></div>
+                <div class="settings-action-row"><div><h4>下载位置</h4><p>已有文件不会移动。</p></div><button id="settings-download-location" class="secondary-button" type="button">选择下载位置</button></div>
+                <div class="settings-action-row"><div><h4>安装与启动设置</h4></div><button id="settings-startup" class="secondary-button" type="button">安装与启动设置</button></div>
+                <div class="settings-action-row"><div><h4>Apple Music 凭据</h4></div><button id="settings-credentials" class="secondary-button" type="button">配置凭据</button></div>
+              </div>
+            </section>
+            <p id="desktop-settings-browser-note" class="hint">本机与账户设置请使用桌面客户端。</p>
+            <section id="service-settings-card" class="settings-card surface" aria-labelledby="service-settings-title">
+              <h2 id="service-settings-title">服务与诊断</h2>
+              <section class="status-section" aria-labelledby="service-status-title" hidden>
+                <div class="status-intro"><h3 id="service-status-title">服务连接</h3><button id="repair-service-button" class="secondary-button repair-button" type="button" hidden>诊断与修复</button></div>
+                <div class="status-grid">
+                  <div class="status-item"><span class="status-symbol" aria-hidden="true">●</span><span class="status-copy"><span class="status-label">本机界面</span></span><span class="status-value online">运行中</span></div>
+                  <div class="status-item"><span class="status-symbol" aria-hidden="true">W</span><span class="status-copy"><span class="status-label">Apple 认证</span></span><span id="wrapper-status" class="status-value offline" role="status" aria-live="polite">检测中…</span></div>
+                  <div class="status-item"><span class="status-symbol status-symbol-download" aria-hidden="true">↓</span><span class="status-copy"><span class="status-label">后端服务</span></span><span id="downloader-status" class="status-value offline" role="status" aria-live="polite">检测中…</span></div>
+                </div>
+              </section>
+              <div id="desktop-service-settings" hidden>
+              <div class="settings-action-list">
+                <div class="settings-action-row"><div><h4>连接服务</h4></div><button id="settings-start-service" class="secondary-button" type="button">启动/重新连接</button></div>
+                <div class="settings-action-row"><div><h4>诊断信息</h4></div><button id="settings-diagnostics" class="secondary-button" type="button">查看诊断信息</button></div>
+                <div class="settings-action-row"><div><h4>导出调试日志</h4><p>日志已脱敏，不包含凭据。</p></div><button id="settings-export-logs" class="secondary-button" type="button">导出脱敏日志</button></div>
+                <div class="settings-action-row"><div><h4>运行时修复</h4></div><button id="settings-repair-runtime" class="secondary-button" type="button">修复运行时</button></div>
+                <div class="settings-action-row"><div><h4>停止服务</h4><p>不会删除下载文件。</p></div><button id="settings-stop-service" class="secondary-button settings-stop-button" type="button">停止服务</button></div>
+              </div>
+              <p id="desktop-settings-status" class="hint" role="status" aria-live="polite"></p>
+              </div>
+          <section class="log-section" aria-labelledby="settings-log-title">
+            <div class="section-heading">
+              <h3 id="settings-log-title">服务消息</h3>
+              <button id="export-logs" class="secondary-button" type="button" hidden>导出脱敏日志</button>
+              <span class="live-indicator"><span aria-hidden="true"></span>实时</span>
+            </div>
+            <details><summary>查看服务消息</summary><div id="log-container" class="log-container" role="log" aria-live="polite"></div></details>
+          </section>
+            </section>
+          </section>
+        </aside>
+      </div>
+    </main>
+
+    <footer><span>Apple Music Downloader v1.4.3</span><span>文件与凭据仅保存在本机</span></footer>
+  </div>
+  <script src="job-data.js?v=1.4.3-contracts1"></script>
+  <script src="renderer.js?v=1.4.3-playback1"></script>
+  <script src="browse.js?v=1.4.3-contracts1"></script>
+  <script src="playback.js?v=1.4.3-playback1"></script>
+  <script src="catalog.js?v=1.4.3-playback1"></script>
+  <script src="client-navigation.js?v=1.4.3-ui3"></script>
+</body>
+</html>

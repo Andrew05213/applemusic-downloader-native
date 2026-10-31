@@ -1,0 +1,81 @@
+# Third-party and source notices
+
+## Imported downloader provenance
+
+`apple-music-downloader/` is checked in as ordinary source so Docker and CLI
+builds do not depend on a missing Git submodule checkout. The parent revision
+recorded this tree as Gitlink `4bd24bf5374053fbab070f61ee7ae2addcf589bc`.
+That Gitlink did not include a `.gitmodules` entry or remote configuration.
+
+The imported module declares `github.com/Andrew05213/applemusic_downloader` in
+its `go.mod`, and the parent checkout uses
+`https://github.com/Andrew05213/applemusic_downloader.git` as its origin. This
+is the reproducible source reference retained for this import; it is not a
+claim that the parent repository owns every file in the imported tree.
+
+The bundled README attributes the original script to Sorrow and identifies the
+Wrapper project as <https://github.com/zhaarey/wrapper>. Preserve these
+attributions whenever the corresponding material is redistributed.
+
+## Wrapper vendor status
+
+This Wrapper integration was derived from
+<https://github.com/WorldObservationLog/wrapper>. This establishes the source
+attribution, but not the precise revision used for every bundled artifact. At
+the immutable commit
+`0d4823df8097a88fd62dc5f8112dc4a5c733b65a` (reviewed 2026-07-26), that
+repository is a fork of `zhaarey/wrapper` and does not publish a LICENSE file.
+
+The checked-in `wrapper-linux/` tree is a related, mixed-generation runtime:
+100 of its 111 files matched the x86_64 release asset observed on 2026-07-26,
+but the two security- and protocol-critical executables did not. In particular,
+the local `wrapper` SHA-256 is
+`cfe72b434e4a30cbcb2a0e5dd5b0f9af139d0fd724a91cad2a746ab92394decb`, while
+the observed upstream asset was
+`cee2f07190e0ddba18ecc5a9161cd06a5a7d9ac5520e2533381410be6cfb56b8`; the
+same mismatch exists for `rootfs/system/bin/main`. The local source tree also
+cannot reproduce its checked-in executable. These legacy artifacts therefore
+must not be described as built from that commit, and this project intentionally
+does not auto-update them from a mutable branch or `latest` release tag.
+
+The current WSL Appliance build does not redistribute those two legacy executable
+files as its Wrapper implementation. Its private build stage fetches the exact
+commit above, applies `appliance/patches/wrapper-login-fd.patch`, pins cJSON,
+Dobby, CMake and Android NDK r23b by commit or SHA-256, and rebuilds the Wrapper
+launcher, production Android main, and standalone credential-free network probe.
+Two clean builds produced the same reviewed SHA-256 values:
+
+- Wrapper: `380d55a91c6da9ac518ede14b19a7aa390bd32315fb0f02e63aa75a3fca94b17`
+- Android main: `f1cf33a411d3a33bce0c79c7561670e6095a60366715538fa07d0ed06ee3facb`
+- Android network preflight: `77c93c3cec9906b32e7825629bdc3a2bd5392888fdcdabc0c5884352ec28133a`
+
+The legacy rootfs remains a required proprietary link/runtime input. Rebuilding
+the three executables establishes a technical source match; it does not establish
+a redistribution license for Wrapper or any Android/Apple material.
+
+A future Wrapper refresh must update source, patch, runtime inputs and reviewed
+output hashes as one change, keep immutable upstream references, and document
+an independently verified license conclusion here. Until that license review
+is complete, public combined artifacts remain blocked.
+
+## License status
+
+`apple-music-downloader/utils/runv2/LICENSE` is the MIT License, copyright
+2024 Sendy McSenderson, and remains included verbatim. No top-level license or
+copyright notice was present in the imported downloader Gitlink, and the
+bundled Wrapper artifacts likewise have no verified license record in this
+checkout. They must not be relicensed by this project.
+
+Before publishing a combined binary, image, or installer, maintainers must
+verify the upstream license and source provenance for the downloader and
+Wrapper artifacts and add the resulting notices here. This NOTICE grants no
+rights in third-party material.
+
+## Upstream CDM material
+
+`apple-music-downloader/utils/runv3/cdm/consts.go` was imported with an
+upstream PEM device key and client-identification blob. Their provenance and
+redistribution authorization are not verified by this repository. Do not
+describe them as this project's credentials, do not add them to diagnostics or
+logs, and do not publish a combined artifact until their upstream authorization
+has been independently verified or the material has been removed/replaced.

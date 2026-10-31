@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'">
+  <title>设置 Apple Music Downloader</title>
+  <link rel="stylesheet" href="setup.css">
+</head>
+<body>
+  <main>
+    <header>
+      <span class="eyebrow">WINDOWS WSL2 APPLIANCE</span>
+      <h1>几步完成本机下载服务</h1>
+      <p>安装向导会自动准备专用 WSL2 环境。你不需要 Docker、Compose、终端或 Linux 知识；首次启用 WSL2 时，Windows 会打开一个可见的管理员终端窗口显示安装进度。</p>
+    </header>
+
+    <ol class="steps" aria-label="设置进度">
+      <li data-step="detecting">检测系统</li>
+      <li data-step="wsl_action">启用 WSL2</li>
+      <li data-step="downloading">准备组件</li>
+      <li data-step="directory">下载位置</li>
+      <li data-step="credentials">账户凭据</li>
+      <li data-step="starting">启动服务</li>
+    </ol>
+
+    <section class="panel" aria-live="polite">
+      <h2 id="status-title">正在检测 Windows 与 WSL2…</h2>
+      <p id="status-message">首次启动可能需要几分钟。</p>
+      <p id="status-action" class="action"></p>
+      <div class="status-controls">
+        <button id="service-repair-button" type="button" class="compact" hidden>修复服务</button>
+        <button id="diagnostics-button" type="button" class="secondary compact" aria-controls="diagnostics-panel" aria-expanded="false">查看诊断日志</button>
+      </div>
+    </section>
+
+    <section id="diagnostics-panel" class="panel diagnostics-panel" aria-labelledby="diagnostics-title" hidden>
+      <div class="diagnostics-heading">
+        <div>
+          <span class="eyebrow">LOCAL DIAGNOSTICS</span>
+          <h2 id="diagnostics-title">发行版状态与最近 200 行日志</h2>
+        </div>
+        <span class="redaction-badge">已脱敏</span>
+      </div>
+      <pre id="diagnostics-output" class="diagnostics-output" tabindex="0" aria-live="polite">暂无诊断输出。</pre>
+      <button id="copy-diagnostics" type="button" class="secondary compact">复制脱敏诊断</button>
+    </section>
+
+    <form id="setup-form">
+      <fieldset>
+        <legend>正式文件保存位置</legend>
+        <div class="path-row">
+          <input id="download-dir" name="downloadDir" type="text" readonly aria-label="下载目录">
+          <button id="choose-directory" type="button" class="secondary">选择…</button>
+        </div>
+        <p class="hint">数据库、日志和临时分片保留在专用 WSL 磁盘中；这里仅保存最终音乐文件。</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>凭据（可稍后配置）</legend>
+        <label for="apple-email">Apple ID 邮箱</label>
+        <input id="apple-email" type="email" autocomplete="username">
+        <label for="apple-password">Apple ID 密码</label>
+        <input id="apple-password" type="password" autocomplete="current-password">
+        <label for="media-token">Media User Token</label>
+        <input id="media-token" type="password" autocomplete="off">
+        <label for="authorization-token">Authorization Token</label>
+        <input id="authorization-token" type="password" autocomplete="off">
+        <label for="storefront">Storefront</label>
+        <input id="storefront" type="text" value="us" maxlength="8" autocomplete="off">
+        <p class="hint">凭据使用 Windows DPAPI 加密，传给 WSL 时只经过一次性 stdin，不写入 .env 或命令行。</p>
+      </fieldset>
+
+      <footer>
+        <button id="repair-button" type="button" class="secondary" hidden>执行修复</button>
+        <button id="restart-button" type="button" class="secondary" hidden>重新启动 Windows</button>
+        <button id="begin-button" type="submit">安装并启动</button>
+      </footer>
+    </form>
+  </main>
+  <script src="setup.js"></script>
+</body>
+</html>

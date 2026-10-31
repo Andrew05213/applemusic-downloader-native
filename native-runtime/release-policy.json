@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "publicReleaseAllowed": true,
+  "decision": "Maintainer-enabled native build gate; this is not a third-party license grant or a statement of compliance.",
+  "reviewStatus": "incomplete"
+}

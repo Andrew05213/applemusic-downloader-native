@@ -1,0 +1,32 @@
+.git
+**/.git
+**/.env
+**/.env.*
+**/config.yaml
+**/*.db
+**/*.db-*
+**/*.log
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/2fa.txt
+**/downloads
+**/data
+**/working
+**/node_modules
+**/.cache
+**/tmp
+**/*.zip
+**/*.tar
+**/*.tar.gz
+
+# The context builder deliberately installs this reviewed file after copying
+# the backend. It is the sole config.yaml allowed into an Appliance build.
+!backend/config.yaml
+
+# Fixed, test-only CA material used only by the non-deliverable Wrapper build
+# gate. The runtime stage never copies this directory.
+!network-preflight-fixtures/
+!network-preflight-fixtures/*.crt
+!network-preflight-fixtures/*.key

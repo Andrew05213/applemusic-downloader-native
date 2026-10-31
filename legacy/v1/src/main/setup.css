@@ -1,0 +1,60 @@
+:root { color-scheme: light; font-family: "Segoe UI Variable", "Microsoft YaHei UI", system-ui, sans-serif; color: #172033; background: #f4f6fb; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 90% 0, #e9e2ff 0, transparent 34rem), #f4f6fb; }
+main { width: min(780px, calc(100% - 32px)); margin: 0 auto; padding: 38px 0 48px; }
+header h1 { margin: 8px 0; font-size: clamp(2rem, 6vw, 3.2rem); letter-spacing: -.04em; }
+header p { max-width: 660px; color: #526078; line-height: 1.65; }
+.eyebrow { color: #6941c6; font-weight: 800; font-size: .78rem; letter-spacing: .14em; }
+.steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 0; margin: 28px 0 18px; list-style: none; }
+.steps li { min-height: 54px; padding: 10px; border: 1px solid #dce1eb; border-radius: 12px; color: #6b7486; background: #fff9; font-size: .86rem; }
+.steps li.active { color: #4d2aa3; border-color: #9c7bea; background: #f0eaff; font-weight: 700; }
+.steps li.complete { color: #146c43; border-color: #83c7a5; background: #eaf9f1; }
+.panel, fieldset { border: 1px solid #dfe3ec; border-radius: 16px; background: #fff; box-shadow: 0 12px 34px rgba(35, 45, 74, .06); }
+.panel { padding: 20px 22px; margin-bottom: 16px; }
+.panel h2 { margin: 0 0 6px; font-size: 1.14rem; }
+.panel p { margin: 4px 0; color: #526078; }
+.panel .action { color: #a23b20; font-weight: 650; }
+.status-controls { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.diagnostics-panel { border-color: #302a3a; color: #f7f3f8; background: #211d27; }
+.diagnostics-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.diagnostics-heading h2 { margin: 5px 0 0; }
+.redaction-badge { flex: none; border: 1px solid #5c5268; border-radius: 999px; padding: 4px 9px; color: #d8cfde; font-size: .76rem; font-weight: 700; }
+.diagnostics-output { min-height: 96px; max-height: 320px; margin: 16px 0 0; overflow: auto; border: 1px solid #3f3749; border-radius: 12px; padding: 14px 16px; color: #e9e2ed; background: #151219; font: .82rem/1.55 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+fieldset { margin: 14px 0; padding: 18px 20px 20px; }
+legend { padding: 0 8px; font-weight: 750; }
+label { display: block; margin: 12px 0 5px; font-size: .9rem; font-weight: 650; }
+input { width: 100%; border: 1px solid #cfd5e1; border-radius: 10px; padding: 10px 12px; font: inherit; background: #fbfcff; }
+input:focus-visible, button:focus-visible { outline: 3px solid #8c6be0; outline-offset: 2px; }
+.path-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.hint { color: #617087; font-size: .84rem; line-height: 1.5; }
+footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+button { border: 0; border-radius: 10px; padding: 10px 18px; color: white; background: #6842c2; font: inherit; font-weight: 750; cursor: pointer; }
+button.secondary { color: #3e315c; background: #ece7f8; }
+button.compact { padding: 8px 13px; font-size: .88rem; }
+button:disabled { cursor: wait; opacity: .58; }
+@media (max-width: 620px) { .steps { grid-template-columns: 1fr 1fr; } .path-row { grid-template-columns: 1fr; } footer { flex-wrap: wrap; } .diagnostics-heading { align-items: stretch; flex-direction: column; } .redaction-badge { align-self: flex-start; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+/* Match the music client's restrained offline theme. */
+:root { color-scheme: light dark; color: #222226; background: #f7f7f8; }
+body { background: #f7f7f8; }
+header h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); }
+.eyebrow { color: #a52243; }
+.steps { grid-template-columns: repeat(3, 1fr); }
+.steps li.active { color: #a52243; border-color: #ca2348; background: #fff0f4; }
+.panel, fieldset { box-shadow: none; border-radius: 12px; }
+button { background: #ca2348; }
+button.secondary { color: #a52243; background: #fff0f4; }
+input:focus-visible, button:focus-visible { outline-color: #ca2348; }
+@media (prefers-color-scheme: dark) {
+  :root { color: #f1f1f4; background: #18181b; }
+  body { background: #18181b; }
+  .panel, fieldset, .steps li { background: #222226; border-color: #41414a; color: #f1f1f4; }
+  header p, .panel p, .hint { color: #c4c4cc; }
+  input { background: #29292e; border-color: #41414a; color: #f1f1f4; }
+  .eyebrow, .panel .action { color: #ff91a8; }
+  button.secondary, .steps li.active { background: #412330; color: #ff91a8; }
+  .steps li.complete { background: #193b2e; color: #72d6a7; }
+}
+@media (max-width: 620px) { .steps { grid-template-columns: repeat(2, 1fr); } }

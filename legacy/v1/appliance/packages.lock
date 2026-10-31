@@ -1,0 +1,17 @@
+# Direct runtime packages. Every package is pinned to the fixed Ubuntu snapshot.
+# packages.resolved.lock records the complete installed package inventory and is
+# checked during the image build, including dependencies inherited from Ubuntu.
+ca-certificates=20260601~22.04.1
+curl=7.81.0-1ubuntu1.25
+dbus=1.12.20-2ubuntu4.1
+ffmpeg=7:4.4.2-0ubuntu0.22.04.1
+gpac=2.0.0+dfsg1-2
+gzip=1.10-4ubuntu4.2
+iproute2=5.15.0-1ubuntu2.2
+procps=2:3.3.17-6ubuntu2.1
+socat=1.7.4.1-3ubuntu4
+systemd=249.11-0ubuntu3.21
+systemd-sysv=249.11-0ubuntu3.21
+tar=1.34+dfsg-1ubuntu0.1.22.04.6
+xz-utils=5.2.5-2ubuntu1.1
+

@@ -1,0 +1,43 @@
+# Source control and local agent state
+.git
+.gitignore
+.worktrees
+legacy
+.claude
+.codex
+.agents
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+apple-music-downloader/config.yaml
+
+# Persistent runtime data and generated media
+downloads
+data
+wrapper-data
+wrapper-linux/rootfs/data
+*.log
+*.zip
+*.tar
+*.tar.gz
+*.amdl-*
+
+# Local dependency and build output
+.artifacts
+.tmp-v2-native
+node_modules
+electron/generated
+electron/bin
+appliance/.work
+appliance/dist
+dist
+dist-*
+build
+coverage
+test-results
+playwright-report
+.cache
+tmp
+*.exe

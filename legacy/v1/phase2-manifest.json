@@ -1,0 +1,1267 @@
+{
+  "schemaVersion": 1,
+  "archiveBase": "af222179ed07f0b128fd09a2bb35cdcb4bb626ac",
+  "maintenanceBranch": "codex/maintenance-1.x",
+  "maintenanceCommit": "c0719fc61b7a553348e8d7be96321cc37eb0a0d9",
+  "files": [
+    {
+      "original": "apple-music-downloader/cmd/amdl-appliance/main_linux.go",
+      "path": "legacy/v1/apple-music-downloader/cmd/amdl-appliance/main_linux.go",
+      "sha256": "d85547e2bd5bae380bc6ec340dcaae66ea43edea9fca320a35b849e91aa2e9d6"
+    },
+    {
+      "original": "apple-music-downloader/cmd/amdl-appliance/main_linux_test.go",
+      "path": "legacy/v1/apple-music-downloader/cmd/amdl-appliance/main_linux_test.go",
+      "sha256": "c7766e7b591245834a6981a7c1d6868e5e0b8418efa4b578c32fda2d4e2fcdd1"
+    },
+    {
+      "original": "apple-music-downloader/cmd/amdl-windows-probe/canonical_file_windows_test.go",
+      "path": "legacy/v1/apple-music-downloader/cmd/amdl-windows-probe/canonical_file_windows_test.go",
+      "sha256": "679fb3553698c91fd0a3ec7de606799457dce1db943ffe68f67bf83f792a3fe6"
+    },
+    {
+      "original": "apple-music-downloader/cmd/amdl-windows-probe/egress_connect_windows.go",
+      "path": "legacy/v1/apple-music-downloader/cmd/amdl-windows-probe/egress_connect_windows.go",
+      "sha256": "229dee948169fc960d0a9e123399c68f4e1ce673bfb285002ed9286f6e35ed44"
+    },
+    {
+      "original": "apple-music-downloader/cmd/amdl-windows-probe/egress_connect_windows_test.go",
+      "path": "legacy/v1/apple-music-downloader/cmd/amdl-windows-probe/egress_connect_windows_test.go",
+      "sha256": "045648a820e6c0ef249397b0d241e861118c6a4130f9661daccc966e72d5ef14"
+    },
+    {
+      "original": "apple-music-downloader/cmd/amdl-windows-probe/main_other.go",
+      "path": "legacy/v1/apple-music-downloader/cmd/amdl-windows-probe/main_other.go",
+      "sha256": "2734258ea708c7236a27da2eb6027eba0e278f713604c1fba59d1b74b1335110"
+    },
+    {
+      "original": "apple-music-downloader/cmd/amdl-windows-probe/main_windows.go",
+      "path": "legacy/v1/apple-music-downloader/cmd/amdl-windows-probe/main_windows.go",
+      "sha256": "8ea04eebb356b9cd14a0f1a3ba8c240822c11e29babe9bba9c8bb9ec6c4e3b6c"
+    },
+    {
+      "original": "apple-music-downloader/cmd/amdl-windows-probe/main_windows_test.go",
+      "path": "legacy/v1/apple-music-downloader/cmd/amdl-windows-probe/main_windows_test.go",
+      "sha256": "8b594d934f83cc5da36985c6ec7b7f0a90f679b4b7c3cdc33fae71f8ea1eb9ec"
+    },
+    {
+      "original": "apple-music-downloader/cmd/amdl-windows-probe/migration_lock_windows_test.go",
+      "path": "legacy/v1/apple-music-downloader/cmd/amdl-windows-probe/migration_lock_windows_test.go",
+      "sha256": "6459694ec92cc6ffefcacc77a8f5083a79d4fa7f7b49c5486bcea05ef7ee6e3a"
+    },
+    {
+      "original": "apple-music-downloader/cmd/amdl-wslinterop-bootstrap/main_linux.go",
+      "path": "legacy/v1/apple-music-downloader/cmd/amdl-wslinterop-bootstrap/main_linux.go",
+      "sha256": "132a52fc4cc7c4169680d10d8f31354984e176b8f7b7464a7219dbdd4f1e1567"
+    },
+    {
+      "original": "apple-music-downloader/cmd/amdl-wslinterop-bootstrap/main_linux_test.go",
+      "path": "legacy/v1/apple-music-downloader/cmd/amdl-wslinterop-bootstrap/main_linux_test.go",
+      "sha256": "26753ab1080539f664f2e9ccf00ed7c44f959e5d731c4c5fdc80aebb58fd904f"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/backend_dialer.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/backend_dialer.go",
+      "sha256": "8acbf3cc245221b05e4aafcc953caaba78c3f608c5d9e9a383a15d97f13339a6"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/backend_dialer_test.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/backend_dialer_test.go",
+      "sha256": "ad577cb1bdc7aebf6fa0c07cffc3fe18de37ecc2f864fc0cc14ff26b7ae436d5"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/backend_host.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/backend_host.go",
+      "sha256": "8d6f845826847c7d8568e6ca696ac2d16d7bb6e555121a2c920259785425e447"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/backend_host_test.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/backend_host_test.go",
+      "sha256": "9e57f89600e5288abec7a6089f5b9f02bf3dd1965b4c65f6f469f18a36ff9719"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/backend_maintenance.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/backend_maintenance.go",
+      "sha256": "cfe8c1e29ae912663760da0eaa7fc16c10a52f3563266f815edd71db0b2fed09"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/backend_maintenance_test.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/backend_maintenance_test.go",
+      "sha256": "16b1add7e1f388d81499ef3718c378a76ad91f1b257380284167cc1222a6ee58"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/backend_process_linux.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/backend_process_linux.go",
+      "sha256": "e3f87d96684102738cadbae15f78df376619a1761462eb378143366b7baa1d26"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/backend_process_linux_test.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/backend_process_linux_test.go",
+      "sha256": "b376a44e4a2304f4a5e395321ac7f152e5aa6c0f30616fbae76ea41bfc0d41a5"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/backend_process_other.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/backend_process_other.go",
+      "sha256": "dbab5eba6ee6ecb901acfa6708dee144887c5048b2049a568a5fb8efdea7c7e0"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/build_identity_test.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/build_identity_test.go",
+      "sha256": "efa5f1a11774dded93a9fec4b7f1cc5fd02065b30d68ce2e1a7200e5124f9092"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/ca_bundle_linux.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/ca_bundle_linux.go",
+      "sha256": "236ebaec9e6966690e9d82c84a9c179bb80ef63da2767e44e23a895504960b37"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/ca_bundle_other.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/ca_bundle_other.go",
+      "sha256": "ec09ef56644778c853214ec8e36ecb09c94320991b12adadeead4b0d30c453dc"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/database_backup.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/database_backup.go",
+      "sha256": "76683c773573f544ce0f66f94445a10ba7187b412e67582dec9829b1d12fff1a"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/database_backup_linux_test.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/database_backup_linux_test.go",
+      "sha256": "0c5313f5744cc00a7fa77ad887ca6b78eb7c2052a5d81b179f4892ffa9e4ecda"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/download_linux.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/download_linux.go",
+      "sha256": "5c7a569f36c2ad29ebb92e8fe4ad30220aa50cbeb8d4681f77e6dc064e37514a"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/download_linux_test.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/download_linux_test.go",
+      "sha256": "7124b58b773948cfd7e62e9f3efefa09462168dbc4ce5d69d0fc13903f7eb706"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/download_mount_linux_test.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/download_mount_linux_test.go",
+      "sha256": "c532ef0f6961ccd68d3f464a8dc22f32dde0f5a224ddd98d2cc682fc61a9209d"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/download_other.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/download_other.go",
+      "sha256": "de76df2a582e6f2657863850b17390c70c0f11faf60de9f506b06e4f33deee8b"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/egress_broker.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/egress_broker.go",
+      "sha256": "339d6607377db8879bd3f4a201ad53b4e295b7c2cc203c926b2080cc8d5c7abf"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/egress_broker_test.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/egress_broker_test.go",
+      "sha256": "8db356f3ab48bde9b704f2fac6526a389fa4d9e5c21f22f31d33fe3cff14beb2"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/native_probe_linux.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/native_probe_linux.go",
+      "sha256": "b552d926cd2f7c6bfc975c284b542a3d44910e323331f52f25f755489ff703a4"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/native_probe_linux_test.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/native_probe_linux_test.go",
+      "sha256": "b1114cbdcdb87428d4861f888dc9c8426ae0d8a400ad58c2513fe74280d8bf31"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/native_probe_other.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/native_probe_other.go",
+      "sha256": "f94f9ca8bc73094675ac82f1acef59bc00458428b1d16e75cb6a76bbfb6ecfc9"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/network_control.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/network_control.go",
+      "sha256": "c2a2f638035b4e93a15e9951a525e6fc090c08ae1cd1403033e0263bca824344"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/network_control_test.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/network_control_test.go",
+      "sha256": "6d0504aa8f0c7d809489eba73693260e94a71fbdc9266be7d28e0459c616cc75"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/network_preflight_linux.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/network_preflight_linux.go",
+      "sha256": "2bad3f24b749c7e47d6ebf3631e11d217ee968d130e708ea20df1ecab32f2fb4"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/network_preflight_other.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/network_preflight_other.go",
+      "sha256": "ede557a0591ed73d6b8394aedcd97ff82161263d872e43693cc29e09b12d1aa5"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/network_preflight_test.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/network_preflight_test.go",
+      "sha256": "0dc8229389ae56a7b805cf06004613d20aa50bb1ef074b75197debf84fe7ef4a"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/protocol.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/protocol.go",
+      "sha256": "fd13df957ff458878e3090ec83715475976db31ed994aa0569317b0f704c617c"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/protocol_proxy_stage_test.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/protocol_proxy_stage_test.go",
+      "sha256": "677e6617b73b0d3174322fdbe8d6ae4193998aa82c3c788853feca56d403fcfc"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/proxy.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/proxy.go",
+      "sha256": "54286f918d8993fa4dd86af29152d8bb694d1a78d4e24ff3a3bcf046d31f9d0a"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/proxy_test.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/proxy_test.go",
+      "sha256": "7a0ae98af61af1f6423fe04dff6098a8cd72669e9319a4a97511592bd7993a4c"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/redact.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/redact.go",
+      "sha256": "c30936e4416844e201bcd3be76018d9e6cc3310338beb86c8951aea54e2bc2c9"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/release.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/release.go",
+      "sha256": "2f50fabe16fae3ceb37a4a0d8adab22e368d179794007b60025cdf950ecb59c4"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/release_linux_test.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/release_linux_test.go",
+      "sha256": "f861d7398932663b9e14c0617f9b3df4cc8d62e8b6bf3c685d0d0c997f518baa"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/release_metadata.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/release_metadata.go",
+      "sha256": "50a24102e22a5deca6ccd2151f2a25b165e1dbc39044d430477ffed321d7aea1"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/release_probe.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/release_probe.go",
+      "sha256": "d6c4ee3ea76be37865937341876331f4a299dc61a8611249a5e60fb91980fb1a"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/release_probe_linux_test.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/release_probe_linux_test.go",
+      "sha256": "7616c3109e6ce4e6660a1e276e8bde77cf06b0e434d9842736c8657c9182054b"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/runtime_extract_linux.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/runtime_extract_linux.go",
+      "sha256": "3703bc432d2bf34d68b26f229e81f868d0b64cac54a0b1943d1cf27ff6198faa"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/runtime_extract_other.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/runtime_extract_other.go",
+      "sha256": "5da7f6839997b9c9b04d0e560a1280ee0bbe99fbe1338c801043e8c6a8d09496"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/runtime_mount_guard_linux.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/runtime_mount_guard_linux.go",
+      "sha256": "55e99491abb2c0bacf1be7c7a922fef73ae0566eb7aa159b6b156204317729a9"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/runtime_mount_guard_other.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/runtime_mount_guard_other.go",
+      "sha256": "7e76178587ff31f13fb68ac091af301dc0a5502543a5b0a9a2f17cccc44f5f51"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/supervisor.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/supervisor.go",
+      "sha256": "d7bb24ceff0a36e1706d2a6ae3291d47f79e61d6be1af78c22a5ce59d595eac2"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/supervisor_test.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/supervisor_test.go",
+      "sha256": "8a41652f1022f73b1aab9950198a58b88b729a99a84c05997db362ca983e1e70"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/sync_directory_unix.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/sync_directory_unix.go",
+      "sha256": "15d38ad7298339586b00b01b707d3b1d22a2390de57088d7ed79cf09c160c8c0"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/sync_directory_windows.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/sync_directory_windows.go",
+      "sha256": "69bec9a471fb10d66a97de04fe7f635559f606845952224ed91b8c1dc202511e"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/types.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/types.go",
+      "sha256": "f234f4a8664d423c2ff3768e2cd9259ac80ab80d3383d017ce611c0b16b1c698"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/unmount_linux.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/unmount_linux.go",
+      "sha256": "d0e1835f9c4aad00d367a837a74359a980ffa36658fec0325ad8a04f90aae76f"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/unmount_other.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/unmount_other.go",
+      "sha256": "f549e135e89e2ae987d2c3cd70ed6d2ac04decacc81cab412ee2b36f533b572f"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/update_receipt.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/update_receipt.go",
+      "sha256": "bd60cda8a908c999cf4b64e43d3353bbb2efbe0ac446c6a7aa95b559e84c19ee"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/update_receipt_linux_test.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/update_receipt_linux_test.go",
+      "sha256": "e7aa537465dc6c2e5b9bef036e31e4309ec507b59344f1f38514b4da1c933f1e"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/update_receipt_test.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/update_receipt_test.go",
+      "sha256": "ea935b86be2dcf3f7bc0c27d6afe65a36081c7aaf630348c3ba2e92cfa41103d"
+    },
+    {
+      "original": "apple-music-downloader/internal/appliance/update_transaction.go",
+      "path": "legacy/v1/apple-music-downloader/internal/appliance/update_transaction.go",
+      "sha256": "03dc287701ba29f7b2bf35179e606e1fcab9a8e07b71c775b595b471e5ce969b"
+    },
+    {
+      "original": "appliance/.gitignore",
+      "path": "legacy/v1/appliance/.gitignore",
+      "sha256": "03b863d34805cf9f9ee9c1cbbc3c2ae6874f1494557ebb140ded694d476d8cb4"
+    },
+    {
+      "original": "appliance/Dockerfile",
+      "path": "legacy/v1/appliance/Dockerfile",
+      "sha256": "cfdecfa0df6bb0c0f7e1a14f2f2acc0a0e487e67b06b266602263bb7e128bbf2"
+    },
+    {
+      "original": "appliance/Dockerfile.resolve-packages",
+      "path": "legacy/v1/appliance/Dockerfile.resolve-packages",
+      "sha256": "81a1fa904faa66be7893d16f72e0bb320a6191cf17042fd7d837a6dd60248f77"
+    },
+    {
+      "original": "appliance/README.md",
+      "path": "legacy/v1/appliance/README.md",
+      "sha256": "24f00f9e567ea323d383b4ecafe3cce424496f62936ea622f9fc83c37ccbe468",
+      "retainedAsStub": true
+    },
+    {
+      "original": "appliance/build-context.dockerignore",
+      "path": "legacy/v1/appliance/build-context.dockerignore",
+      "sha256": "2665b2a6e6f2336376b4fa530b5a629da4975d6cda92dc09bfdc344fc8f01c2b"
+    },
+    {
+      "original": "appliance/config.appliance.yaml",
+      "path": "legacy/v1/appliance/config.appliance.yaml",
+      "sha256": "f942ebb436719e309082a63700712d3c140586ce6af17efc9902ca538f083338"
+    },
+    {
+      "original": "appliance/local-inputs.poc.lock",
+      "path": "legacy/v1/appliance/local-inputs.poc.lock",
+      "sha256": "2c91c9f8a936403cd8ef9ac386e26e91706c6b07863c85ba06e3640e909d4482"
+    },
+    {
+      "original": "appliance/manifest.schema.json",
+      "path": "legacy/v1/appliance/manifest.schema.json",
+      "sha256": "965e28cd2c86d8699b82cfc9152f03988064a3f9214daca504d5b8ae297130bb"
+    },
+    {
+      "original": "appliance/native/network_preflight.c",
+      "path": "legacy/v1/appliance/native/network_preflight.c",
+      "sha256": "9e72c98aa0810b8d4787399638ed3a8ad68e2dc0dbb57d4ece630ed8d53a3220"
+    },
+    {
+      "original": "appliance/native/network_preflight.h",
+      "path": "legacy/v1/appliance/native/network_preflight.h",
+      "sha256": "e6f9cc30ced7ac8af2190df518bfda33cc9f1ed43ba507ec747e4a0064a590e9"
+    },
+    {
+      "original": "appliance/native/network_preflight_main.c",
+      "path": "legacy/v1/appliance/native/network_preflight_main.c",
+      "sha256": "756fa489cf4a15d46c1ff6d6fb49ba91084dbe09a6517fc9ccfb0a9584c73d9a"
+    },
+    {
+      "original": "appliance/packages.lock",
+      "path": "legacy/v1/appliance/packages.lock",
+      "sha256": "dfdaf5880f072e800a23bccb981ba7de76c649caa66bbcad7c98b1dc815b13fd"
+    },
+    {
+      "original": "appliance/packages.resolved.lock",
+      "path": "legacy/v1/appliance/packages.resolved.lock",
+      "sha256": "14d89d98b6019c5fe773303632de7bea84bf60f4c88900b3cdf4cff24ed908a1"
+    },
+    {
+      "original": "appliance/patches/wrapper-login-fd.patch",
+      "path": "legacy/v1/appliance/patches/wrapper-login-fd.patch",
+      "sha256": "fea223dd26f89ac0abe3b1301717bb5d97537719c50ad05cb2ef9a5cdcf2b950"
+    },
+    {
+      "original": "appliance/rootfs-overlay/etc/systemd/journald.conf.d/applemusic-downloader.conf",
+      "path": "legacy/v1/appliance/rootfs-overlay/etc/systemd/journald.conf.d/applemusic-downloader.conf",
+      "sha256": "beafdca7cb816a57ebd7191aed2a1b8725bed96c94f9ddece9a0dfbabe53090c"
+    },
+    {
+      "original": "appliance/rootfs-overlay/etc/systemd/system/amdl-appliance.service",
+      "path": "legacy/v1/appliance/rootfs-overlay/etc/systemd/system/amdl-appliance.service",
+      "sha256": "798af408398bdc1b0459e264a3a1a8fcb3b40b675bed4ae1331e66f6eb84f548"
+    },
+    {
+      "original": "appliance/rootfs-overlay/etc/wsl.conf",
+      "path": "legacy/v1/appliance/rootfs-overlay/etc/wsl.conf",
+      "sha256": "0b5b9dfe4e8a5619ec4069691cfba24131e0ec1723aa40a03d119a9688ba3b5b"
+    },
+    {
+      "original": "appliance/rootfs-overlay/opt/applemusic-downloader/amdl-appliance-keepalive",
+      "path": "legacy/v1/appliance/rootfs-overlay/opt/applemusic-downloader/amdl-appliance-keepalive",
+      "sha256": "0ca640c4ae5cf848180b86e924fc4bbbee3f130f6e74837133d75ae7a7d0f529"
+    },
+    {
+      "original": "appliance/rootfs-overlay/usr/lib/tmpfiles.d/applemusic-downloader.conf",
+      "path": "legacy/v1/appliance/rootfs-overlay/usr/lib/tmpfiles.d/applemusic-downloader.conf",
+      "sha256": "b5d8ed635c8778ab8e0eab852de73df1d4582827dc0f4f7c158287509dc7b799"
+    },
+    {
+      "original": "appliance/scripts/build-all.sh",
+      "path": "legacy/v1/appliance/scripts/build-all.sh",
+      "sha256": "8b9248c9a8ef8594ee2c646f3ac3f20bc16dc8815fd5f1f0c1bcab97115b42cf"
+    },
+    {
+      "original": "appliance/scripts/build-image.sh",
+      "path": "legacy/v1/appliance/scripts/build-image.sh",
+      "sha256": "3f0d61cf692f42abc339d5738654a37276bfa6be2730cd59b45bfe8198579361"
+    },
+    {
+      "original": "appliance/scripts/build-rootfs.sh",
+      "path": "legacy/v1/appliance/scripts/build-rootfs.sh",
+      "sha256": "2bc9e96344293562359d77886c8ff292356d2846b597dc8968042948e9fa5ffa"
+    },
+    {
+      "original": "appliance/scripts/build-runtime.sh",
+      "path": "legacy/v1/appliance/scripts/build-runtime.sh",
+      "sha256": "848c98ce8fc492beb09df8538061fb34e55f0a06a3b1944cf10c15ebcfc0fa2a"
+    },
+    {
+      "original": "appliance/scripts/build-source-snapshot.sh",
+      "path": "legacy/v1/appliance/scripts/build-source-snapshot.sh",
+      "sha256": "fa7ae13ad84aa094c97573c5597a06227000d01164e3fe7ab5656209339fdda4"
+    },
+    {
+      "original": "appliance/scripts/common.sh",
+      "path": "legacy/v1/appliance/scripts/common.sh",
+      "sha256": "4b9b1df349c42c4e985edea13de1ded739d4439e4e815bec33bcadeed20832bb"
+    },
+    {
+      "original": "appliance/scripts/extract-zip.py",
+      "path": "legacy/v1/appliance/scripts/extract-zip.py",
+      "sha256": "90d4d25cb44a4d505c69c902368bf1de3e7e63939f1567b21bf5c515630f9606"
+    },
+    {
+      "original": "appliance/scripts/fix-patch-hunk-headers.py",
+      "path": "legacy/v1/appliance/scripts/fix-patch-hunk-headers.py",
+      "sha256": "e45dcf116c9763eea5826737fec1639e187f3861f4f6e31042116bb3574241fc"
+    },
+    {
+      "original": "appliance/scripts/generate-build-metadata.py",
+      "path": "legacy/v1/appliance/scripts/generate-build-metadata.py",
+      "sha256": "a03777a0c2e2a41da8b5da5fe364991dd3e322622da562cff33efba697467797"
+    },
+    {
+      "original": "appliance/scripts/generate-manifest.sh",
+      "path": "legacy/v1/appliance/scripts/generate-manifest.sh",
+      "sha256": "b6604d55c95f07b74a9aebcf4941559cc4d8ac67564595f589e36e1432eb4d1a"
+    },
+    {
+      "original": "appliance/scripts/lock-local-inputs.sh",
+      "path": "legacy/v1/appliance/scripts/lock-local-inputs.sh",
+      "sha256": "8d5acb452401c3d1e793ea52c585869b25c43efe06cb38e18b41a062e11142a3"
+    },
+    {
+      "original": "appliance/scripts/measure-android-ca-bundle.sh",
+      "path": "legacy/v1/appliance/scripts/measure-android-ca-bundle.sh",
+      "sha256": "136465a1433f3d66b0d3397050c8bdc8ab58e08ada116c108a9e37e0427e0739"
+    },
+    {
+      "original": "appliance/scripts/measure-native-pins.sh",
+      "path": "legacy/v1/appliance/scripts/measure-native-pins.sh",
+      "sha256": "70c58a4d3584ba6f51d8987c86184577c621785624a9fb0a4d3746d9680b3d40"
+    },
+    {
+      "original": "appliance/scripts/native-abi-fixture-server.py",
+      "path": "legacy/v1/appliance/scripts/native-abi-fixture-server.py",
+      "sha256": "be6996288c0597b4b36d4d4dbc8782bbbc266137a3b87cb3791f76c4df6e58a9"
+    },
+    {
+      "original": "appliance/scripts/network-preflight-fixture-server.py",
+      "path": "legacy/v1/appliance/scripts/network-preflight-fixture-server.py",
+      "sha256": "e5ca0734b15f53331f422be8461ebae58e108c38bde27e4ad167ce17361c19fe"
+    },
+    {
+      "original": "appliance/scripts/package-export-stream.sh",
+      "path": "legacy/v1/appliance/scripts/package-export-stream.sh",
+      "sha256": "32e74a6148a65b668d81951da37ce5a21445530f11ea235a6ed8e7d9b29be424"
+    },
+    {
+      "original": "appliance/scripts/resolve-packages.sh",
+      "path": "legacy/v1/appliance/scripts/resolve-packages.sh",
+      "sha256": "3876712d7fd29526dfdef8c0e95b411ec183fdc90daf3eafd029692ab5353aef"
+    },
+    {
+      "original": "appliance/scripts/run-native-abi-harness.sh",
+      "path": "legacy/v1/appliance/scripts/run-native-abi-harness.sh",
+      "sha256": "975880a8aae21e1edfc79983689bdda6d7b8e92db5e90c6875ffc8fd5b83cfb3"
+    },
+    {
+      "original": "appliance/scripts/run-network-preflight-harness.sh",
+      "path": "legacy/v1/appliance/scripts/run-network-preflight-harness.sh",
+      "sha256": "b2b03bd637c82f425794308620eea9f24d008b378ba308457aa7613469b3a228"
+    },
+    {
+      "original": "appliance/scripts/validate-json-schema.py",
+      "path": "legacy/v1/appliance/scripts/validate-json-schema.py",
+      "sha256": "7bb862b439d6e0ca28d2e647d7146fa3d8a96f62e99f2f6d8563ac22f1bb2b75"
+    },
+    {
+      "original": "appliance/scripts/verify-reproducible.sh",
+      "path": "legacy/v1/appliance/scripts/verify-reproducible.sh",
+      "sha256": "efb34d117ae7843b73faaf788352fe29ceb33bfba7803c27b12d5220ca7359a0"
+    },
+    {
+      "original": "appliance/scripts/verify-urlrequest-abi.sh",
+      "path": "legacy/v1/appliance/scripts/verify-urlrequest-abi.sh",
+      "sha256": "97bcbd25bf833ff798476ecfe80330e2b3098260e3364fc38241475ae74cf60f"
+    },
+    {
+      "original": "appliance/scripts/verify.sh",
+      "path": "legacy/v1/appliance/scripts/verify.sh",
+      "sha256": "bdc82b5469b3626a008dd639312400a33dc056e1f59cf0ab4b542b38f0e545bf"
+    },
+    {
+      "original": "appliance/tests/network-preflight-fixtures/server-correct.crt",
+      "path": "legacy/v1/appliance/tests/network-preflight-fixtures/server-correct.crt",
+      "sha256": "6890c7eca81d43ad235f2995b222332a1ad794bad8e17ba2d3b9a7d3797dc690"
+    },
+    {
+      "original": "appliance/tests/network-preflight-fixtures/server-wrong-host.crt",
+      "path": "legacy/v1/appliance/tests/network-preflight-fixtures/server-wrong-host.crt",
+      "sha256": "38e01c592070b0acb7af58a5e87176a8086810adeaf684e4e1ec6270e2144b08"
+    },
+    {
+      "original": "appliance/tests/network-preflight-fixtures/server.key",
+      "path": "legacy/v1/appliance/tests/network-preflight-fixtures/server.key",
+      "sha256": "5ad3478e779787808289af45b7e026ff40212a2028d1f8b16423f48fc22f3b99"
+    },
+    {
+      "original": "appliance/tests/network-preflight-fixtures/trusted-ca.crt",
+      "path": "legacy/v1/appliance/tests/network-preflight-fixtures/trusted-ca.crt",
+      "sha256": "fec25947c49c815bcb63ed49ad9abc48b2bda080b3a6dbecbe1a546af43b126e"
+    },
+    {
+      "original": "appliance/tests/network-preflight-fixtures/trusted-ca.key",
+      "path": "legacy/v1/appliance/tests/network-preflight-fixtures/trusted-ca.key",
+      "sha256": "418dd52371efccfb33092e4a3cdc8c742f624b7c86b062a38db9bd593b388acc"
+    },
+    {
+      "original": "appliance/tests/network-preflight-fixtures/untrusted-ca.crt",
+      "path": "legacy/v1/appliance/tests/network-preflight-fixtures/untrusted-ca.crt",
+      "sha256": "3233f2ed6bfaa6bb9ce935ffeadc1eb7111109fd76b9aaedb88990187b546205"
+    },
+    {
+      "original": "appliance/tests/network-preflight-fixtures/untrusted-ca.key",
+      "path": "legacy/v1/appliance/tests/network-preflight-fixtures/untrusted-ca.key",
+      "sha256": "531d0fd39242aab0d5a88f7fbadfebba64ad6668874f24afa6c04c363b960855"
+    },
+    {
+      "original": "appliance/tests/test-android-ca-bundle.py",
+      "path": "legacy/v1/appliance/tests/test-android-ca-bundle.py",
+      "sha256": "6a2310e374e67700a4eba03fa9f711cf7591eba458927bf43a87e80269137d33"
+    },
+    {
+      "original": "appliance/tests/test-metadata-tools.py",
+      "path": "legacy/v1/appliance/tests/test-metadata-tools.py",
+      "sha256": "4d05063e3621bb4c2336fab1f9ea7233d387b5a7ae4af6085ef2ac2d7509d073"
+    },
+    {
+      "original": "appliance/tests/test-network-preflight.py",
+      "path": "legacy/v1/appliance/tests/test-network-preflight.py",
+      "sha256": "ad3d02b075850e607e66f7eaf5df883fac633619ee1285853fa7cb4dd9ad3172"
+    },
+    {
+      "original": "appliance/tests/test-source-snapshot.sh",
+      "path": "legacy/v1/appliance/tests/test-source-snapshot.sh",
+      "sha256": "188c4ee1f453fb9b3007317d6b0f5a707b05f70b2b3cf1e140f52d4e0b3ff8db"
+    },
+    {
+      "original": "appliance/tests/test-tar-compare-strip-components.sh",
+      "path": "legacy/v1/appliance/tests/test-tar-compare-strip-components.sh",
+      "sha256": "da320bb69bfb101d98fa7e1c914a245f00cfefeb69bb7f84ae5b40246af50f13"
+    },
+    {
+      "original": "appliance/tests/test-wrapper-auth-diagnostics.py",
+      "path": "legacy/v1/appliance/tests/test-wrapper-auth-diagnostics.py",
+      "sha256": "b7e340cde6502596d78d1d24eb778b7c7e8aa3a55a596ede65f56883ccb0e42c"
+    },
+    {
+      "original": "appliance/tests/test-wrapper-dev-token-safety.py",
+      "path": "legacy/v1/appliance/tests/test-wrapper-dev-token-safety.py",
+      "sha256": "13489cf15ed3f26b78a555bd4f98d29ff5ba7ebadd1dc0533e3114bbdd34c04c"
+    },
+    {
+      "original": "appliance/tests/test-wrapper-http-message-abi.py",
+      "path": "legacy/v1/appliance/tests/test-wrapper-http-message-abi.py",
+      "sha256": "68f50e366560286bdb81bc5ed11433067d0314db9f5c15b4445e109ea199b906"
+    },
+    {
+      "original": "appliance/tests/test-wrapper-lease-abi.py",
+      "path": "legacy/v1/appliance/tests/test-wrapper-lease-abi.py",
+      "sha256": "a254266699f46d0b528a8ddbc8ed898f15fb930b3750156d353ae4c0f040f744"
+    },
+    {
+      "original": "appliance/tests/test-wrapper-mount-cleanup.py",
+      "path": "legacy/v1/appliance/tests/test-wrapper-mount-cleanup.py",
+      "sha256": "13a6bfc15f66bbf3f0358bade7bef5345824098f9b760419d77bd4a012771d2d"
+    },
+    {
+      "original": "appliance/tests/test-wrapper-native-abi-harness.py",
+      "path": "legacy/v1/appliance/tests/test-wrapper-native-abi-harness.py",
+      "sha256": "1e4caa972744d7b1c68559831d4f64a0588f722cfd056333a8f806d4a9781c2c"
+    },
+    {
+      "original": "appliance/tests/test-wrapper-offline-status.py",
+      "path": "legacy/v1/appliance/tests/test-wrapper-offline-status.py",
+      "sha256": "3580e50b484975833de97e6a87ac1831ef0a1785eb192076877a7fa29d43ea8b"
+    },
+    {
+      "original": "appliance/tests/test-wrapper-parent-death.py",
+      "path": "legacy/v1/appliance/tests/test-wrapper-parent-death.py",
+      "sha256": "c73a99f7c092b4c5f24cfc1e34041347dacb229bd66f9c19351dd38242a8bec6"
+    },
+    {
+      "original": "appliance/tests/test-wrapper-session-resume.py",
+      "path": "legacy/v1/appliance/tests/test-wrapper-session-resume.py",
+      "sha256": "f89da08f0e6464969e1c6aca261c90492a77b1efb669520b2336511ce02b823d"
+    },
+    {
+      "original": "appliance/tests/test-wrapper-startup-markers.py",
+      "path": "legacy/v1/appliance/tests/test-wrapper-startup-markers.py",
+      "sha256": "012bc802c0164872a0ab1f2a6867de60b3e88e29418faca68d18f7a9d646bb98"
+    },
+    {
+      "original": "appliance/tests/test-wrapper-url-request-abi.py",
+      "path": "legacy/v1/appliance/tests/test-wrapper-url-request-abi.py",
+      "sha256": "e7f071dfc300f6a5fcf255292630438917084cafd7bd64153c13e0528f493264"
+    },
+    {
+      "original": "appliance/tests/wrapper-secret-fd-smoke.py",
+      "path": "legacy/v1/appliance/tests/wrapper-secret-fd-smoke.py",
+      "sha256": "1bf1e23f5c8e2654b24a801edc1a8f456f25f1803cf488fb2e6c1886b76a4bf8"
+    },
+    {
+      "original": "appliance/versions.lock",
+      "path": "legacy/v1/appliance/versions.lock",
+      "sha256": "fb478d00b06129670f8824326ba7d39dabb703b8ce05bd424fffac8a0a4f3f2c"
+    },
+    {
+      "original": "wrapper-linux/.gitattributes",
+      "path": "legacy/v1/wrapper-linux/.gitattributes",
+      "sha256": "1a1dbe176bc233b499d35a57db7513f2941c99ab9759f177830c9149be99005b"
+    },
+    {
+      "original": "wrapper-linux/Dockerfile",
+      "path": "legacy/v1/wrapper-linux/Dockerfile",
+      "sha256": "42ec42b06ed7691a79a8ee744b43b740a8d1f6e01b7e9fa8decc9f61c82e805f"
+    },
+    {
+      "original": "wrapper-linux/Makefile",
+      "path": "legacy/v1/wrapper-linux/Makefile",
+      "sha256": "929d841022d93af64f9cec6794b6ec96e8a4d7bc2e4e476ab67f0a3c2ef49fa1"
+    },
+    {
+      "original": "wrapper-linux/README.md",
+      "path": "legacy/v1/wrapper-linux/README.md",
+      "sha256": "4a02a81297f53e1745ad28f7115509eec194d362f33966dfeff6e591caeffa71",
+      "retainedAsStub": true
+    },
+    {
+      "original": "wrapper-linux/import.h",
+      "path": "legacy/v1/wrapper-linux/import.h",
+      "sha256": "0683b2965e05745cdd07e94d1e89bb578859774aab9134844c3b3ee15363b079"
+    },
+    {
+      "original": "wrapper-linux/main.cpp",
+      "path": "legacy/v1/wrapper-linux/main.cpp",
+      "sha256": "cf4440dfbca9ffcb27c03f28692b718f4fe6f07824048d3d07126b3f55ebc223"
+    },
+    {
+      "original": "wrapper-linux/rootfs/data/data/com.apple.android.music/.gitkeep",
+      "path": "legacy/v1/wrapper-linux/rootfs/data/data/com.apple.android.music/.gitkeep",
+      "sha256": "3d9126bce0b1dc1783ee21f9151ed801215595e08de6afb8a40a689b285b1371"
+    },
+    {
+      "original": "wrapper-linux/rootfs/dev/.gitkeep",
+      "path": "legacy/v1/wrapper-linux/rootfs/dev/.gitkeep",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/bin/linker64",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/bin/linker64",
+      "sha256": "85982b4aa9a0a5f24f8c1dca285ba08eb6a5dcdbb9820ac719a7e3c77aa4c737"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/bin/main",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/bin/main",
+      "sha256": "a87d3d86395871c2c7fac1d737ae4a5d8c6b7bc6dd72a3957f645951c2bcaa2b"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libBlocksRuntime.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libBlocksRuntime.so",
+      "sha256": "9814b756ae173a546eb12bf1019746f14b17a6546806445ff67f75b0aba8856a"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libCoreADI.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libCoreADI.so",
+      "sha256": "b5b971cea0bbe828bdcfaf219fd91fc1e37cf8daee84001ef917d0b1c2b985ed"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libCoreFP.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libCoreFP.so",
+      "sha256": "cc75fb416f3f03b283d16a22d2ffb130a03c830a6a66f291389472bae524b175"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libCoreFoundation.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libCoreFoundation.so",
+      "sha256": "c5727cecfa18833a6828caf2072aa6a4edf39b73752597e4de35854ea9a71ce0"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libCoreLSKD.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libCoreLSKD.so",
+      "sha256": "1c8e1b64f7e966c2f78ba2582a1ec30a0aff8ad7ef8221117853f34d9b7faa3b"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libEGL.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libEGL.so",
+      "sha256": "3897b833e0bf0d56c5ec3895a28682d8273d7c4df1ced68ff06e62979827a94a"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libETC1.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libETC1.so",
+      "sha256": "a48f6370d303952bca9c3fd2c0b4c97a31a0a5930c9bfb0d974cff513ab6638e"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libGLES_trace.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libGLES_trace.so",
+      "sha256": "9875cf00f54c17c26f7a1270f33e1ec7edddd0890cb700e37c9537692d99fd56"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libGLESv1_CM.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libGLESv1_CM.so",
+      "sha256": "12cce12f3177ddadaf30b904f9cf426d3e9c71aad55d4c25c04e6f3fef90b0c0"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libGLESv2.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libGLESv2.so",
+      "sha256": "ee1d8a85e80f4805137888793f13906cc20dd2ee06dfba909fae0ecbf69ef49e"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libLLVM.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libLLVM.so",
+      "sha256": "3cb17292f33af0b6ad2de8c44e6a9fcd25861f933d03a554b9671803bdd1232e"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libOpenSLES.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libOpenSLES.so",
+      "sha256": "9bd7f62f3b5f047c6f60c7a97fb4be64b1caadc8ea7ce468c3a8e20be5cbb89f"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libRS.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libRS.so",
+      "sha256": "959312aa5bc0ea5a898999c75b924805d5ea3960999633d2f5be1528e0d31c2a"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libRScpp.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libRScpp.so",
+      "sha256": "83d0b08309a64ec9bf60652ef96b7f2579635039736e463247528352712de97c"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libandroid.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libandroid.so",
+      "sha256": "8e9ee27bc19bd3a3b9e1bc24301bf385a22ff18c9f97fff19679ce885f18742e"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libandroid_runtime.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libandroid_runtime.so",
+      "sha256": "6b7f3fe6db03e2f6e0118504f1c40a89fe28000ecd04d6d2a20961f102306d8d"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libandroidappmusic.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libandroidappmusic.so",
+      "sha256": "0a575431868e40ddb29e9e0bac7a4993d6e05971b45403cabe358c081b54a36e"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libandroidfw.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libandroidfw.so",
+      "sha256": "546535df9106b347525b749b68cbb1372939795215f32005b160563205d31ba2"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libaudioutils.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libaudioutils.so",
+      "sha256": "ad6657529259260ce78fb57a85f52f8f237e02f78c8d75d16588c8bfe807e39a"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libbacktrace.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libbacktrace.so",
+      "sha256": "97046a07be82e646f2da90dae7ed0cf9b69b076c3100f678622db93d72e4517b"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libbcc.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libbcc.so",
+      "sha256": "f6a519e0452b736733ae673cfa91dec3d526f27d03807531444177f6b0d6237c"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libbcinfo.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libbcinfo.so",
+      "sha256": "0f69323449c8053695b63c818aa0bdcb32dab1f1aa54f3df760211076e524c04"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libbinder.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libbinder.so",
+      "sha256": "b6c0890b23ab130961196e5c09d0e4afc5901a61f1f06f202aae6b63e55fac30"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libc++.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libc++.so",
+      "sha256": "c854f749424bc2019d36bef9da63a185569c6a70613b3db8830d62b99e4c4e87"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libc++_shared.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libc++_shared.so",
+      "sha256": "82ffc20ba230bbdd031b27853d6cfaaa27079aabe6dd478cafd9b6fa866a35c2"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libc.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libc.so",
+      "sha256": "421be2eaae5cd2c730048b4b8ea176d4287e21b126ead4075a52a9b9cc41e51e"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libcamera_client.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libcamera_client.so",
+      "sha256": "4b010eed0129633663298cc569790cdc930b389950ff6b4b567f67927237683a"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libcamera_metadata.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libcamera_metadata.so",
+      "sha256": "1681a88f4d5e3a0a997f03c052b5a1ea9738181b8149d5a6f16ba20031895ebf"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libcommon_time_client.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libcommon_time_client.so",
+      "sha256": "54e47ca25a77dd067bc1b331a30281a4217dd7e812f46bb889be168bf157e549"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libcrypto.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libcrypto.so",
+      "sha256": "8cff426b8b966d465dda91984a87a1272cb23b8b405c1592d6e6e9a57879f7c5"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libcurl.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libcurl.so",
+      "sha256": "922d6c70ab8a86a761046c70902d3d6c56b136fb2a3b21dbc5a4e3fe5f6130ae"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libcutils.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libcutils.so",
+      "sha256": "e50b38ead1b65a9910ee8274a207af1abda6db7880cd7722d2a8eb3507fd4b27"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libdaapkit.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libdaapkit.so",
+      "sha256": "74b0ffb8964c33017daf4b9a8f22fbcc398a4a49f1e81ee9541d4e909cf7278a"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libdispatch.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libdispatch.so",
+      "sha256": "7d360c1e81c6982b70b32bdc4e343fd586d727722fd6562df211aaf1955b0e2c"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libdrmframework.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libdrmframework.so",
+      "sha256": "0914786cbacc464409a3a25eae291568f98917d42b64f3f14a181769f7db6749"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libeffects.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libeffects.so",
+      "sha256": "3ee4c19e86a8a98426db97f210cccd98041a0a77bc1308f3faba3ffc2d6d2291"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libexpat.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libexpat.so",
+      "sha256": "7db72b51eee87b8162df047b5a4eaf086bd076bd8e37b88f5c84c567f75f721b"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libft2.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libft2.so",
+      "sha256": "8ac64e7b7fe86be6fbb717f1981c96cf5974f092e364397c186f98017ce84195"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libgabi++.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libgabi++.so",
+      "sha256": "332cdd74588f040422b21b37ad16264cabdb50c64f8c7a18b6184498a89b4c66"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libgccdemangle.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libgccdemangle.so",
+      "sha256": "6724c3212b762c8c5dbcb0f76d485204f49542923540d97b4a27ee8a6b18a851"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libgui.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libgui.so",
+      "sha256": "462d0013640d9074639ddb222c4ca6a4e798a9f9af0ed10dc734501fc8c90a28"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libhardware.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libhardware.so",
+      "sha256": "fdfe37ace293f0a766f13a632ff4b21223abb0897ea807c875e45846b12a7b30"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libhardware_legacy.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libhardware_legacy.so",
+      "sha256": "8842fa4376ce6388f7538a1a347f94cfa25f06ddc2c012265831a077d5a67336"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libharfbuzz_ng.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libharfbuzz_ng.so",
+      "sha256": "5435e3617594fd1e738d2b920cfdc4a1d22ef85363186a8ec8e2f70c3cb27679"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libhwui.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libhwui.so",
+      "sha256": "6b057a0892f6c333f15848ab124ba346d745bb8ba82314acc6a90ba3243270e2"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libicudata_sv_apple.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libicudata_sv_apple.so",
+      "sha256": "afe9021fd9fee67f1f2909f3bb603f0362e93be5ef761d4dee9812249b2aa0f0"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libicui18n.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libicui18n.so",
+      "sha256": "ae6c3d0989db44b5b6c75f858c9d7e3021248a714b5569507f4f7b94ab4b1440"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libicui18n_sv_apple.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libicui18n_sv_apple.so",
+      "sha256": "7ae2e3c0e78e54e94a2ce2d7f3efbb4375e2505769f4ebeb43f05ac7d344ff76"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libicuuc.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libicuuc.so",
+      "sha256": "a59d30bfd8104bf23ffdae1f07b9f7e7316f65b5b3a3d5b81c45694d84b84a0c"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libicuuc_sv_apple.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libicuuc_sv_apple.so",
+      "sha256": "cac055936358d0ea35021240a7a36a2110994f3c8883a47bb28fd2c634e6f069"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libimg_utils.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libimg_utils.so",
+      "sha256": "94ea3388b058103be175086fe664f8db6a3630d1e825b70fd720ef549e59f9f6"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libinput.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libinput.so",
+      "sha256": "0c5a1f046291d390806927d9c9dcc44bddaa51e4ffb41671c83d44172855dbd4"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libinputflinger.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libinputflinger.so",
+      "sha256": "eccfdf5e7d4f7d853dec1fcec6f20e9088c3eb362163682aadf4d0e39f3c14da"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libjpeg.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libjpeg.so",
+      "sha256": "e7a24eff0714521e37527dece9214cb1f19d46e2439411f2f8d49eb575d1c5fb"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/liblog.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/liblog.so",
+      "sha256": "f312d563748c1e15cdc3ec3469b16331f7fdaa6ad9b922c7ccbbf1ad38840d02"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libm.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libm.so",
+      "sha256": "0aa4a18dcc9ae8091de4e6636e143ff62e04c800bffafe2f1315427a33a62e84"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libmedia.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libmedia.so",
+      "sha256": "ec9ddd6841221d362214fcec50450e7c0a8ae1d3f4af3788b3da381e2acb817c"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libmedialibrarycore.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libmedialibrarycore.so",
+      "sha256": "04888c3ee00b90b8af88c836c9b5e531bb1b52f56696ae7a0d6b6285f958f204"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libmediaplatform.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libmediaplatform.so",
+      "sha256": "96ec8f0a9bdd597534fb876d1945f153077d688826dcc7673807e113280d5203"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libmemtrack.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libmemtrack.so",
+      "sha256": "59ed8b60461b327ae1497178800788daa7253d1e736bae6005d22bdd31b31fc4"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libminikin.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libminikin.so",
+      "sha256": "6b89b31f2d803fb944610e33b3a3b018fb2c04ea3f25bd7a35fa9a4355308579"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libnativebridge.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libnativebridge.so",
+      "sha256": "2ef850ef9e41e7faa4677a528022b8350e2878b970412a1ad870c5a814856aa4"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libnativehelper.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libnativehelper.so",
+      "sha256": "1f7a91bb32248c0cba1af91a315543d25cb8d7d48365aeaa53884452e07103bf"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libnbaio.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libnbaio.so",
+      "sha256": "020203924ddc35e0b1ca11b5a4d7e97b2ebe072ea094dfcb1704350ef94e7a69"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libnetd_client.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libnetd_client.so",
+      "sha256": "c3c8242fcfc83abcafaafb5f25016884ff98ba131711bb5b04c558b831a26d40"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libnetutils.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libnetutils.so",
+      "sha256": "1f59f6798eb13528b71435d5ba0825847acff5edb3cebdfbb09337874a119c57"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libopus.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libopus.so",
+      "sha256": "76b2e2dd4270200f846feac778397eecfa94e1dbf0b0c46a18fcd43b4e80b1cf"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libpdfium.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libpdfium.so",
+      "sha256": "e2e03e9d4c617659705bac564664feb7fd881a725e6b767dfed4d101d9f2f1f1"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libpng.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libpng.so",
+      "sha256": "f1c5bfc2d5d4270581e5e5b6e9a911742658136efb5f977af5d5930557a8bf62"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libpowermanager.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libpowermanager.so",
+      "sha256": "036fb1c24391a75b7017fe95c83dbd8f0623fa1e504903ccd2ca685ca8345eb0"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libprocessgroup.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libprocessgroup.so",
+      "sha256": "6158400be15bc9d3ef89b1d0b0e79bb280d62fd4cf63307493b55762e5a9df00"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libselinux.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libselinux.so",
+      "sha256": "2f0569cb34e7b11302142b7cb8a34efefc8bb8472b6b1a6c7d39b7c23f20af09"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libskia.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libskia.so",
+      "sha256": "5db2ed76d49a752b0d3538f1aa865a5eb71a0fd0e02ac4aaa54bc4d80cb956c5"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libsonivox.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libsonivox.so",
+      "sha256": "f17ded03cdd3569cda816082e7b156861414b21dbe87f92545b8b3b22724fcf8"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libsoundtrigger.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libsoundtrigger.so",
+      "sha256": "225358c3a5f3c9b84e239c11505bf3317960aacf931f5baf2186645c175d1756"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libspeexresampler.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libspeexresampler.so",
+      "sha256": "cccfaab64e58ce9e8d57539569c052c3acd49f58fced0c0ce3fc88a2b99b2106"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libsqlite.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libsqlite.so",
+      "sha256": "d0b7e563c0b874a11ef0d1c48bd86d0dbd3216510dd27ab8f6db317eb4199963"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libssl.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libssl.so",
+      "sha256": "8051495241833b0c86ceeca51bf0d360ff58c220d75d630ecf7dedde13026a63"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libstagefright.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libstagefright.so",
+      "sha256": "0c7de7fffa5cb1d0d6998b5fc11ccf90e49e17b6949e0b7b8dd4ae42bfe97332"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libstagefright_avc_common.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libstagefright_avc_common.so",
+      "sha256": "f5354c23f43746c5a8d2050d1c2163a0755abd94c2bc059aa25fa257af3648b5"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libstagefright_enc_common.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libstagefright_enc_common.so",
+      "sha256": "74c1442a588683dd313ac96a024bf4ac9a4b2ec7f05ee56e2a89db542d5aeb64"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libstagefright_foundation.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libstagefright_foundation.so",
+      "sha256": "39b828c6b05f5990f151d92ded661334ffe978887df936b5f24ca8bd0afa471f"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libstagefright_http_support.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libstagefright_http_support.so",
+      "sha256": "120e2907561a0b72ae4a502352845209516950697b0c912f251d9da1eadfe69e"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libstagefright_omx.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libstagefright_omx.so",
+      "sha256": "0d9fed3e95ff112d7833994223e6197f7bebc17efec3befcb71e7e30ca5eb410"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libstagefright_yuv.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libstagefright_yuv.so",
+      "sha256": "91b6a7bdd92e20b1a61f3722cde6730dc4530f2d37d0bf26c6e9dfb0ede823be"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libstdc++.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libstdc++.so",
+      "sha256": "4d65dd2fe51ac841cb734ce198c6709d5dd2e76393964ac7a6ebc99306ff38d3"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libstlport.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libstlport.so",
+      "sha256": "a8a1b79a77aff5918477c2b52f14ebc3715efdf73c05c3a79396e03384f27bec"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libstoreservicescore.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libstoreservicescore.so",
+      "sha256": "6238261363d7943f1a0a27116b52544831f3e295e8533a634641fe5b09d92c7e"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libsync.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libsync.so",
+      "sha256": "fdefe4820145826961a830f865c686b09eaad25a14640b92f04ef0a662d8b31b"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libui.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libui.so",
+      "sha256": "a7674dd0ccad7b55f60221961bda68862a527f3921951b65e89694a2f454abfc"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libunwind-ptrace.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libunwind-ptrace.so",
+      "sha256": "481de65399c61d0671b43abc37086ec9550044f08800412cba9b52f5dfec8d6c"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libunwind.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libunwind.so",
+      "sha256": "93579f0545253735391b1dc27a69e44ca8b8237967ef66646afa028cfb093816"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libusbhost.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libusbhost.so",
+      "sha256": "fc7f99a6b03889b31d70008e31a939941e2668281b91995131a7ad4f53cbf3fb"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libutils.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libutils.so",
+      "sha256": "0697bc44481570774af63367e7082c01297997bec0ca86f488948e25a986e2b7"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libvorbisidec.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libvorbisidec.so",
+      "sha256": "83eccc34fcb87cccd05422bda279d3af87e70e803d2dacb2f55fc2cfd2a5de5a"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libwilhelm.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libwilhelm.so",
+      "sha256": "ad6cbba01c6fb9cdf6d33082441ba1a04f6e4c030df6026403f59a1c93e8e6e2"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libxml2.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libxml2.so",
+      "sha256": "41422a7384114f4a98fa7a09e019c9f2aec07c429d6d2ae4b63022b111325109"
+    },
+    {
+      "original": "wrapper-linux/rootfs/system/lib64/libz.so",
+      "path": "legacy/v1/wrapper-linux/rootfs/system/lib64/libz.so",
+      "sha256": "e953e12985e0d756445e49ace84bd7c0e25c48616d3a572b0037a4c920b38e22"
+    },
+    {
+      "original": "wrapper-linux/test.c",
+      "path": "legacy/v1/wrapper-linux/test.c",
+      "sha256": "8876c2b00a16ce831d6822815aaedda99422574b892859f0c19deb1e656738ec"
+    },
+    {
+      "original": "wrapper-linux/wrapper",
+      "path": "legacy/v1/wrapper-linux/wrapper",
+      "sha256": "cfe72b434e4a30cbcb2a0e5dd5b0f9af139d0fd724a91cad2a746ab92394decb"
+    },
+    {
+      "original": "wrapper-linux/wrapper.c",
+      "path": "legacy/v1/wrapper-linux/wrapper.c",
+      "sha256": "0c094d15ea6f5d75264e980523275af3f6cbb3de769cbae32cc87dd06160d559"
+    }
+  ],
+  "web": [
+    {
+      "original": "src/renderer/browse.js",
+      "path": "web/browse.js",
+      "sha256": "6118f9eb346fb25f8d075537171b138503667ccce75bae6ce8a937ce80e851a9"
+    },
+    {
+      "original": "src/renderer/catalog.js",
+      "path": "web/catalog.js",
+      "sha256": "63017c8803f75a745f9604b803b90ae0035e70c4a81e70571cbf0710130b86f9"
+    },
+    {
+      "original": "src/renderer/client-navigation.js",
+      "path": "web/client-navigation.js",
+      "sha256": "c3c562400e8c87bc6bb0227dba2f24945122b11c0ed36cbfd335335572fda0fd"
+    },
+    {
+      "original": "src/renderer/client.css",
+      "path": "web/client.css",
+      "sha256": "bf96501070aee2b01c21460bcfc9d9dcb9459e02ac34ad74058a9094c442cb5f"
+    },
+    {
+      "original": "src/renderer/index.html",
+      "path": "web/index.html",
+      "sha256": "ec4fb5eea4caf9995ba1b3f495706929161a44d3092bb71f77844455f1ffb4ce"
+    },
+    {
+      "original": "src/renderer/job-data.js",
+      "path": "web/job-data.js",
+      "sha256": "77f86c61488ce75462fd598ae7b67d782fcafb683316793c987b9e54591c823b"
+    },
+    {
+      "original": "src/renderer/playback.js",
+      "path": "web/playback.js",
+      "sha256": "dc3521cbb9d02ad36f8bfb5f73d9181538cc0b92d8234235755b54cb6c81b7a4"
+    },
+    {
+      "original": "src/renderer/renderer.js",
+      "path": "web/renderer.js",
+      "sha256": "13db3cdfed7ca84d96fc1a0fedc54dc9478aa97c42813c1854b2dc640de756f5"
+    },
+    {
+      "original": "src/renderer/styles.css",
+      "path": "web/styles.css",
+      "sha256": "9ba0ec0fa196c36a462117f00cf89e41b5419a5400cd29c3be25ffce2ab92e43"
+    }
+  ]
+}

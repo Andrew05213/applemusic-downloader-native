@@ -1,0 +1,70 @@
+* text=auto
+# Frozen imports retain their original EOF bytes and recorded identities.
+# Do not rewrite legacy source merely to beautify the clean-root diff.
+legacy/v1/** whitespace=-blank-at-eof
+.gitattributes text eol=lf
+
+# Reproducible build inputs must not inherit a contributor's core.autocrlf.
+*.sh text eol=lf
+*.py text eol=lf
+*.patch text eol=lf whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab
+*.lock text eol=lf
+Dockerfile text eol=lf
+Dockerfile.* text eol=lf
+.dockerignore text eol=lf
+appliance/build-context.dockerignore text eol=lf
+legacy/v1/appliance/build-context.dockerignore text eol=lf
+*.go text eol=lf
+*.c text eol=lf
+*.h text eol=lf
+*.js text eol=lf
+*.cjs text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.crt text eol=lf
+*.key text eol=lf
+*.md text eol=lf
+*.nsh text eol=lf
+
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Extensionless reproducible-build inputs. These are hashed into reproducible
+# input digests from working-tree bytes, so text=auto is not enough: it
+# would let the checkout drift to CRLF on Windows and change the digest between
+# platforms. Pin them to LF explicitly.
+apple-music-downloader/utils/runv2/LICENSE text eol=lf
+apple-music-downloader/go.mod text eol=lf
+apple-music-downloader/go.sum text eol=lf
+wrapper-linux/Makefile text eol=lf
+wrapper-linux/main.cpp text eol=lf
+legacy/v1/wrapper-linux/Makefile text eol=lf
+legacy/v1/wrapper-linux/main.cpp text eol=lf
+# Frozen working-tree bytes recorded by phase2-manifest.json (not runnable).
+legacy/v1/appliance/rootfs-overlay/etc/systemd/journald.conf.d/applemusic-downloader.conf text eol=crlf
+legacy/v1/appliance/rootfs-overlay/etc/systemd/system/amdl-appliance.service text eol=crlf
+legacy/v1/appliance/rootfs-overlay/etc/wsl.conf text eol=crlf
+legacy/v1/appliance/rootfs-overlay/opt/applemusic-downloader/amdl-appliance-keepalive text eol=crlf
+legacy/v1/appliance/rootfs-overlay/usr/lib/tmpfiles.d/applemusic-downloader.conf text eol=crlf
+NOTICE text eol=lf
+docs/legacy/NOTICE-v1 text eol=lf
+third-party-licenses/*-LICENSE text eol=lf
+native-runtime/init text eol=lf
+.gitignore text eol=lf
+
+# Never run binary runtime inputs through line-ending normalization.
+*.exe -text
+*.dll -text
+*.so -text
+*.a -text
+*.zip -text
+*.gz -text
+*.tar -text
+*.db -text
+*.png -text
+*.jpg -text
+*.jpeg -text
+*.ico -text

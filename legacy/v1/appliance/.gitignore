@@ -1,0 +1,7 @@
+/dist/
+/.work/
+/.build-context/
+/.build-*/
+/.repro-*/
+/.legacy-proof/
+/*.local.lock

@@ -1,0 +1,47 @@
+{
+  "name": "applemusic-downloader-native",
+  "version": "1.0.0",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Andrew05213/applemusic-downloader-native.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Andrew05213/applemusic-downloader-native/issues"
+  },
+  "description": "Native Apple Music desktop build without WSL or remote webviews; third-party rights review remains incomplete.",
+  "main": "src/main/native-main.js",
+  "scripts": {
+    "start": "node electron/start-native.js",
+    "start:native": "node electron/start-native.js",
+    "test": "node electron/native-build-environment.js electron/native-ci.js unit",
+    "test:all": "node electron/native-build-environment.js --test \"test/**/*.test.js\"",
+    "verify:native": "node electron/native-build-environment.js electron/native-ci.js contract",
+    "verify:boundaries": "node electron/native-build-environment.js scripts/check-native-boundaries.js",
+    "release:native": "node electron/native-build-environment.js electron/native-release.js",
+    "test:electron": "node electron/native-build-environment.js --test \"test/electron/*.test.js\"",
+    "test:web": "node electron/native-build-environment.js node_modules/@playwright/test/cli.js test",
+    "build:native-backend": "node electron/build-native-backend.js",
+    "build:native-service": "node electron/build-native-service.js",
+    "build:native-runtime": "node electron/build-native-runtime.js",
+    "test:native-backend": "node electron/native-build-environment.js --test test/native/native-backend.smoke.cjs",
+    "test:native-guest": "node electron/native-build-environment.js test/native/native-guest-live.cjs",
+    "dist:win": "npm run dist:native",
+    "dist:win:online": "npm run dist:native",
+    "dist:win:offline": "npm run dist:native",
+    "dist:native": "node electron/dist-native.js"
+  },
+  "keywords": [],
+  "author": "Andrew05213",
+  "license": "ISC",
+  "devDependencies": {
+    "@electron/asar": "3.2.18",
+    "@electron/fuses": "1.8.0",
+    "@playwright/test": "^1.54.1",
+    "electron": "45.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "extends": "./electron-builder.native.cjs"
+  }
+}

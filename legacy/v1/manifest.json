@@ -1,0 +1,503 @@
+{
+  "schemaVersion": 1,
+  "maintenanceBranch": "codex/maintenance-1.x",
+  "maintenanceCommit": "c0719fc61b7a553348e8d7be96321cc37eb0a0d9",
+  "archiveBase": "3c7628385c8abdfeb051a28a8bee3e35817f3087",
+  "files": [
+    {
+      "original": "Dockerfile",
+      "path": "legacy/v1/Dockerfile",
+      "sha256": "9729c441f16f4f9cf35036aa61461561f3f87e7ba680bacedcfca71ba5f8046d"
+    },
+    {
+      "original": "docker-compose.yml",
+      "path": "legacy/v1/docker-compose.yml",
+      "sha256": "af8403f6576027462fffc020fe3ce9c55b011fe479b211bf9a88317359b33c70"
+    },
+    {
+      "original": "electron-builder.base.cjs",
+      "path": "legacy/v1/electron-builder.base.cjs",
+      "sha256": "5dc5197be03e6074a78f59b142a65fde49cdc484783188aeef944b1e735aa630"
+    },
+    {
+      "original": "electron-builder.offline.yml",
+      "path": "legacy/v1/electron-builder.offline.yml",
+      "sha256": "bf8ea7d65652fbd39a8cbcf42184645c2b4b30c056cd3920e5627f57811eb6d1"
+    },
+    {
+      "original": "electron/apple-music-browser.js",
+      "path": "legacy/v1/electron/apple-music-browser.js",
+      "sha256": "1eaee08be063733d7f456076117a56e5cc5d82db8265f8f98a5af74c94163383"
+    },
+    {
+      "original": "electron/appliance-manifest.js",
+      "path": "legacy/v1/electron/appliance-manifest.js",
+      "sha256": "1880cf2790dd1188eb91bd24eaead4af24a54804c6526b45e7cd2db023f5653e"
+    },
+    {
+      "original": "electron/build-windows-helper.js",
+      "path": "legacy/v1/electron/build-windows-helper.js",
+      "sha256": "ae50219eefae7b3821666fe82740b0a2bd06d06217b9a94494323b12c763fca8"
+    },
+    {
+      "original": "electron/credential-sentinel-smoke.js",
+      "path": "legacy/v1/electron/credential-sentinel-smoke.js",
+      "sha256": "3fd677e6e9072775e9bdcea4363751e5a191ad5d3532fbe140ecb0fe36cb054a"
+    },
+    {
+      "original": "electron/credentials.js",
+      "path": "legacy/v1/electron/credentials.js",
+      "sha256": "b8afbe2a91e07321394144ce5922e93b3d513535108146f3d13c82803e94cb28"
+    },
+    {
+      "original": "electron/desktop-state.js",
+      "path": "legacy/v1/electron/desktop-state.js",
+      "sha256": "9014235a45fa7736a65126a2192127385cc68954ccbbb571638fb604dd4b5e39"
+    },
+    {
+      "original": "electron/diagnostic-export.js",
+      "path": "legacy/v1/electron/diagnostic-export.js",
+      "sha256": "18e1587bf97bc4684154e47d32f462fa62442307f93c88f3e4111ac54693f9cd"
+    },
+    {
+      "original": "electron/drm-build-config.js",
+      "path": "legacy/v1/electron/drm-build-config.js",
+      "sha256": "a2f61d42fa47b9aec668a61c0b78fbf0d14474b3b05731b3df8ae562dd350607"
+    },
+    {
+      "original": "electron/drm-runtime-smoke.cjs",
+      "path": "legacy/v1/electron/drm-runtime-smoke.cjs",
+      "sha256": "82d28c03fbdc1439f5dd27ed7b251f551d28e4386fb5f99af17bcedb1810c146"
+    },
+    {
+      "original": "electron/drm-runtime.js",
+      "path": "legacy/v1/electron/drm-runtime.js",
+      "sha256": "b489cc1957188476ce18f85fe515d60941d0feb5efce679a08ba9f036df502ae"
+    },
+    {
+      "original": "electron/inject-appliance-manifest.js",
+      "path": "legacy/v1/electron/inject-appliance-manifest.js",
+      "sha256": "98e47931e1c567959663ab3430f30963853660458e30411cb9467291412fba02"
+    },
+    {
+      "original": "electron/install-drm.js",
+      "path": "legacy/v1/electron/install-drm.js",
+      "sha256": "dae8d0bd1451d93aadbf67b57a067a109356b7dd6dc7ba7272a9f9101a11e14a"
+    },
+    {
+      "original": "electron/installer.nsh",
+      "path": "legacy/v1/electron/installer.nsh",
+      "sha256": "4570d6bfe90fa4e9c6e78a4d713685883b3f29c8257a567a0814e131f86d812d"
+    },
+    {
+      "original": "electron/legacy-desktop-package.json",
+      "path": "legacy/v1/electron/legacy-desktop-package.json",
+      "sha256": "4f154e578db7188d6bfefcc230e08a02f2bac861a87519c385d22e328d706057"
+    },
+    {
+      "original": "electron/local-poc-adoption.js",
+      "path": "legacy/v1/electron/local-poc-adoption.js",
+      "sha256": "d809add31bc2e4118225108de38c62ee8078d69b4e201eabe2fc35dff3161e2c"
+    },
+    {
+      "original": "electron/local-poc-bootstrap.js",
+      "path": "legacy/v1/electron/local-poc-bootstrap.js",
+      "sha256": "8e5351ac76f57718be9c4b7a7fa7f2037611db6f9701e0293e34ea513e5124a9"
+    },
+    {
+      "original": "electron/local-poc-migration-lock.js",
+      "path": "legacy/v1/electron/local-poc-migration-lock.js",
+      "sha256": "1b6418d4bc35f7685c4dec5cced436704e2c81d5ea24770a923abb0c020b8aa2"
+    },
+    {
+      "original": "electron/loopback-proxy.js",
+      "path": "legacy/v1/electron/loopback-proxy.js",
+      "sha256": "1de5e66dab19139afdb4ee3a838168e2fd2e415876cceb1f1e9e4a9d1bac2391"
+    },
+    {
+      "original": "electron/native-release-not-ready.js",
+      "path": "legacy/v1/electron/native-release-not-ready.js",
+      "sha256": "3affb527f57252e7fb19483e95ddab74de964bec9ee8ef1f1eb791f24a7a3e5f"
+    },
+    {
+      "original": "electron/official-web-player.js",
+      "path": "legacy/v1/electron/official-web-player.js",
+      "sha256": "a5caa46e55e6d79e4494d750fc95aa6e6739b61d629c8c36da845be53cd5b427"
+    },
+    {
+      "original": "electron/playback-support.js",
+      "path": "legacy/v1/electron/playback-support.js",
+      "sha256": "15de066dc78cb978af56f475968f37258aec7f9beff2c424a449fe4e054aae18"
+    },
+    {
+      "original": "electron/process-runner.js",
+      "path": "legacy/v1/electron/process-runner.js",
+      "sha256": "c572f3a73cb4bf94ea58a1b6d9f75334545c7ede9e491580c45d12c27574b4c8"
+    },
+    {
+      "original": "electron/release-manifest.js",
+      "path": "legacy/v1/electron/release-manifest.js",
+      "sha256": "52a627d7bdc67725c1474a5a53067f09cfc7e8f746f85f1d510d034c5e7f7793"
+    },
+    {
+      "original": "electron/run-credential-sentinel-smoke.js",
+      "path": "legacy/v1/electron/run-credential-sentinel-smoke.js",
+      "sha256": "443e077638aa5321ad4dbaea7e6819891f0a8d4bef39cc236a60d56b9a08a6e8"
+    },
+    {
+      "original": "electron/run-drm-smoke.js",
+      "path": "legacy/v1/electron/run-drm-smoke.js",
+      "sha256": "96fcabf8fd1d66b2e58607423bcbc2cf2f4adddd2345be2dc12d90d9b60f8a3f"
+    },
+    {
+      "original": "electron/run-wsl-repair-smoke.js",
+      "path": "legacy/v1/electron/run-wsl-repair-smoke.js",
+      "sha256": "bb4d514fecfbbef9a06498187f24ade19041347cba73a579c156506014f8e8d1"
+    },
+    {
+      "original": "electron/run-wsl-smoke.js",
+      "path": "legacy/v1/electron/run-wsl-smoke.js",
+      "sha256": "6aa2e52cbe74a14bfa827709b608d63280c6b9b19fc32f49105332cd75a257a4"
+    },
+    {
+      "original": "electron/setup-controller.js",
+      "path": "legacy/v1/electron/setup-controller.js",
+      "sha256": "8c5b421a010d6c1dfa19a1ae4482a467c54695c53780192619ec7c51a200ef5d"
+    },
+    {
+      "original": "electron/start-drm.js",
+      "path": "legacy/v1/electron/start-drm.js",
+      "sha256": "3dec8931a7bc55c9cdd43f0c806b64deb69e38d35b516f3163944e9eeef1575b"
+    },
+    {
+      "original": "electron/verify-packaged-resources.js",
+      "path": "legacy/v1/electron/verify-packaged-resources.js",
+      "sha256": "12841781dd295e5b5d34e30c765804fc7a599c0c3a1ff65760d286a7548e6fa1"
+    },
+    {
+      "original": "electron/windows-capabilities.js",
+      "path": "legacy/v1/electron/windows-capabilities.js",
+      "sha256": "0b9bbb70c4bb98143ed3392eb1f6ab552e8d47b3ecc3671afbc5e20806f51933"
+    },
+    {
+      "original": "electron/windows-support.js",
+      "path": "legacy/v1/electron/windows-support.js",
+      "sha256": "00de0d3d2e2a3dab0cafcaba2489b3b0b02c5f0ca8d2a60461fdbb862cfbad3b"
+    },
+    {
+      "original": "electron/write-checksums.js",
+      "path": "legacy/v1/electron/write-checksums.js",
+      "sha256": "18a52d0dbce2ab3db73d8059e679b12c34c4ee13ed6fbe84855ef40193a57fd9"
+    },
+    {
+      "original": "electron/wsl-manager.js",
+      "path": "legacy/v1/electron/wsl-manager.js",
+      "sha256": "dc0c4d08cd07e0bda8a6527c97e2e5f0532b95d35289c074c487b8e4ea86809b"
+    },
+    {
+      "original": "electron/wsl-mount-smoke.js",
+      "path": "legacy/v1/electron/wsl-mount-smoke.js",
+      "sha256": "c1334e80a3b690453836175c823541ca181ca01a91637082584c7d81a90b1eec"
+    },
+    {
+      "original": "electron/wsl-smoke.js",
+      "path": "legacy/v1/electron/wsl-smoke.js",
+      "sha256": "30a1feda78abc7f14a1ed4160f0afae1c9ea887a801e0f5dbc60f5070847d95e"
+    },
+    {
+      "original": "electron/wslinterop-recovery.js",
+      "path": "legacy/v1/electron/wslinterop-recovery.js",
+      "sha256": "13e3fef378e214d7064871fd871ebe414275897fba15aafae5fde4c5fa26b713"
+    },
+    {
+      "original": "src/main/credentials.html",
+      "path": "legacy/v1/src/main/credentials.html",
+      "sha256": "6759b7cff267e44ed53bf0c46c3529c42c6252e5fe210739ffb60d88f222dd04"
+    },
+    {
+      "original": "src/main/credentials.js",
+      "path": "legacy/v1/src/main/credentials.js",
+      "sha256": "43fc64c6813923219d4a357aaba45bd5108dd62e91768aa8bd87b3b438511e30"
+    },
+    {
+      "original": "src/main/main.js",
+      "path": "legacy/v1/src/main/main.js",
+      "sha256": "4be8b727b7fcfa69e9cc561b9a2872a23687de62c9ae11a836056f932d758ed9"
+    },
+    {
+      "original": "src/main/setup.css",
+      "path": "legacy/v1/src/main/setup.css",
+      "sha256": "dc8554899940fcb901c66c8ed07789024474b7d3ad958c873b5288d53b3ab9bc"
+    },
+    {
+      "original": "src/main/setup.html",
+      "path": "legacy/v1/src/main/setup.html",
+      "sha256": "cb7acef83ddc7c6b7f16ed37287424609066720ae2c582135240bd938fd517c3"
+    },
+    {
+      "original": "src/main/setup.js",
+      "path": "legacy/v1/src/main/setup.js",
+      "sha256": "ce817a338620592d95b00fa1fb26173012875fcca5cf4e94c811182900b61ea5"
+    },
+    {
+      "original": "src/preload/apple-music-preload.js",
+      "path": "legacy/v1/src/preload/apple-music-preload.js",
+      "sha256": "de6c8dbc0e8a8c70bbae21c8c3a53050f9f0484802d4695d77e797d33749f98d"
+    },
+    {
+      "original": "src/preload/credentials-preload.js",
+      "path": "legacy/v1/src/preload/credentials-preload.js",
+      "sha256": "3c954c1d2408d6a633a4aad0ac7750fb31ef2fecd114852e18458004d78be592"
+    },
+    {
+      "original": "src/preload/preload.js",
+      "path": "legacy/v1/src/preload/preload.js",
+      "sha256": "7ed13e0d81e153f934a9bf17680284c43a19c33b4b9d9a0a16a061d29591287a"
+    },
+    {
+      "original": "src/preload/setup-preload.js",
+      "path": "legacy/v1/src/preload/setup-preload.js",
+      "sha256": "feb127442d807723ae5032080eedf0b3add0b3b37e81af658501d5594be407ac"
+    },
+    {
+      "original": "start.bat",
+      "path": "legacy/v1/start.bat",
+      "sha256": "c5e1a4cc9b7ebd52f799f3ad2235c392850e7156ccfbdbbd20e56210c75f07fb"
+    },
+    {
+      "original": "start.sh",
+      "path": "legacy/v1/start.sh",
+      "sha256": "051b29a6db8fc478b3aad6a4b57de84b49ef0381beb2f1ed262956a9635e48c2"
+    },
+    {
+      "original": "test/docker-build-security.test.js",
+      "path": "legacy/v1/test/docker-build-security.test.js",
+      "sha256": "075e2b07018a6e89cf8fcda2060262561f3b8ac7f192176e1b4d2c97d2dc79cc"
+    },
+    {
+      "original": "test/electron/apple-music-action.test.js",
+      "path": "legacy/v1/test/electron/apple-music-action.test.js",
+      "sha256": "c1134085d48d0ac6d656c15d13c6162a426314440db9d6725f4e7baacdf25901"
+    },
+    {
+      "original": "test/electron/apple-music-browser.test.js",
+      "path": "legacy/v1/test/electron/apple-music-browser.test.js",
+      "sha256": "9f9936395c9356f240fa9b08b4029a4cffe2ed7129965f7dd9b233405a7b8a61"
+    },
+    {
+      "original": "test/electron/apple-music-preload.test.js",
+      "path": "legacy/v1/test/electron/apple-music-preload.test.js",
+      "sha256": "6ee5cb782fc1fc3b2d5a9e90f23c0f377730512f0021ffb173a21d2110b19edb"
+    },
+    {
+      "original": "test/electron/appliance-manifest.test.js",
+      "path": "legacy/v1/test/electron/appliance-manifest.test.js",
+      "sha256": "e5dd08fbad9d1cc2a2c0b69cd100c54b85697e731f983e6bd37a5569e73eca83"
+    },
+    {
+      "original": "test/electron/build-config.test.js",
+      "path": "legacy/v1/test/electron/build-config.test.js",
+      "sha256": "661052ef583d010d0f94623c148d2022d7fccbfd5f1f876915c6753f71aab081"
+    },
+    {
+      "original": "test/electron/ca-repair-admission.test.js",
+      "path": "legacy/v1/test/electron/ca-repair-admission.test.js",
+      "sha256": "57a6eaa9699fa957ef4c9b27d700a4307dea22e50007ce140f0241b79b81c411"
+    },
+    {
+      "original": "test/electron/credential-sentinel-smoke.test.js",
+      "path": "legacy/v1/test/electron/credential-sentinel-smoke.test.js",
+      "sha256": "e24e299d37e323c497b1ca74519435ac187ff10e67fad08c3fcc16d97f837b01"
+    },
+    {
+      "original": "test/electron/credentials-renderer.test.js",
+      "path": "legacy/v1/test/electron/credentials-renderer.test.js",
+      "sha256": "f63b25943c18772082c1ea7824906829f7095cad5959528b54ee885ad0451e34"
+    },
+    {
+      "original": "test/electron/credentials.test.js",
+      "path": "legacy/v1/test/electron/credentials.test.js",
+      "sha256": "c3c2194924fcc439d0e559cc8c5312d06a4092b9970628bce98b9b040711a092"
+    },
+    {
+      "original": "test/electron/desktop-state.test.js",
+      "path": "legacy/v1/test/electron/desktop-state.test.js",
+      "sha256": "4349367eee262134c145c4a0c773fda2762408bef6b3bd25aabdcec7af2dcb1f"
+    },
+    {
+      "original": "test/electron/diagnostic-export.test.js",
+      "path": "legacy/v1/test/electron/diagnostic-export.test.js",
+      "sha256": "60aaeec2b8b0817b048c7ca06310ced289d63ec3250bc19a4c0a44cccad0f66a"
+    },
+    {
+      "original": "test/electron/drm-build-config.test.js",
+      "path": "legacy/v1/test/electron/drm-build-config.test.js",
+      "sha256": "a84f26f4ef56ef7884e30d5d4215c31cd427bc545da49d3b2ea8d5f6a6da61ff"
+    },
+    {
+      "original": "test/electron/drm-builder-integration.test.js",
+      "path": "legacy/v1/test/electron/drm-builder-integration.test.js",
+      "sha256": "76e7344976f79158409ade61de81be2ccc2b920c0ac0c8ae1600b2611504c068"
+    },
+    {
+      "original": "test/electron/drm-runtime.test.js",
+      "path": "legacy/v1/test/electron/drm-runtime.test.js",
+      "sha256": "147d0659fac704c1bdac67b6be58f48f8153ff39767a12738384a6486b41aae3"
+    },
+    {
+      "original": "test/electron/drm-tools.test.js",
+      "path": "legacy/v1/test/electron/drm-tools.test.js",
+      "sha256": "313037f54d6909c23e559903e0cdb4298c79ddb699cc84481671fbf7e298b419"
+    },
+    {
+      "original": "test/electron/fixtures/appliance-manifest-document.js",
+      "path": "legacy/v1/test/electron/fixtures/appliance-manifest-document.js",
+      "sha256": "ea0b7a3cb5be741b4425d04c60fbe274b607d1ca66f37201ae87c1c56c49a8d7"
+    },
+    {
+      "original": "test/electron/fixtures/assert-public-release-blocked.js",
+      "path": "legacy/v1/test/electron/fixtures/assert-public-release-blocked.js",
+      "sha256": "bc3750dde16f09d97d24fc5cb133de2917d59a2561d70f536889b69780f90724"
+    },
+    {
+      "original": "test/electron/fixtures/create-synthetic-appliance.js",
+      "path": "legacy/v1/test/electron/fixtures/create-synthetic-appliance.js",
+      "sha256": "2253d9fe8c710f75fc2515f33029c20184632d08a4b6bd8667831a6a9b85af83"
+    },
+    {
+      "original": "test/electron/fixtures/wslinterop-incident-manifest.js",
+      "path": "legacy/v1/test/electron/fixtures/wslinterop-incident-manifest.js",
+      "sha256": "64cfe24beb962123ad3f593672917be1543f7fb18570d66628366a40b61041d9"
+    },
+    {
+      "original": "test/electron/local-poc-adoption.test.js",
+      "path": "legacy/v1/test/electron/local-poc-adoption.test.js",
+      "sha256": "19753572c74c1002870bddeef32fc72b2f26d115e4f2ddfacea58013b9ccadf9"
+    },
+    {
+      "original": "test/electron/local-poc-bootstrap.test.js",
+      "path": "legacy/v1/test/electron/local-poc-bootstrap.test.js",
+      "sha256": "68c2ff994076de6644c61755fde5a7db6e16505ec0234654d49a84869af91616"
+    },
+    {
+      "original": "test/electron/local-poc-migration-lock.test.js",
+      "path": "legacy/v1/test/electron/local-poc-migration-lock.test.js",
+      "sha256": "ee5fce0d55198e795c406e0e82de1e6994613e86d57bb53e6b27a0fd2c437e74"
+    },
+    {
+      "original": "test/electron/loopback-proxy.test.js",
+      "path": "legacy/v1/test/electron/loopback-proxy.test.js",
+      "sha256": "aa529cd0a6ac036220371d81b2cb7ea1ec7bed9d6b8cc6c97e01966ae3a8db7c"
+    },
+    {
+      "original": "test/electron/main-privileged-pages.test.js",
+      "path": "legacy/v1/test/electron/main-privileged-pages.test.js",
+      "sha256": "07b37b3eea5cfaebca8cba0e414d20a9a9627c903a1c94de4fe60cf7663d3e13"
+    },
+    {
+      "original": "test/electron/main-startup.test.js",
+      "path": "legacy/v1/test/electron/main-startup.test.js",
+      "sha256": "3592575646f3b323bc23ad22c997aa952a819a0ed26536a53579439425dd6a2f"
+    },
+    {
+      "original": "test/electron/official-web-player.test.js",
+      "path": "legacy/v1/test/electron/official-web-player.test.js",
+      "sha256": "db6fe25607bdad51333e9240d09b62d614e88b532f55b6eb2396f8fc8c5c6d42"
+    },
+    {
+      "original": "test/electron/packaging-tools.test.js",
+      "path": "legacy/v1/test/electron/packaging-tools.test.js",
+      "sha256": "3fec8d0ad0544cd217cb549bc8afb30dfd642e365d670e95bf55e36518d4b85f"
+    },
+    {
+      "original": "test/electron/playback-support.test.js",
+      "path": "legacy/v1/test/electron/playback-support.test.js",
+      "sha256": "a9107cf1b73664ec193a0ed0f08526919e20abf6c93de9bd6a33b80eb0f997c7"
+    },
+    {
+      "original": "test/electron/preload.test.js",
+      "path": "legacy/v1/test/electron/preload.test.js",
+      "sha256": "604b17f02c9810c476fb837bc59eaed01b3e7c10709b56ae121cd533f2d8b9e9"
+    },
+    {
+      "original": "test/electron/process-runner.test.js",
+      "path": "legacy/v1/test/electron/process-runner.test.js",
+      "sha256": "d637d8548ae561c9db0e7c426368273eb4d898b1be71d912896c0b508d1a1893"
+    },
+    {
+      "original": "test/electron/release-manifest.test.js",
+      "path": "legacy/v1/test/electron/release-manifest.test.js",
+      "sha256": "e3526a9b29973127261269d62923af8235769bdf65b021a41bb7478345a26d38"
+    },
+    {
+      "original": "test/electron/setup-controller.test.js",
+      "path": "legacy/v1/test/electron/setup-controller.test.js",
+      "sha256": "a3ba8e84b614d3f691b152c179537fcd01940e9a411d57877f6c1b3d2671f932"
+    },
+    {
+      "original": "test/electron/setup-preload.test.js",
+      "path": "legacy/v1/test/electron/setup-preload.test.js",
+      "sha256": "641ce26d47647eec5b65ca7ea6d903822f79833aa6126a29b562b45ab93c335a"
+    },
+    {
+      "original": "test/electron/setup-renderer.test.js",
+      "path": "legacy/v1/test/electron/setup-renderer.test.js",
+      "sha256": "90d663d1cd7bbf051a6724b32a98bdac3e612e83519519fc137b7e07b3a99d37"
+    },
+    {
+      "original": "test/electron/synthetic-appliance-fixture.test.js",
+      "path": "legacy/v1/test/electron/synthetic-appliance-fixture.test.js",
+      "sha256": "0bbdecc5e8a6922b965f67e453335aec7e020ff67490aa8e6a410e14b05d9240"
+    },
+    {
+      "original": "test/electron/windows-capabilities.test.js",
+      "path": "legacy/v1/test/electron/windows-capabilities.test.js",
+      "sha256": "1a97cc89bced21e2ecf62484a03001f69e2802fab78e843b49d16f694f77f0ac"
+    },
+    {
+      "original": "test/electron/wsl-manager.test.js",
+      "path": "legacy/v1/test/electron/wsl-manager.test.js",
+      "sha256": "85c8cf7e295dd487932a68be27586876c57ffffb7b3c321e45fd93c59f87fbe3"
+    },
+    {
+      "original": "test/electron/wsl-mount-smoke.test.js",
+      "path": "legacy/v1/test/electron/wsl-mount-smoke.test.js",
+      "sha256": "a4803d88944b7770cafb50222b4368e4879be0732d4e54f4cb71bbd74765d325"
+    },
+    {
+      "original": "test/electron/wsl-repair-smoke.test.js",
+      "path": "legacy/v1/test/electron/wsl-repair-smoke.test.js",
+      "sha256": "ac3a13543b8f99beffbeaea171e8e720e972b05f3337d4f71a7c2890ce060882"
+    },
+    {
+      "original": "test/electron/wsl-smoke.test.js",
+      "path": "legacy/v1/test/electron/wsl-smoke.test.js",
+      "sha256": "add11f0b5213df58afd8d2c0eec6fa42c8b2fb4611f424269a5210c87e8eac58"
+    },
+    {
+      "original": "test/electron/wslinterop-recovery.test.js",
+      "path": "legacy/v1/test/electron/wslinterop-recovery.test.js",
+      "sha256": "f81ad6c9c509b5fdf43cac12424d1d04db2c9a31afe8dd3038ffecc31811b068"
+    },
+    {
+      "original": "e2e/web-queue.spec.cjs",
+      "sha256": "47e0d6ae649c6d2e47c936e7dcffa99c881489a18320c5d1224507c5f2086fa5",
+      "path": "legacy/v1/e2e/web-queue.spec.cjs"
+    },
+    {
+      "original": "e2e/fixtures/apple-browser-close-smoke.cjs",
+      "sha256": "a6a5b2244874441df4557306c2d4c1e8f5cec33e6d3693e9449c1326f561a53f",
+      "path": "legacy/v1/e2e/fixtures/apple-browser-close-smoke.cjs"
+    },
+    {
+      "original": "e2e/fixtures/apple-music-action-smoke.cjs",
+      "sha256": "e6cb15a6477c29f2a9daf37411e72837ceb68f9a95a037ccf6789c24c759afd1",
+      "path": "legacy/v1/e2e/fixtures/apple-music-action-smoke.cjs"
+    },
+    {
+      "path": "legacy/v1/e2e/apple-music-action.spec.cjs",
+      "sha256": "5372ed8a74e4f44403fea17857b932f440eb000d9748a148feabb668bc39b7b3",
+      "original": "e2e/apple-music-action.spec.cjs"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+services:
+  app:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile
+    init: true
+    privileged: true
+    ports:
+      - "127.0.0.1:${AMDL_HOST_PORT:-8080}:8080"
+    restart: unless-stopped
+    mem_limit: 4g
+    environment:
+      GOGC: "20"
+      AMDL_CONFIG: /app/working/config.yaml
+      AMDL_DATA_DIR: /app/data
+      AMDL_DOWNLOAD_DIR: /app/downloads
+      AMDL_RUNTIME: docker
+      # The browser sees the published host port, not the container listener.
+      # Pass that non-secret authority component explicitly so the backend can
+      # keep its DNS-rebinding guard strict when AMDL_HOST_PORT is customized.
+      AMDL_WEB_ORIGIN_PORT: ${AMDL_HOST_PORT:-8080}
+      AMDL_STOREFRONT: ${STOREFRONT:-us}
+      # Only this non-secret path enters Config.Env. The ignored host .env is
+      # mounted read-only below and parsed directly into process memory.
+      AMDL_CREDENTIALS_FILE: /run/secrets/amdl-credentials.env
+    volumes:
+      - ${DOWNLOADS_DIR:-./downloads}:/app/downloads
+      # Docker Desktop exposes Windows bind mounts as mode 0777 inside Linux,
+      # so jobs.db and the local API capability must live in a private Docker
+      # volume rather than a host data directory.
+      - amdl-data:/app/data
+      - ${WRAPPER_DATA_DIR:-./wrapper-data}:/app/rootfs/data
+      - type: bind
+        source: ${AMDL_DOCKER_CREDENTIALS_FILE:-./.env.example}
+        target: /run/secrets/amdl-credentials.env
+        read_only: true
+        bind:
+          create_host_path: false
+
+volumes:
+  amdl-data:

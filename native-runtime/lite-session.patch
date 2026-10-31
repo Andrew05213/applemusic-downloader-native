@@ -1,0 +1,98 @@
+diff --git a/lite/lite_main.cpp b/lite/lite_main.cpp
+--- a/lite/lite_main.cpp
++++ b/lite/lite_main.cpp
+@@ -22,2 +22,3 @@
+ #include "logger.h"
++#include "native_login.h"
+@@ -37,2 +38,4 @@
+ static bool g_login_only = false;
++bool g_native_login = false;
++static bool g_native_service = false;
+ static std::string g_login_credentials;
+@@ -233,2 +236,3 @@
++#include "native_service.h"
+ static void handle_m3u8(const httplib::Request& req, httplib::Response& res) {
+@@ -510,2 +514,8 @@
+         else if (arg == "--code-from-file") g_code_from_file = true;
++        else if (arg == "--native-login-stdin") {
++            g_native_login = true;
++            g_login_only = true;
++            if (!native_credentials(g_login_credentials)) return 1;
++        }
++        else if (arg == "--native-service") g_native_service = true;
+@@ -548,3 +558,6 @@
+         g_resolved_device_info = resolve_device_info(username);
++        native_wipe(g_login_credentials);
++        native_wipe(password);
++        native_wipe(username);
+@@ -577,3 +590,4 @@
+         waitpid(pid, &status, 0);
++        if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) return 1;
+@@ -636,2 +650,3 @@
+     svr.Get("/m3u8", handle_m3u8);
++    native_routes(svr);
+diff --git a/lite/auth.cpp b/lite/auth.cpp
+--- a/lite/auth.cpp
++++ b/lite/auth.cpp
+@@ -2,2 +2,3 @@
+ #include "cJSON.h"
++#include "native_login.h"
+@@ -62,2 +63,11 @@
+     if (need2FA) {
++        if (g_native_login) {
++            std::string code;
++            if (!native_code(code) || !amPassword) _exit(1);
++            std::string combined = std::string(amPassword) + code;
++            memset(amPassword, 0, strlen(amPassword)); free(amPassword);
++            amPassword = strdup(combined.c_str());
++            native_wipe(code); native_wipe(combined);
++        } else {
+         std::string path = std::string(g_base_dir) + "/2fa.txt";
+@@ -117,3 +127,4 @@
+             }
+         }
++        }
+     }
+@@ -132,5 +143,1 @@
+-    LOG_DEBUG("cred submit: user=%.32s len=%zu pass_len=%zu",
+-              amUsername ? amUsername : "(null)", username.size,
+-              amPassword ? strlen(amPassword) : 0);
+diff --git a/lite/playback.cpp b/lite/playback.cpp
+--- a/lite/playback.cpp
++++ b/lite/playback.cpp
+@@ -7,3 +7,4 @@
+ #include <mutex>
++#include <map>
+ #include <dlfcn.h>
+@@ -245,6 +246,31 @@
+                 LOG_WARN("content template capture failed");
+             }
+         }
+     }
+     return result;
+ }
++// Native CBCS sample operation: preserve the context for one owned stream.
++// The persistent /key payload is deliberately not interpreted as AES bytes.
++struct NativeStream { std::string adam, uri; void* kd; };
++static std::map<std::string, NativeStream> native_streams;
++bool native_decrypt(const std::string& stream, const std::string& adam,
++                    const std::string& uri, const std::string& input,
++                    std::string& output) {
++    std::lock_guard<std::mutex> lock(g_playback_mutex);
++    auto found = native_streams.find(stream);
++    if (found == native_streams.end() || found->second.adam != adam || found->second.uri != uri) {
++        if (found == native_streams.end() && native_streams.size() >= 32) return false;
++        if (adam != "0" && uri == "skd://itunes.apple.com/P000000000/s1/e1") return false;
++        void* ptr = getKdContext(adam, uri);
++        if (!ptr || !*(void**)ptr) return false;
++        native_streams[stream] = NativeStream{adam, uri, *(void**)ptr};
++        found = native_streams.find(stream);
++    }
++    output = input;
++    NfcRKVnxuKZy04KWbdFu71Ou(found->second.kd, 5, &output[0], &output[0], output.size());
++    return true;
++}
++void native_decrypt_close(const std::string& stream) {
++    std::lock_guard<std::mutex> lock(g_playback_mutex);
++    native_streams.erase(stream);
++}

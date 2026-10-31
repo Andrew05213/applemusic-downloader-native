@@ -1,0 +1,11 @@
+diff --git a/lite/auth.cpp b/lite/auth.cpp
+--- a/lite/auth.cpp
++++ b/lite/auth.cpp
+@@ -1,1 +1,3 @@
+ #include "internal.h"
++#define AMDL_STORE_BRIDGE_IMPLEMENTATION
++#include "native_store_bridge.h"
+@@ -142,2 +144,3 @@
+     _ZNSt6__ndk110shared_ptrIN17storeservicescore16AuthenticateFlowEE11make_sharedIJRNS0_INS1_14RequestContextEEEEEES3_DpOT_(&flow, &ctx);
++    if (g_native_login && !native_store_bridge_install()) return false;
+     _ZN17storeservicescore16AuthenticateFlow3runEv(flow.obj);

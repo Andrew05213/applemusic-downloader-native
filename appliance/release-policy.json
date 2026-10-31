@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "publicReleaseAllowed": false,
+  "reviewedAt": "2026-07-29",
+  "blockers": [
+    "The legacy Wrapper executables are provenance-mismatched inputs and must never replace the reproducibly rebuilt outputs.",
+    "No verified Wrapper redistribution license is recorded for the source-built outputs.",
+    "Android/Apple runtime material and runv3 CDM material lack verified redistribution authorization."
+  ],
+  "allowedUses": [
+    "local-poc",
+    "private-ci",
+    "private-build"
+  ],
+  "requiredBeforePublicRelease": [
+    "Record immutable source provenance for every redistributed binary.",
+    "Record verified licenses and preserve all required notices.",
+    "Record explicit redistribution authorization for Android, Apple, and CDM material.",
+    "Independently reproduce and review the locked Wrapper and Android main output hashes."
+  ]
+}

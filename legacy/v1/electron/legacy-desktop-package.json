@@ -1,0 +1,121 @@
+{
+  "name": "apple-music-downloader",
+  "version": "1.4.3",
+  "description": "Apple Music native desktop development: app-owned login, Lite/QEMU service and local UI.",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "node electron/start-native.js",
+    "start:native": "node electron/start-native.js",
+    "install:drm": "node electron/install-drm.js",
+    "test": "node --test \"test/**/*.test.js\"",
+    "test:electron": "node --test \"test/electron/*.test.js\"",
+    "test:web": "playwright test",
+    "fixture:appliance:ci": "node test/electron/fixtures/create-synthetic-appliance.js",
+    "verify:release-gates": "node test/electron/fixtures/assert-public-release-blocked.js",
+    "verify:appliance:static": "bash appliance/scripts/verify.sh --dist appliance/dist",
+    "build:windows-helper": "node electron/build-windows-helper.js",
+    "build:native-backend": "node electron/build-native-backend.js",
+    "build:native-service": "node electron/build-native-service.js",
+    "build:native-runtime": "node electron/build-native-runtime.js",
+    "test:native-backend": "node --test test/native/native-backend.smoke.cjs",
+    "test:native-guest": "node test/native/native-guest-live.cjs",
+    "prepare:appliance": "node electron/inject-appliance-manifest.js --private",
+    "prepare:appliance:offline": "node electron/inject-appliance-manifest.js --private --offline",
+    "dist:win": "npm run dist:win:online",
+    "dist:win:online": "node electron/native-release-not-ready.js && npm run build:windows-helper && npm run prepare:appliance && electron-builder --win nsis --x64 --config electron-builder.base.cjs --publish never && node electron/verify-packaged-resources.js online && node electron/write-checksums.js dist online",
+    "dist:win:offline": "node electron/native-release-not-ready.js && npm run build:windows-helper && npm run prepare:appliance:offline && electron-builder --win nsis --x64 --config electron-builder.offline.yml --publish never && node electron/verify-packaged-resources.js offline && node electron/write-checksums.js dist offline",
+    "build:wsl-rootfs": "bash appliance/scripts/build-all.sh --channel local-poc",
+    "measure:wsl-native-pins": "bash appliance/scripts/measure-native-pins.sh",
+    "verify:wsl-rootfs": "bash appliance/scripts/verify.sh --dist appliance/dist --require-artifacts",
+    "build:source-snapshot": "bash appliance/scripts/build-source-snapshot.sh --repo-root . --dist appliance/dist",
+    "verify:wsl-reproducible": "bash appliance/scripts/verify-reproducible.sh",
+    "smoke:wsl": "node electron/run-wsl-smoke.js",
+    "smoke:wsl:lifecycle": "node electron/run-wsl-smoke.js --lifecycle",
+    "smoke:wsl:repair": "node electron/run-wsl-repair-smoke.js",
+    "smoke:wsl:adopt-local-poc": "node electron/run-wsl-smoke.js --adopt-local-poc",
+    "smoke:wsl:bootstrap-local-poc-identity": "node electron/run-wsl-smoke.js --bootstrap-local-poc-identity",
+    "smoke:wsl:credentials": "node electron/run-credential-sentinel-smoke.js",
+    "smoke:drm": "node electron/run-drm-smoke.js"
+  },
+  "keywords": [],
+  "author": "Andrew05213",
+  "license": "ISC",
+  "devDependencies": {
+    "@electron/asar": "3.2.18",
+    "@electron/fuses": "1.8.0",
+    "@playwright/test": "^1.54.1",
+    "electron": "https://codeload.github.com/castlabs/electron-releases/tar.gz/9b90904e4fe174122b99eca5b7b967aa79681cc6",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "io.github.andrew05213.applemusicdownloader",
+    "productName": "Apple Music Downloader",
+    "directories": {
+      "output": "dist"
+    },
+    "forceCodeSigning": false,
+    "files": [
+      "src/**",
+      "electron/appliance-manifest.js",
+      "electron/apple-music-browser.js",
+      "electron/credentials.js",
+      "electron/playback-support.js",
+      "electron/official-web-player.js",
+      "electron/desktop-state.js",
+      "electron/diagnostic-export.js",
+      "electron/loopback-proxy.js",
+      "electron/process-runner.js",
+      "electron/release-manifest.js",
+      "electron/setup-controller.js",
+      "electron/windows-capabilities.js",
+      "electron/windows-support.js",
+      "electron/wslinterop-recovery.js",
+      "electron/wsl-manager.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "electron/bin/amdl-windows-probe.exe",
+        "to": "bin/amdl-windows-probe.exe"
+      },
+      {
+        "from": "electron/bin/amdl-wslinterop-bootstrap.exe",
+        "to": "bin/amdl-wslinterop-bootstrap.exe"
+      },
+      {
+        "from": "electron/generated/wslinterop-recovery.json",
+        "to": "recovery/wslinterop-recovery.json"
+      },
+      {
+        "from": "electron/generated/appliance-manifest.json",
+        "to": "appliance/manifest.json"
+      },
+      {
+        "from": "docs/legacy/NOTICE-v1",
+        "to": "NOTICE"
+      },
+      {
+        "from": "apple-music-downloader/utils/runv2/LICENSE",
+        "to": "third-party-licenses/runv2-LICENSE"
+      }
+    ],
+    "win": {
+      "signAndEditExecutable": true,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": false,
+      "deleteAppDataOnUninstall": false,
+      "include": "electron/installer.nsh",
+      "artifactName": "AppleMusicDownloader-${version}-Setup.${ext}"
+    }
+  }
+}

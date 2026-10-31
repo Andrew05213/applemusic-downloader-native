@@ -1,0 +1,30 @@
+# Third-party notices and provenance: native 2.0
+
+The maintainer enabled the native public build gate. This notice is not a
+complete license clearance or a source offer; unresolved obligations remain.
+See docs/compliance/native-2.0-status.md in the source repository for the open
+corresponding-source, dependency and authorization review.
+
+The native runtime uses Wrapper Lite from WorldObservationLog/wrapper at
+2fd7e0eaef081f93cf687428b965674937832ba4. Its MIT license is included in
+native-runtime/notices/wrapper-LICENSE. Local patches and input identities are
+recorded in native-runtime/inputs.lock.json and the runtime build evidence.
+
+QEMU 11.1.0, the Debian Linux kernel and BusyBox are included as runtime
+components. QEMU license texts are in native-runtime/notices. Their exact
+corresponding source, build inputs and associated notices still require review;
+do not represent this notice as satisfying source-distribution obligations.
+
+cJSON (copyright 2009-2017 Dave Gamble and contributors, MIT) and Dobby
+(Apache-2.0) are pinned build inputs. Their license texts are included under
+third-party-licenses. Go dependency notices, Android components, QEMU DLLs and
+firmware still require an inventory and delivery review before redistribution.
+
+The imported downloader attributes the original script to Sorrow. Its complete
+upstream provenance and redistribution rights are not verified. The MIT license
+for utils/runv2 is included in third-party-licenses/runv2-LICENSE.
+Android/Apple runtime material and CDM-related material require separate
+authorization review. No rights in third-party material are granted here.
+
+The historical WSL Appliance notice is retained at docs/legacy/NOTICE-v1 and
+is not a description of the native 2.0 installer.

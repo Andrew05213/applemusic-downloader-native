@@ -1,0 +1,2933 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index bf0694d90f5394823645c50f908876a8534d01a8..d7e7f750c0541d504e84a4ff3342910b2dd3252a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -41,17 +41,27 @@ FetchContent_MakeAvailable(dobby)
+ set(CMDLINE_SOURCE cmdline.c)
+ set(HANDLE_SOURCE main.cpp)
+ set(MAIN_SOURCE main.c)
++set(URL_REQUEST_SHIM_SOURCE url_request_shim.cpp)
++set(NATIVE_ABI_HARNESS_SOURCE native_abi_harness.c)
++set(NETWORK_PREFLIGHT_SOURCE network_preflight.c)
++set(NETWORK_PREFLIGHT_MAIN_SOURCE network_preflight_main.c)
+ set(WRAPPER_SOURCE wrapper.c)
+ set(WRAPPER_ROOTLESS_SOURCE wrapper-rootless.c)
+ 
+ add_library(cmdline_object OBJECT ${CMDLINE_SOURCE})
+ add_library(handle_object OBJECT ${HANDLE_SOURCE})
+ 
+-add_executable(main ${MAIN_SOURCE} $<TARGET_OBJECTS:cmdline_object> $<TARGET_OBJECTS:handle_object>)
++add_executable(main ${MAIN_SOURCE} ${URL_REQUEST_SHIM_SOURCE} $<TARGET_OBJECTS:cmdline_object> $<TARGET_OBJECTS:handle_object>)
++add_executable(native_abi_harness ${NATIVE_ABI_HARNESS_SOURCE} ${URL_REQUEST_SHIM_SOURCE} $<TARGET_OBJECTS:cmdline_object> $<TARGET_OBJECTS:handle_object>)
++add_executable(amdl_network_preflight ${NETWORK_PREFLIGHT_MAIN_SOURCE} ${NETWORK_PREFLIGHT_SOURCE})
+ 
+ target_include_directories(main PRIVATE ${cjson_SOURCE_DIR})
+ target_link_libraries(main PRIVATE cjson)
+ target_link_libraries(main PRIVATE dobby)
++target_include_directories(native_abi_harness PRIVATE ${cjson_SOURCE_DIR})
++target_compile_definitions(native_abi_harness PRIVATE AMDL_NATIVE_ABI_HARNESS=1 MyRelease)
++target_link_libraries(native_abi_harness PRIVATE cjson)
++target_link_libraries(native_abi_harness PRIVATE dobby)
+ 
+ set_target_properties(main PROPERTIES 
+     COMPILE_DEFINITIONS "MyRelease"
+@@ -73,6 +83,17 @@ target_link_libraries(main PRIVATE
+     ${MEDIAPLATFORM_LIB}
+     ${LOG_SHARED_LIB}
+ )
++target_link_libraries(native_abi_harness PRIVATE
++    ${CXX_SHARED_LIB}
++    ${ANDROIDAPPMUSIC_LIB}
++    ${STORESERVICESCORE_LIB}
++    ${MEDIAPLATFORM_LIB}
++    ${LOG_SHARED_LIB}
++)
++target_link_libraries(amdl_network_preflight PRIVATE
++    ${CURL_SHARED_LIB}
++    ${SYSTEM_LIB_DIR}/libxml2.so
++)
+ 
+ get_target_property(MAIN_COMPILE_DEFINITIONS main COMPILE_DEFINITIONS)
+ if(NOT "MyRelease" IN_LIST MAIN_COMPILE_DEFINITIONS)
+diff --git a/import.h b/import.h
+index b105ac343ae7d2dc5e97784e4bce1ec949d442ec..9526d58a0b6a9dd77a58c8bf8b853799217c1261 100644
+--- a/import.h
++++ b/import.h
+@@ -105,7 +105,7 @@ extern void
+ _ZN22SVPlaybackLeaseManagerC2ERKNSt6__ndk18functionIFvRKiEEERKNS1_IFvRKNS0_10shared_ptrIN17storeservicescore19StoreErrorConditionEEEEEE(
+ 	void *, void *, void *);
+ extern void _ZN22SVPlaybackLeaseManager25refreshLeaseAutomaticallyERKb(void *, uint8_t *);
+-extern void _ZN22SVPlaybackLeaseManager12requestLeaseERKb(void *, uint8_t *);
++extern uint8_t _ZN22SVPlaybackLeaseManager12requestLeaseERKb(void *, uint8_t *);
+ 
+ // storeservicescore::ProtocolDialogResponse::setSelectedButton(std::__ndk1::shared_ptr<storeservicescore::ProtocolButton>
+ // const&)
+@@ -251,18 +251,7 @@ extern void _ZN21SVFootHillSessionCtrl16resetAllContextsEv(void *);
+ extern int __android_log_print(int prio, const char *tag, const char *fmt, ...);
+ extern int __android_log_write(int prio, const char *tag, const char *text);
+ 
+-extern void *_ZTVNSt6__ndk120__shared_ptr_emplaceIN13mediaplatform11HTTPMessageENS_9allocatorIS2_EEEE;
+-extern void *_ZN13mediaplatform11HTTPMessageC2ENSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES7_(void *,  union std_string *, union std_string *);
+-extern void _ZN13mediaplatform11HTTPMessage9setHeaderERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES9_(void *, union std_string *, union std_string *);
+-extern void _ZN13mediaplatform11HTTPMessage11setBodyDataEPcm(void *,char *, u_long);
+ extern void *_ZN17storeservicescore10DeviceGUID4guidEv(void *, void *);
+-extern char *_ZNK13mediaplatform4Data5bytesEv(void *);
+-extern void *_ZN17storeservicescore10URLRequestC2ERKNSt6__ndk110shared_ptrIN13mediaplatform11HTTPMessageEEERKNS2_INS_14RequestContextEEE(void *, struct shared_ptr *, struct shared_ptr *);
+-extern void *_ZN17storeservicescore10URLRequest19setRequestParameterERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES9_(void *, union std_string *, union std_string *);
+-extern void *_ZN17storeservicescore10URLRequest3runEv(void *);
+-extern struct shared_ptr *_ZNK17storeservicescore10URLRequest5errorEv(void *);
+-extern struct shared_ptr *_ZNK17storeservicescore10URLRequest8responseEv(void *);
+-extern struct shared_ptr *_ZNK17storeservicescore11URLResponse18underlyingResponseEv(void *);
+ 
+ extern void * _ZN17storeservicescore15PurchaseRequestC2ERKNSt6__ndk110shared_ptrINS_14RequestContextEEE(void *, struct shared_ptr *);
+ extern void *_ZN17storeservicescore15PurchaseRequest23setProcessDialogActionsEb(void *, int);
+@@ -274,7 +263,6 @@ extern struct shared_ptr *_ZN17storeservicescore16PurchaseResponse5errorEv(void
+ extern struct std_vector _ZNK17storeservicescore16PurchaseResponse5itemsEv(void *);
+ extern struct std_vector _ZNK17storeservicescore12PurchaseItem6assetsEv(void *);
+ extern union std_string *_ZNK17storeservicescore13PurchaseAsset3URLEv(void *, void *);
+-extern int _ZNK17storeservicescore19StoreErrorCondition9errorCodeEv(void *);
+ extern const char *_ZNK17storeservicescore19StoreErrorCondition4whatEv(void *);
+ extern struct shared_ptr *_ZNK17storeservicescore20AuthenticateResponse5errorEv(void *);
+ extern union std_string *_ZNK17storeservicescore20AuthenticateResponse15customerMessageEv(void *);
+@@ -330,4 +318,4 @@ const char *const fairplayCert = "MIIEzjCCA7agAwIBAgIIAXAVjHFZDjgwDQYJKoZIhvcNAQ
+ 								 "ymdxZ74WGZMuVv3ueJKcxG1jAhCRhr0lb6QaPaQQSNW+xnoesb3CLA0RzrcgBp/9WFZNdttJOS"
+ 								 "yC93lQmiE0r5RqPpe/IWUzwoZxri8qnsghVFxCBEcMB+U4PJR8WeAkPrji8po2JLYurvgNRhGk"
+ 								 "DKcAFPuGEpXdF86hPts+07zazsP0fBjBSVgP3jqb8G31w5W+O+wBW0B9uCf3s0vXU4LuJTAyww"
+-								 "s2ImZ7O/AaY/uXWOyIUMUKPgL1/QJieB7pBoENIJ2CeJS2M3iv00ssmCmTEJ";
+\ No newline at end of file
++								 "s2ImZ7O/AaY/uXWOyIUMUKPgL1/QJieB7pBoENIJ2CeJS2M3iv00ssmCmTEJ";
+diff --git a/main.c b/main.c
+index fbc79315b1ffcb5737de6738bab51234e234f35e..95e520fe73307329f0bf4540cfdc803f42fba883 100644
+--- a/main.c
++++ b/main.c
+@@ -1,4 +1,7 @@
+ #include <errno.h>
++#include <fcntl.h>
++#include <inttypes.h>
++#include <stdint.h>
+ #include <setjmp.h>
+ #include <signal.h>
+ #include <stdio.h>
+@@ -14,6 +17,7 @@
+ #include <sys/stat.h>
+ 
+ #include "import.h"
++#include "url_request_shim.h"
+ #include "cmdline.h"
+ #include "cJSON.h"
+ #ifndef MyRelease
+@@ -25,6 +29,8 @@ static uint8_t leaseMgr[16];
+ static struct shared_ptr reqCtx;
+ struct gengetopt_args_info args_info;
+ char *amUsername, *amPassword;
++static size_t amUsernameCapacity, amPasswordCapacity, amPasswordBaseLength;
++static int amdl_resume_session;
+ struct shared_ptr GUID;
+ int decryptCount = 1000;
+ int offlineFlag;
+@@ -34,6 +40,238 @@ static char *g_storefront_id = NULL;
+ static char *g_dev_token = NULL;
+ static char *g_music_token = NULL;
+ 
++#define AMDL_LOGIN_DOCUMENT_MAX (256 * 1024)
++#define AMDL_DEV_TOKEN_RESPONSE_MAX (256 * 1024)
++#define AMDL_DEV_TOKEN_MAX (64 * 1024)
++#define AMDL_GUID_MAX (4 * 1024)
++#define AMDL_MUSIC_TOKEN_REQUEST_MAX (256 * 1024)
++#define AMDL_MUSIC_TOKEN_RESPONSE_MAX (256 * 1024)
++#define AMDL_MUSIC_TOKEN_MAX (64 * 1024)
++
++static void wipe_memory(void *buffer, size_t length) {
++    volatile unsigned char *cursor = (volatile unsigned char *)buffer;
++    while (length-- > 0) {
++        *cursor++ = 0;
++    }
++}
++
++static void amdl_write_literal(const char *literal, size_t length) {
++    if (literal == NULL) {
++        return;
++    }
++    while (length > 0) {
++        ssize_t written = write(STDERR_FILENO, literal, length);
++        if (written < 0 && errno == EINTR) {
++            continue;
++        }
++        if (written <= 0) {
++            return;
++        }
++        literal += (size_t)written;
++        length -= (size_t)written;
++    }
++}
++
++static void amdl_log_data_view_failure(const char *stage, int reason) {
++    static const char *const suffixes[] = {
++        "ok\n",
++        "invalid_argument\n",
++        "length_exception\n",
++        "bytes_exception\n",
++        "bytes_null\n",
++    };
++    if (stage == NULL) {
++        return;
++    }
++    amdl_write_literal(stage, strlen(stage));
++    if (reason < 0 || reason >= (int)(sizeof(suffixes) / sizeof(suffixes[0]))) {
++        reason = 1;
++    }
++    amdl_write_literal(suffixes[reason], strlen(suffixes[reason]));
++}
++
++static void wipe_cjson_string(cJSON *item) {
++    if (cJSON_IsString(item) && item->valuestring != NULL) {
++        wipe_memory(item->valuestring, strlen(item->valuestring) + 1);
++    }
++}
++
++static void wipe_login_credentials(void) {
++    if (amUsername != NULL) {
++        wipe_memory(amUsername, amUsernameCapacity);
++        free(amUsername);
++        amUsername = NULL;
++    }
++    if (amPassword != NULL) {
++        wipe_memory(amPassword, amPasswordCapacity);
++        free(amPassword);
++        amPassword = NULL;
++    }
++    amUsernameCapacity = 0;
++    amPasswordCapacity = 0;
++    amPasswordBaseLength = 0;
++}
++
++static int read_two_factor_code_file(const char *path, char code[7]) {
++    if (path == NULL || code == NULL) {
++        return -1;
++    }
++    int fd = open(path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
++    if (fd < 0) {
++        return errno == ENOENT ? 0 : -1;
++    }
++    struct stat info = {0};
++    if (fstat(fd, &info) != 0 || !S_ISREG(info.st_mode) || info.st_size != 6) {
++        close(fd);
++        unlink(path);
++        return -1;
++    }
++    size_t used = 0;
++    while (used < 7) {
++        ssize_t count = read(fd, code + used, 7 - used);
++        if (count == 0) {
++            break;
++        }
++        if (count < 0) {
++            if (errno == EINTR) {
++                continue;
++            }
++            close(fd);
++            wipe_memory(code, 7);
++            unlink(path);
++            return -1;
++        }
++        used += (size_t)count;
++    }
++    int close_result = close(fd);
++    int unlink_result = unlink(path);
++    if (close_result != 0 || unlink_result != 0 || used != 6) {
++        wipe_memory(code, 7);
++        return -1;
++    }
++    for (size_t index = 0; index < 6; ++index) {
++        if (code[index] < '0' || code[index] > '9') {
++            wipe_memory(code, 7);
++            return -1;
++        }
++    }
++    code[6] = '\0';
++    return 1;
++}
++
++static int amdl_apply_two_factor_code(const char code[7]) {
++    const size_t passLen = amPasswordBaseLength;
++    size_t index;
++
++    if (amPassword == NULL || code == NULL || passLen > SIZE_MAX - 6 ||
++        passLen + 6 >= amPasswordCapacity || code[6] != '\0') {
++        return 0;
++    }
++    for (index = 0; index < 6; ++index) {
++        if (code[index] < '0' || code[index] > '9') {
++            return 0;
++        }
++    }
++    memcpy(amPassword + passLen, code, 6);
++    amPassword[passLen + 6] = '\0';
++    return 1;
++}
++
++/* Native startup markers contain fixed stage labels only. They exist so an
++ * initialization watchdog can name the stage that
++ * stopped instead of reporting an unlocatable silent timeout. */
++static void amdl_startup_marker(const char *stage) {
++    if (stage == NULL) {
++        return;
++    }
++    fprintf(stderr, "[wrapper-native] startup %s\n", stage);
++    fflush(stderr);
++}
++
++static int read_login_fd_credentials(void) {
++    const char *raw_fd = getenv("AMDL_WRAPPER_LOGIN_FD");
++    if (raw_fd == NULL || *raw_fd == '\0') {
++        return 0;
++    }
++    char *end = NULL;
++    errno = 0;
++    long parsed = strtol(raw_fd, &end, 10);
++    unsetenv("AMDL_WRAPPER_LOGIN_FD");
++    if (errno != 0 || end == raw_fd || *end != '\0' || parsed < 3 || parsed > 1024) {
++        fprintf(stderr, "[!] invalid login credential descriptor\n");
++        return -1;
++    }
++
++    int fd = (int)parsed;
++    unsigned char *document = calloc(AMDL_LOGIN_DOCUMENT_MAX + 2, 1);
++    if (document == NULL) {
++        close(fd);
++        return -1;
++    }
++    amdl_startup_marker("login_fd_read_begin");
++    size_t used = 0;
++    while (used <= AMDL_LOGIN_DOCUMENT_MAX) {
++        ssize_t count = read(fd, document + used, AMDL_LOGIN_DOCUMENT_MAX + 1 - used);
++        if (count == 0) {
++            break;
++        }
++        if (count < 0) {
++            if (errno == EINTR) {
++                continue;
++            }
++            close(fd);
++            wipe_memory(document, AMDL_LOGIN_DOCUMENT_MAX + 2);
++            free(document);
++            return -1;
++        }
++        used += (size_t)count;
++    }
++    close(fd);
++    amdl_startup_marker("login_fd_eof");
++    if (used == 0 || used > AMDL_LOGIN_DOCUMENT_MAX) {
++        fprintf(stderr, "[!] login credential document has an invalid size\n");
++        wipe_memory(document, AMDL_LOGIN_DOCUMENT_MAX + 2);
++        free(document);
++        return -1;
++    }
++
++    cJSON *root = cJSON_Parse((const char *)document);
++    cJSON *email = root ? cJSON_GetObjectItemCaseSensitive(root, "appleEmail") : NULL;
++    cJSON *password = root ? cJSON_GetObjectItemCaseSensitive(root, "applePassword") : NULL;
++    if (!cJSON_IsString(email) || !cJSON_IsString(password) ||
++        email->valuestring == NULL || password->valuestring == NULL ||
++        *email->valuestring == '\0' || *password->valuestring == '\0') {
++        fprintf(stderr, "[!] login credential document is incomplete\n");
++        wipe_cjson_string(email);
++        wipe_cjson_string(password);
++        cJSON_Delete(root);
++        wipe_memory(document, AMDL_LOGIN_DOCUMENT_MAX + 2);
++        free(document);
++        return -1;
++    }
++    amUsernameCapacity = strlen(email->valuestring) + 1;
++    amUsername = strdup(email->valuestring);
++    size_t password_length = strlen(password->valuestring);
++    amPasswordCapacity = password_length + 7;
++    amPassword = calloc(password_length + 7, 1);
++    if (amUsername != NULL && amPassword != NULL) {
++        memcpy(amPassword, password->valuestring, password_length);
++        amPasswordBaseLength = password_length;
++    }
++    wipe_cjson_string(email);
++    wipe_cjson_string(password);
++    cJSON_Delete(root);
++    wipe_memory(document, AMDL_LOGIN_DOCUMENT_MAX + 2);
++    free(document);
++    if (amUsername == NULL || amPassword == NULL) {
++        fprintf(stderr, "[!] failed to allocate login credentials\n");
++        wipe_login_credentials();
++        return -1;
++    }
++    amdl_startup_marker("login_document_valid");
++    return 1;
++}
++
+ #ifndef MyRelease
+ static int (*orig_debug_log_enabled)(void);
+ static int (*orig_android_log_print)(int prio, const char *tag, const char *fmt, ...);
+@@ -147,13 +385,11 @@ static void dialogHandler(long j, struct shared_ptr *protoDialogPtr,
+ static void dialogHandler(long j, struct shared_ptr *protoDialogPtr,
+                           struct shared_ptr *respHandler) {
+     const char *const title = std_string_data(
+         _ZNK17storeservicescore14ProtocolDialog5titleEv(protoDialogPtr->obj));
+-    fprintf(stderr, "[.] dialogHandler: {title: %s, message: %s}\n", title,
+-            std_string_data(_ZNK17storeservicescore14ProtocolDialog7messageEv(
+-                protoDialogPtr->obj)));
++    fprintf(stderr, "[wrapper-native] dialog received\n");
+ 
+     unsigned char ptr[72];
+     memset(ptr + 8, 0, 16);
+     *(void **)(ptr) =
+         &_ZTVNSt6__ndk120__shared_ptr_emplaceIN17storeservicescore22ProtocolDialogResponseENS_9allocatorIS2_EEEE +
+         2;
+@@ -171,15 +407,8 @@ static void dialogHandler(long j, struct shared_ptr *protoDialogPtr,
+                 _ZN17storeservicescore22ProtocolDialogResponse17setSelectedButtonERKNSt6__ndk110shared_ptrINS_14ProtocolButtonEEE(
+                     diagResp.obj, b);
+                 break;
+             }
+         }
+-    } else {
+-        for (struct shared_ptr *b = butVec->begin; b != butVec->end; ++b) {
+-            fprintf(
+-                stderr, "[.] button %p: %s\n", b->obj,
+-                std_string_data(
+-                    _ZNK17storeservicescore14ProtocolButton5titleEv(b->obj)));
+-        }
+-    }
++    }
+     _ZN20androidstoreservices28AndroidPresentationInterface28handleProtocolDialogResponseERKlRKNSt6__ndk110shared_ptrIN17storeservicescore22ProtocolDialogResponseEEE(
+         apInf.obj, &j, &diagResp);
+@@ -188,16 +417,17 @@ static void credentialHandler(struct shared_ptr *credReqHandler,
+ static void credentialHandler(struct shared_ptr *credReqHandler,
+                               struct shared_ptr *credRespHandler) {
++    /* Restoration must never answer a credential challenge or ask for 2FA.
++     * The supervisor may perform one separate, explicit login attempt. */
++    if (amdl_resume_session) {
++        wipe_login_credentials();
++        fprintf(stderr, "[wrapper-native] session_login_required\n");
++        exit(78);
++    }
+     const uint8_t need2FA =
+         _ZNK17storeservicescore18CredentialsRequest28requiresHSA2VerificationCodeEv(
+             credReqHandler->obj);
+-    fprintf(
+-        stderr, "[.] credentialHandler: {title: %s, message: %s, 2FA: %s}\n",
+-        std_string_data(_ZNK17storeservicescore18CredentialsRequest5titleEv(
+-            credReqHandler->obj)),
+-        std_string_data(_ZNK17storeservicescore18CredentialsRequest7messageEv(
+-            credReqHandler->obj)),
+-        need2FA ? "true" : "false");
++    fprintf(stderr, "[wrapper-native] credential_challenge requires_two_factor=%s\n",
++            need2FA ? "true" : "false");
+ 
+-    int passLen = strlen(amPassword);
+ 
+     if (need2FA) {
+@@ -213,12 +443,23 @@ static void credentialHandler(struct shared_ptr *credReqHandler,
+                     exit(0);
+                 }
+                 char *path = strcat_b(args_info.base_dir_arg, "/2fa.txt");
+-                if (file_exists(path)) {
+-                    FILE *fp = fopen(path, "r");
+-                    fscanf(fp, "%6s", amPassword + passLen);
+-                    remove(path);
++                char code[7] = {0};
++                int code_result = read_two_factor_code_file(path, code);
++                free(path);
++                if (code_result > 0) {
++                    if (!amdl_apply_two_factor_code(code)) {
++                        wipe_memory(code, sizeof(code));
++                        fprintf(stderr, "[!] 2FA credential storage is unavailable\n");
++                        exit(EXIT_FAILURE);
++                    }
++                    wipe_memory(code, sizeof(code));
+                     fprintf(stderr, "[!] Code file detected! Logging in...\n");
+                     break;
++                }
++                wipe_memory(code, sizeof(code));
++                if (code_result < 0) {
++                    fprintf(stderr, "[!] Invalid 2FA code file. Exiting...\n");
++                    exit(EXIT_FAILURE);
+                 } else {
+                     sleep(3);
+                     count++;
+@@ -227,7 +468,13 @@ static void credentialHandler(struct shared_ptr *credReqHandler,
+         } else {
+             printf("2FA code: ");
+-            scanf("%6s", amPassword + passLen);
++            char code[7] = {0};
++            if (scanf("%6s", code) != 1 || !amdl_apply_two_factor_code(code)) {
++                wipe_memory(code, sizeof(code));
++                fprintf(stderr, "[!] 2FA credential storage is unavailable\n");
++                exit(EXIT_FAILURE);
++            }
++            wipe_memory(code, sizeof(code));
+         }
+     }
+ 
+     uint8_t *const ptr = malloc(80);
+@@ -260,7 +507,6 @@ static inline void init() {
+     fprintf(stderr, "[+] starting...\n");
+     setenv("ANDROID_DNS_MODE", "local", 1);
+     if (args_info.proxy_given) {
+-        fprintf(stderr, "[+] Using proxy %s\n", args_info.proxy_arg);
+         setenv("all_proxy", args_info.proxy_arg, 1);
+     }
+ 
+@@ -378,24 +624,26 @@ inline static uint8_t login(struct shared_ptr reqCtx) {
+     _ZN17storeservicescore16AuthenticateFlow3runEv(flow.obj);
+     struct shared_ptr *resp =
+         _ZNK17storeservicescore16AuthenticateFlow8responseEv(flow.obj);
+-    if (resp == NULL || resp->obj == NULL)
++    if (resp == NULL || resp->obj == NULL) {
++        fprintf(stderr, "[wrapper-native] authentication_failed response_type=unknown error_code=unknown error_code_hex=unknown error_code_source=unavailable\n");
+         return 0;
++    }
+     const int respType =
+         _ZNK17storeservicescore20AuthenticateResponse12responseTypeEv(
+             resp->obj);
+     if (respType != 6) {
+-        const char *customer_msg = std_string_data(
+-            _ZNK17storeservicescore20AuthenticateResponse15customerMessageEv(resp->obj));
+-        if (customer_msg && *customer_msg)
+-            fprintf(stderr, "[!] server message: %s\n", customer_msg);
+-
+         struct shared_ptr *err = _ZNK17storeservicescore20AuthenticateResponse5errorEv(resp->obj);
+-        if (err != NULL && err->obj != NULL) {
++        if (err != NULL && err->obj != NULL && err->ctrl_blk != NULL) {
+-            int code = _ZNK17storeservicescore19StoreErrorCondition9errorCodeEv(err->obj);
+-            const char *what = _ZNK17storeservicescore19StoreErrorCondition4whatEv(err->obj);
+-            fprintf(stderr, "[!] auth error: code=%d, message=%s\n", code, what ? what : "none");
++            uint32_t auth_code = 0;
++            if (amdl_store_error_code_value(err->obj, &auth_code)) {
++                fprintf(stderr,
++                        "[wrapper-native] authentication_failed response_type=%d error_code=%" PRIu32 " error_code_hex=0x%08" PRIX32 " error_code_source=store_error_accessor_v1\n",
++                        respType, auth_code, auth_code);
++            } else {
++                fprintf(stderr, "[wrapper-native] authentication_failed response_type=%d error_code=unknown error_code_hex=unknown error_code_source=unavailable\n", respType);
++            }
+         } else {
+-            fprintf(stderr, "[!] auth failed: response type %d\n", respType);
++            fprintf(stderr, "[wrapper-native] authentication_failed response_type=%d error_code=unknown error_code_hex=unknown error_code_source=unavailable\n", respType);
+         }
+     }
+     return respType == 6;
+@@ -888,10 +1136,38 @@ void write_storefront_id(void) {
+ }
+ 
+ char *get_guid() {
+-    char *ret[2];
++    char *result = NULL;
++    fprintf(stderr, "[wrapper-native] get_guid begin\n");
++    if (GUID.obj == NULL || GUID.ctrl_blk == NULL) {
++        fprintf(stderr, "[wrapper-native] get_guid failed\n");
++        return NULL;
++    }
++    char *ret[2] = {0};
+     _ZN17storeservicescore10DeviceGUID4guidEv(ret, GUID.obj);
+-    char *guid = _ZNK13mediaplatform4Data5bytesEv(ret[0]);
+-    return guid;
++    if (ret[0] == NULL || ret[1] == NULL) {
++        fprintf(stderr, "[wrapper-native] get_guid failed\n");
++        return NULL;
++    }
++    const unsigned char *guid = NULL;
++    size_t guid_length = 0;
++    int guid_view_reason = amdl_data_view(ret[0], &guid, &guid_length);
++    if (guid_view_reason != AMDL_DATA_VIEW_OK) {
++        amdl_log_data_view_failure("[wrapper-native] get_guid data_view=", guid_view_reason);
++        return NULL;
++    }
++    if (guid_length == 0 || guid_length > AMDL_GUID_MAX ||
++        memchr(guid, '\0', guid_length) != NULL) {
++        fprintf(stderr, "[wrapper-native] get_guid failed\n");
++        return NULL;
++    }
++    result = (char *)calloc(guid_length + 1, 1);
++    if (result == NULL) {
++        fprintf(stderr, "[wrapper-native] get_guid failed\n");
++        return NULL;
++    }
++    memcpy(result, guid, guid_length);
++    fprintf(stderr, "[wrapper-native] get_guid complete\n");
++    return result;
+ }
+ 
+ long long getCurrentTimeMillis() {
+@@ -902,107 +1178,417 @@ long long getCurrentTimeMillis() {
+ 
+ 
+ char *get_music_user_token(char *guid, char *authToken, struct shared_ptr reqCtx){
+-    uint8_t ptr[480];
+-    *(void **)(ptr) =
+-        &_ZTVNSt6__ndk120__shared_ptr_emplaceIN13mediaplatform11HTTPMessageENS_9allocatorIS2_EEEE +
+-        2;
+-    struct shared_ptr httpMessage = {.obj = ptr + 32, .ctrl_blk = ptr};
++    char *result = NULL;
++    char *response_copy = NULL;
++    char *body = NULL;
++    cJSON *json = NULL;
++    char *token = NULL;
++    size_t response_length = 0;
++    size_t token_length = 0;
++    struct amdl_http_message *httpMessage = NULL;
++    struct amdl_url_request *urlRequest = NULL;
++    void *responseObject = NULL;
++    void *underlyingObject = NULL;
++    const unsigned char *response_bytes = NULL;
++    int has_remote_error = 0;
++
++    fprintf(stderr, "[wrapper-native] music_token begin\n");
++    if (reqCtx.obj == NULL || reqCtx.ctrl_blk == NULL) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=request_context\n");
++        goto cleanup;
++    }
++    if (guid == NULL || authToken == NULL || *guid == '\0' || *authToken == '\0') {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=input\n");
++        goto cleanup;
++    }
++
+     union std_string url = new_std_string("https://play.itunes.apple.com/WebObjects/MZPlay.woa/wa/createMusicToken");
+     union std_string method = new_std_string("POST");
+-    _ZN13mediaplatform11HTTPMessageC2ENSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES7_(httpMessage.obj, &url, &method);
++    fprintf(stderr, "[wrapper-native] music_token http_message begin\n");
++    httpMessage = amdl_http_message_create(&url, &method);
++    if (httpMessage == NULL) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=http_message\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] music_token http_message complete\n");
+     union std_string contentTypeHeader = new_std_string("Content-Type");
+     union std_string contentTypeValue = new_std_string("application/json; charset=UTF-8");
+-    _ZN13mediaplatform11HTTPMessage9setHeaderERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES9_(httpMessage.obj, &contentTypeHeader, &contentTypeValue);
++    fprintf(stderr, "[wrapper-native] music_token header content_type begin\n");
++    if (!amdl_http_message_set_header(httpMessage, &contentTypeHeader, &contentTypeValue)) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=header_content_type\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] music_token header content_type complete\n");
+     union std_string expectHeader = new_std_string("Expect");
+     union std_string expectValue = new_std_string("");
+-    _ZN13mediaplatform11HTTPMessage9setHeaderERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES9_(httpMessage.obj, &expectHeader, &expectValue);
++    fprintf(stderr, "[wrapper-native] music_token header expect begin\n");
++    if (!amdl_http_message_set_header(httpMessage, &expectHeader, &expectValue)) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=header_expect\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] music_token header expect complete\n");
+     union std_string bundleIdHeader = new_std_string("X-Apple-Requesting-Bundle-Id");
+     union std_string bundleIdValue = new_std_string("com.apple.android.music");
+-    _ZN13mediaplatform11HTTPMessage9setHeaderERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES9_(httpMessage.obj, &bundleIdHeader, &bundleIdValue);
++    fprintf(stderr, "[wrapper-native] music_token header bundle_id begin\n");
++    if (!amdl_http_message_set_header(httpMessage, &bundleIdHeader, &bundleIdValue)) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=header_bundle_id\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] music_token header bundle_id complete\n");
+     union std_string bundleVersionHeader = new_std_string("X-Apple-Requesting-Bundle-Version");
+     union std_string bundleVersionValue = new_std_string("Music/4.9 Android/10 model/Samsung S9 build/7663313 (dt:66)");
+-    _ZN13mediaplatform11HTTPMessage9setHeaderERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES9_(httpMessage.obj, &bundleVersionHeader, &bundleVersionValue);
+-    size_t body_size = 512;
+-    char *body = (char *)malloc(body_size);
++    fprintf(stderr, "[wrapper-native] music_token header bundle_version begin\n");
++    if (!amdl_http_message_set_header(httpMessage, &bundleVersionHeader, &bundleVersionValue)) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=header_bundle_version\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] music_token header bundle_version complete\n");
++
++    const size_t body_size = AMDL_MUSIC_TOKEN_REQUEST_MAX + 1;
++    fprintf(stderr, "[wrapper-native] music_token body_allocate begin\n");
++    body = (char *)calloc(body_size, 1);
+     if (body == NULL) {
+-        return "";
++        fprintf(stderr, "[wrapper-native] music_token failed stage=body_allocation\n");
++        goto cleanup;
+     }
++    fprintf(stderr, "[wrapper-native] music_token body_allocate complete\n");
+ 
+-    snprintf(body, body_size, "{\"guid\":\"%s\",\"assertion\":\"%s\",\"tcc-acceptance-date\":\"%lld\"}", guid, authToken, getCurrentTimeMillis());
++    int body_length = snprintf(body, body_size, "{\"guid\":\"%s\",\"assertion\":\"%s\",\"tcc-acceptance-date\":\"%lld\"}", guid, authToken, getCurrentTimeMillis());
++    if (body_length < 0 || (size_t)body_length >= body_size) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=body_format\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] music_token body_format complete\n");
+ 
+-    _ZN13mediaplatform11HTTPMessage11setBodyDataEPcm(httpMessage.obj, body, strlen(body));
+-    free(body);
+-    uint8_t urlRequest[512];
+-    _ZN17storeservicescore10URLRequestC2ERKNSt6__ndk110shared_ptrIN13mediaplatform11HTTPMessageEEERKNS2_INS_14RequestContextEEE(urlRequest, &httpMessage, &reqCtx);
+-    _ZN17storeservicescore10URLRequest3runEv(urlRequest);
+-    struct shared_ptr *err = _ZNK17storeservicescore10URLRequest5errorEv(urlRequest);
+-    if (err->obj != NULL) {
+-        int code = _ZNK17storeservicescore19StoreErrorCondition9errorCodeEv(err->obj);
+-        const char *what = _ZNK17storeservicescore19StoreErrorCondition4whatEv(err->obj);
+-        fprintf(stderr, "[!] createMusicToken error: code=%d, message=%s\n", code, what ? what : "none");
+-        return NULL;
++    fprintf(stderr, "[wrapper-native] music_token set_body begin\n");
++    if (!amdl_http_message_set_body_data(httpMessage, body, (size_t)body_length)) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=set_body\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] music_token set_body complete\n");
++
++    fprintf(stderr, "[wrapper-native] music_token url_request begin\n");
++    urlRequest = amdl_url_request_create(httpMessage, &reqCtx);
++    if (urlRequest == NULL) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=url_request\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] music_token url_request complete\n");
++    fprintf(stderr, "[wrapper-native] music_token run begin\n");
++    if (!amdl_url_request_run(urlRequest)) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=run\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] music_token run complete\n");
++
++    fprintf(stderr, "[wrapper-native] music_token error_query begin\n");
++    int error_state_ok = amdl_url_request_error_state(urlRequest, &has_remote_error);
++    fprintf(stderr, "[wrapper-native] music_token error_query complete\n");
++    if (!error_state_ok) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=error_reference\n");
++        goto cleanup;
++    }
++    if (has_remote_error) {
++        fprintf(stderr, "[wrapper-native] music_token remote_error\n");
++        goto cleanup;
++    }
++
++    fprintf(stderr, "[wrapper-native] music_token response_query begin\n");
++    int response_ok = amdl_url_request_response_object(urlRequest, &responseObject);
++    fprintf(stderr, "[wrapper-native] music_token response_query complete\n");
++    if (!response_ok) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=response_reference\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] music_token underlying_response begin\n");
++    int underlying_ok = amdl_url_response_underlying_object(responseObject, &underlyingObject);
++    fprintf(stderr, "[wrapper-native] music_token underlying_response complete\n");
++    if (!underlying_ok) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=underlying_response_reference\n");
++        goto cleanup;
++    }
++
++    struct shared_ptr data = {0};
++    memcpy(&data, (const char *)underlyingObject + 48, sizeof(data));
++    if (data.obj == NULL || data.ctrl_blk == NULL) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=response_data\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] music_token data_length begin\n");
++    int music_view_reason = amdl_data_view(data.obj, &response_bytes, &response_length);
++    if (music_view_reason != AMDL_DATA_VIEW_OK) {
++        amdl_log_data_view_failure("[wrapper-native] music_token data_view=", music_view_reason);
++        fprintf(stderr, "[wrapper-native] music_token failed stage=response_data_view\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] music_token data_length complete\n");
++    if (response_length == 0 || response_length > AMDL_MUSIC_TOKEN_RESPONSE_MAX) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=response_length\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] music_token data_bytes begin\n");
++    fprintf(stderr, "[wrapper-native] music_token data_bytes complete\n");
++    if (response_bytes == NULL) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=response_bytes\n");
++        goto cleanup;
++    }
++    response_copy = (char *)calloc(response_length + 1, 1);
++    if (response_copy == NULL) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=response_allocation\n");
++        goto cleanup;
++    }
++    memcpy(response_copy, response_bytes, response_length);
++    if (memchr(response_copy, '\0', response_length) != NULL) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=response_embedded_nul\n");
++        goto cleanup;
++    }
++    for (size_t index = 0; index + 6 <= response_length; ++index) {
++        if (memcmp(response_copy + index, "\\u0000", 6) == 0) {
++            fprintf(stderr, "[wrapper-native] music_token failed stage=response_json_nul\n");
++            goto cleanup;
++        }
++    }
++    response_copy[response_length] = '\0';
++    fprintf(stderr, "[wrapper-native] music_token json_parse begin\n");
++    json = cJSON_ParseWithLengthOpts(response_copy, response_length + 1, NULL, 1);
++    fprintf(stderr, "[wrapper-native] music_token json_parse complete\n");
++    if (json == NULL) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=json_parse\n");
++        goto cleanup;
+     }
+-    struct shared_ptr *urlResp = _ZNK17storeservicescore10URLRequest8responseEv(urlRequest);
+-    struct shared_ptr *resp = _ZNK17storeservicescore11URLResponse18underlyingResponseEv(urlResp->obj);
+-    void *http_message_obj = resp->obj;
+-    void** data_ptr_location = (void**)((char*)http_message_obj + 48);
+-    void* data_ptr = *data_ptr_location;
+-    char *respBody = _ZNK13mediaplatform4Data5bytesEv(data_ptr);
+-    cJSON *json = cJSON_Parse(respBody);
+     cJSON *token_obj = cJSON_GetObjectItemCaseSensitive(json, "music_token");
+-    char *token = cJSON_GetStringValue(token_obj);
++    token = cJSON_GetStringValue(token_obj);
+     if (token == NULL) {
+-        const char *err_desc = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(json, "error_description"));
+-        const char *err_code = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(json, "error"));
+-        fprintf(stderr, "[!] createMusicToken failed: %s (%s)\n",
+-                err_desc ? err_desc : "unknown error",
+-                err_code ? err_code : "?");
+-        return NULL;
++        fprintf(stderr, "[wrapper-native] music_token failed stage=token_type\n");
++        goto cleanup;
++    }
++    token_length = strnlen(token, response_length + 1);
++    if (token_length == 0 || token_length > AMDL_MUSIC_TOKEN_MAX || token_length > response_length) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=token_length\n");
++        goto cleanup;
++    }
++    result = (char *)calloc(token_length + 1, 1);
++    if (result == NULL) {
++        fprintf(stderr, "[wrapper-native] music_token failed stage=token_allocation\n");
++        goto cleanup;
++    }
++    memcpy(result, token, token_length);
++
++cleanup:
++    amdl_write_literal("[wrapper-native] music_token cleanup\n", sizeof("[wrapper-native] music_token cleanup\n") - 1);
++    amdl_write_literal("[wrapper-native] cleanup url_request begin\n", sizeof("[wrapper-native] cleanup url_request begin\n") - 1);
++    amdl_url_request_destroy(urlRequest);
++    amdl_write_literal("[wrapper-native] cleanup url_request complete\n", sizeof("[wrapper-native] cleanup url_request complete\n") - 1);
++    amdl_write_literal("[wrapper-native] cleanup http_message begin\n", sizeof("[wrapper-native] cleanup http_message begin\n") - 1);
++    amdl_http_message_destroy(httpMessage);
++    amdl_write_literal("[wrapper-native] cleanup http_message complete\n", sizeof("[wrapper-native] cleanup http_message complete\n") - 1);
++    if (body != NULL) {
++        amdl_write_literal("[wrapper-native] cleanup body_wipe begin\n", sizeof("[wrapper-native] cleanup body_wipe begin\n") - 1);
++        wipe_memory(body, AMDL_MUSIC_TOKEN_REQUEST_MAX + 1);
++        amdl_write_literal("[wrapper-native] cleanup body_wipe complete\n", sizeof("[wrapper-native] cleanup body_wipe complete\n") - 1);
++        amdl_write_literal("[wrapper-native] cleanup body_free begin\n", sizeof("[wrapper-native] cleanup body_free begin\n") - 1);
++        free(body);
++        amdl_write_literal("[wrapper-native] cleanup body_free complete\n", sizeof("[wrapper-native] cleanup body_free complete\n") - 1);
++    }
++    if (token != NULL && token_length > 0 && token_length <= response_length) {
++        wipe_memory(token, token_length);
++    }
++    amdl_write_literal("[wrapper-native] cleanup json_response begin\n", sizeof("[wrapper-native] cleanup json_response begin\n") - 1);
++    cJSON_Delete(json);
++    amdl_write_literal("[wrapper-native] cleanup json_response complete\n", sizeof("[wrapper-native] cleanup json_response complete\n") - 1);
++    if (response_copy != NULL) {
++        amdl_write_literal("[wrapper-native] cleanup response_wipe begin\n", sizeof("[wrapper-native] cleanup response_wipe begin\n") - 1);
++        wipe_memory(response_copy, response_length + 1);
++        amdl_write_literal("[wrapper-native] cleanup response_wipe complete\n", sizeof("[wrapper-native] cleanup response_wipe complete\n") - 1);
++        amdl_write_literal("[wrapper-native] cleanup response_free begin\n", sizeof("[wrapper-native] cleanup response_free begin\n") - 1);
++        free(response_copy);
++        amdl_write_literal("[wrapper-native] cleanup response_free complete\n", sizeof("[wrapper-native] cleanup response_free complete\n") - 1);
++    }
++    if (result != NULL) {
++        fprintf(stderr, "[wrapper-native] music_token complete\n");
+     }
+-    char *result = strdup(token);
+     return result;
+ }
+ 
+ 
+ char* get_dev_token(struct shared_ptr reqCtx) {
+-    uint8_t ptr[480];
+-    *(void **)(ptr) =
+-        &_ZTVNSt6__ndk120__shared_ptr_emplaceIN13mediaplatform11HTTPMessageENS_9allocatorIS2_EEEE +
+-        2;
+-    struct shared_ptr httpMessage = {.obj = ptr + 32, .ctrl_blk = ptr};
++    char *result = NULL;
++    char *response_copy = NULL;
++    cJSON *json = NULL;
++    char *token = NULL;
++    size_t response_length = 0;
++    size_t token_length = 0;
++    struct amdl_http_message *httpMessage = NULL;
++    struct amdl_url_request *urlRequest = NULL;
++    void *responseObject = NULL;
++    void *underlyingObject = NULL;
++    const unsigned char *response_bytes = NULL;
++    int has_remote_error = 0;
++
++    fprintf(stderr, "[wrapper-native] dev_token begin\n");
++    if (reqCtx.obj == NULL || reqCtx.ctrl_blk == NULL) {
++        fprintf(stderr, "[wrapper-native] dev_token failed stage=request_context\n");
++        goto cleanup;
++    }
++
+     union std_string url = new_std_string("https://sf-api-token-service.itunes.apple.com/apiToken");
+     union std_string method = new_std_string("GET");
+-    _ZN13mediaplatform11HTTPMessageC2ENSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES7_(httpMessage.obj, &url, &method);
+-    uint8_t urlRequest[512];
+-    _ZN17storeservicescore10URLRequestC2ERKNSt6__ndk110shared_ptrIN13mediaplatform11HTTPMessageEEERKNS2_INS_14RequestContextEEE(urlRequest, &httpMessage, &reqCtx);
++    fprintf(stderr, "[wrapper-native] dev_token http_message begin\n");
++    httpMessage = amdl_http_message_create(&url, &method);
++    if (httpMessage == NULL) {
++        fprintf(stderr, "[wrapper-native] dev_token failed stage=http_message\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] dev_token http_message complete\n");
++
++    fprintf(stderr, "[wrapper-native] dev_token url_request begin\n");
++    urlRequest = amdl_url_request_create(httpMessage, &reqCtx);
++    if (urlRequest == NULL) {
++        fprintf(stderr, "[wrapper-native] dev_token failed stage=url_request\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] dev_token url_request complete\n");
+     union std_string clientIdName = new_std_string("clientId");
+     union std_string clientIdValue = new_std_string("musicAndroid");
+-    _ZN17storeservicescore10URLRequest19setRequestParameterERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES9_(urlRequest, &clientIdName, &clientIdValue);
++    fprintf(stderr, "[wrapper-native] dev_token client_id_parameter begin\n");
++    if (!amdl_url_request_set_parameter(urlRequest, &clientIdName, &clientIdValue)) {
++        fprintf(stderr, "[wrapper-native] dev_token failed stage=client_id_parameter\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] dev_token client_id_parameter complete\n");
+     union std_string versionName = new_std_string("version");
+     union std_string versionValue = new_std_string("1");
+-    _ZN17storeservicescore10URLRequest19setRequestParameterERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES9_(urlRequest, &versionName, &versionValue);
+-    _ZN17storeservicescore10URLRequest3runEv(urlRequest);
+-    struct shared_ptr *err = _ZNK17storeservicescore10URLRequest5errorEv(urlRequest);
+-    if (err->obj != NULL) {
+-        int code = _ZNK17storeservicescore19StoreErrorCondition9errorCodeEv(err->obj);
+-        const char *what = _ZNK17storeservicescore19StoreErrorCondition4whatEv(err->obj);
+-        fprintf(stderr, "[!] devToken error: code=%d, message=%s\n", code, what ? what : "none");
+-        return NULL;
++    fprintf(stderr, "[wrapper-native] dev_token version_parameter begin\n");
++    if (!amdl_url_request_set_parameter(urlRequest, &versionName, &versionValue)) {
++        fprintf(stderr, "[wrapper-native] dev_token failed stage=version_parameter\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] dev_token version_parameter complete\n");
++    fprintf(stderr, "[wrapper-native] dev_token run begin\n");
++    if (!amdl_url_request_run(urlRequest)) {
++        fprintf(stderr, "[wrapper-native] dev_token failed stage=run\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] dev_token run complete\n");
++
++    fprintf(stderr, "[wrapper-native] dev_token error_query begin\n");
++    int error_state_ok = amdl_url_request_error_state(urlRequest, &has_remote_error);
++    fprintf(stderr, "[wrapper-native] dev_token error_query complete\n");
++    if (!error_state_ok) {
++        fprintf(stderr, "[wrapper-native] dev_token failed stage=error_reference\n");
++        goto cleanup;
++    }
++    if (has_remote_error) {
++        fprintf(stderr, "[wrapper-native] dev_token remote_error\n");
++        goto cleanup;
++    }
++
++    fprintf(stderr, "[wrapper-native] dev_token response_query begin\n");
++    int response_ok = amdl_url_request_response_object(urlRequest, &responseObject);
++    fprintf(stderr, "[wrapper-native] dev_token response_query complete\n");
++    if (!response_ok) {
++        fprintf(stderr, "[wrapper-native] dev_token failed stage=response_reference\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] dev_token underlying_response begin\n");
++    int underlying_ok = amdl_url_response_underlying_object(responseObject, &underlyingObject);
++    fprintf(stderr, "[wrapper-native] dev_token underlying_response complete\n");
++    if (!underlying_ok) {
++        fprintf(stderr, "[wrapper-native] dev_token failed stage=underlying_response_reference\n");
++        goto cleanup;
++    }
++
++    struct shared_ptr data = {0};
++    memcpy(&data, (const char *)underlyingObject + 48, sizeof(data));
++    if (data.obj == NULL || data.ctrl_blk == NULL) {
++        fprintf(stderr, "[wrapper-native] dev_token failed stage=response_data\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] dev_token data_length begin\n");
++    int dev_view_reason = amdl_data_view(data.obj, &response_bytes, &response_length);
++    if (dev_view_reason != AMDL_DATA_VIEW_OK) {
++        amdl_log_data_view_failure("[wrapper-native] dev_token data_view=", dev_view_reason);
++        fprintf(stderr, "[wrapper-native] dev_token failed stage=response_data_view\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] dev_token data_length complete\n");
++    if (response_length == 0 || response_length > AMDL_DEV_TOKEN_RESPONSE_MAX) {
++        fprintf(stderr, "[wrapper-native] dev_token failed stage=response_length\n");
++        goto cleanup;
++    }
++    fprintf(stderr, "[wrapper-native] dev_token data_bytes begin\n");
++    fprintf(stderr, "[wrapper-native] dev_token data_bytes complete\n");
++    if (response_bytes == NULL) {
++        fprintf(stderr, "[wrapper-native] dev_token failed stage=response_bytes\n");
++        goto cleanup;
++    }
++    response_copy = calloc(response_length + 1, 1);
++    if (response_copy == NULL) {
++        fprintf(stderr, "[wrapper-native] dev_token failed stage=response_allocation\n");
++        goto cleanup;
++    }
++    memcpy(response_copy, response_bytes, response_length);
++    if (memchr(response_copy, '\0', response_length) != NULL) {
++        fprintf(stderr, "[wrapper-native] dev_token failed stage=response_embedded_nul\n");
++        goto cleanup;
++    }
++    for (size_t index = 0; index + 6 <= response_length; ++index) {
++        if (memcmp(response_copy + index, "\\u0000", 6) == 0) {
++            fprintf(stderr, "[wrapper-native] dev_token failed stage=response_json_nul\n");
++            goto cleanup;
++        }
++    }
++    response_copy[response_length] = '\0';
++    fprintf(stderr, "[wrapper-native] dev_token json_parse begin\n");
++    json = cJSON_ParseWithLengthOpts(response_copy, response_length + 1, NULL, 1);
++    fprintf(stderr, "[wrapper-native] dev_token json_parse complete\n");
++    if (json == NULL) {
++        fprintf(stderr, "[wrapper-native] dev_token failed stage=json_parse\n");
++        goto cleanup;
+     }
+-    struct shared_ptr *urlResp = _ZNK17storeservicescore10URLRequest8responseEv(urlRequest);
+-    struct shared_ptr *resp = _ZNK17storeservicescore11URLResponse18underlyingResponseEv(urlResp->obj);
+-    void *http_message_obj = resp->obj;
+-    void** data_ptr_location = (void**)((char*)http_message_obj + 48);
+-    void* data_ptr = *data_ptr_location;
+-    char *respBody = _ZNK13mediaplatform4Data5bytesEv(data_ptr);
+-    cJSON *json = cJSON_Parse(respBody);
+     cJSON *token_obj = cJSON_GetObjectItemCaseSensitive(json, "token");
+-    char *token = cJSON_GetStringValue(token_obj);
++    token = cJSON_GetStringValue(token_obj);
+     if (token == NULL) {
+-        fprintf(stderr, "[!] devToken error: token field missing in response\n");
+-        return NULL;
++        fprintf(stderr, "[wrapper-native] dev_token failed stage=token_type\n");
++        goto cleanup;
++    }
++    token_length = strnlen(token, response_length + 1);
++    if (token_length == 0 || token_length > AMDL_DEV_TOKEN_MAX || token_length > response_length) {
++        fprintf(stderr, "[wrapper-native] dev_token failed stage=token_length\n");
++        goto cleanup;
++    }
++    result = calloc(token_length + 1, 1);
++    if (result == NULL) {
++        fprintf(stderr, "[wrapper-native] dev_token failed stage=token_allocation\n");
++        goto cleanup;
++    }
++    memcpy(result, token, token_length);
++
++cleanup:
++    amdl_write_literal("[wrapper-native] dev_token cleanup\n", sizeof("[wrapper-native] dev_token cleanup\n") - 1);
++    amdl_write_literal("[wrapper-native] cleanup url_request begin\n", sizeof("[wrapper-native] cleanup url_request begin\n") - 1);
++    amdl_url_request_destroy(urlRequest);
++    amdl_write_literal("[wrapper-native] cleanup url_request complete\n", sizeof("[wrapper-native] cleanup url_request complete\n") - 1);
++    amdl_write_literal("[wrapper-native] cleanup http_message begin\n", sizeof("[wrapper-native] cleanup http_message begin\n") - 1);
++    amdl_http_message_destroy(httpMessage);
++    amdl_write_literal("[wrapper-native] cleanup http_message complete\n", sizeof("[wrapper-native] cleanup http_message complete\n") - 1);
++    if (token != NULL && token_length > 0 && token_length <= response_length) {
++        wipe_memory(token, token_length);
++    }
++    amdl_write_literal("[wrapper-native] cleanup json_response begin\n", sizeof("[wrapper-native] cleanup json_response begin\n") - 1);
++    cJSON_Delete(json);
++    amdl_write_literal("[wrapper-native] cleanup json_response complete\n", sizeof("[wrapper-native] cleanup json_response complete\n") - 1);
++    if (response_copy != NULL) {
++        amdl_write_literal("[wrapper-native] cleanup response_wipe begin\n", sizeof("[wrapper-native] cleanup response_wipe begin\n") - 1);
++        wipe_memory(response_copy, response_length + 1);
++        amdl_write_literal("[wrapper-native] cleanup response_wipe complete\n", sizeof("[wrapper-native] cleanup response_wipe complete\n") - 1);
++        amdl_write_literal("[wrapper-native] cleanup response_free begin\n", sizeof("[wrapper-native] cleanup response_free begin\n") - 1);
++        free(response_copy);
++        amdl_write_literal("[wrapper-native] cleanup response_free complete\n", sizeof("[wrapper-native] cleanup response_free complete\n") - 1);
++    }
++    if (result != NULL) {
++        fprintf(stderr, "[wrapper-native] dev_token complete\n");
+     }
+-    char *result = strdup(token);
+     return result;
+ }
+ 
+@@ -1033,12 +1619,35 @@ void write_music_token(void) {
+ }
+ 
+ int offline_available() {
+-    struct shared_ptr *fairplay = malloc(16);
++    if (reqCtx.obj == NULL) {
++        fprintf(stderr, "[!] offline subscription status unavailable; disabling offline channel\n");
++        return 0;
++    }
++    struct shared_ptr *fairplay = calloc(1, sizeof(*fairplay));
++    if (fairplay == NULL) {
++        fprintf(stderr, "[!] offline subscription status unavailable; disabling offline channel\n");
++        return 0;
++    }
+     _ZN17storeservicescore14RequestContext8fairPlayEv(fairplay, reqCtx.obj);
++    if (fairplay == NULL || fairplay->obj == NULL) {
++        fprintf(stderr, "[!] offline subscription status unavailable; disabling offline channel\n");
++        return 0;
++    }
+     struct std_vector fairplay_status = _ZN17storeservicescore8FairPlay21getSubscriptionStatusEv(fairplay->obj);
+-    char *begin_ptr = (char*)fairplay_status.begin;
+-    char *second_item_ptr = begin_ptr + 16;
+-    int state = *(int*)((char*)second_item_ptr + 8);
++    uintptr_t begin = (uintptr_t)fairplay_status.begin;
++    uintptr_t end = (uintptr_t)fairplay_status.end;
++    uintptr_t capacity = (uintptr_t)fairplay_status.end_capacity;
++    if (begin == 0 || end == 0 || capacity == 0 ||
++        begin > end || end > capacity ||
++        end - begin < 2 * 16 || (end - begin) % 16 != 0) {
++        fprintf(stderr, "[!] offline subscription status unavailable; disabling offline channel\n");
++        return 0;
++    }
++    int state = 0;
++    memcpy(&state, (const void *)(begin + 16 + 8), sizeof(state));
++    if (state != 2 && state != 3) {
++        return 0;
++    }
+     if (state == 2 || state == 3) { // kFPSubscriptionCanPlayContent, kFPSubscriptionCanStreamAndPlayContent
+         return 1;
+     } 
+@@ -1047,6 +1656,18 @@ int offline_available() {
+ 
+ int main(int argc, char *argv[]) {
++    amdl_startup_marker("main_enter");
++    const char *resume_mode = getenv("AMDL_WRAPPER_RESUME_SESSION");
++    amdl_resume_session = resume_mode != NULL && strcmp(resume_mode, "1") == 0;
++    unsetenv("AMDL_WRAPPER_RESUME_SESSION");
+     cmdline_parser(argc, argv, &args_info);
++    int login_from_fd = read_login_fd_credentials();
++    if (login_from_fd < 0) {
++        return EXIT_FAILURE;
++    }
++    if (amdl_resume_session && login_from_fd <= 0) {
++        fprintf(stderr, "[!] session restore requires configured credentials\n");
++        return EXIT_FAILURE;
++    }
+     char *copy_that_needs_to_be_freed = NULL;
+     split_string_safe(args_info.device_info_arg, "/", device_infos, 9, &copy_that_needs_to_be_freed);
+ 
+@@ -1054,21 +1675,58 @@ int main(int argc, char *argv[]) {
+     install_hooks();
+     #endif
+ 
+-    init();
+-    reqCtx = init_ctx();
++    if (args_info.login_given && login_from_fd > 0) {
++        fprintf(stderr, "[!] choose either --login or --login-fd, not both\n");
++        wipe_login_credentials();
++        return EXIT_FAILURE;
++    }
+     if (args_info.login_given) {
+-        amUsername = strtok(args_info.login_arg, ":");
+-        amPassword = strtok(NULL, ":");
++        char *separator = strchr(args_info.login_arg, ':');
++        if (separator == NULL || separator == args_info.login_arg || separator[1] == '\0') {
++            fprintf(stderr, "[!] invalid legacy login value\n");
++            return EXIT_FAILURE;
++        }
++        size_t email_length = (size_t)(separator - args_info.login_arg);
++        amUsernameCapacity = email_length + 1;
++        amUsername = strndup(args_info.login_arg, email_length);
++        size_t password_length = strlen(separator + 1);
++        amPasswordCapacity = password_length + 7;
++        amPassword = calloc(password_length + 7, 1);
++        if (amUsername == NULL || amPassword == NULL) {
++            wipe_login_credentials();
++            return EXIT_FAILURE;
++        }
++        memcpy(amPassword, separator + 1, password_length);
++        amPasswordBaseLength = password_length;
+     }
+-    if (args_info.login_given && !login(reqCtx)) {
+-        fprintf(stderr, "[!] login failed\n");
+-        return EXIT_FAILURE;
++
++    amdl_startup_marker("init_begin");
++    init();
++    amdl_startup_marker("init_complete");
++    amdl_startup_marker("init_ctx_begin");
++    reqCtx = init_ctx();
++    amdl_startup_marker("init_ctx_complete");
++    if (!amdl_resume_session && (args_info.login_given || login_from_fd > 0)) {
++        amdl_startup_marker("login_begin");
++        if (!login(reqCtx)) {
++            wipe_login_credentials();
++            fprintf(stderr, "[!] login failed\n");
++            return EXIT_FAILURE;
++        }
++        wipe_login_credentials();
++        fprintf(stderr, "{\"type\":\"authentication_succeeded\",\"phase\":\"authenticated_initializing\"}\n");
++        fflush(stderr);
+     }
+     _ZN22SVPlaybackLeaseManagerC2ERKNSt6__ndk18functionIFvRKiEEERKNS1_IFvRKNS0_10shared_ptrIN17storeservicescore19StoreErrorConditionEEEEEE(
+         leaseMgr, &endLeaseCallback, &pbErrCallback);
+     uint8_t autom = 1;
+     _ZN22SVPlaybackLeaseManager25refreshLeaseAutomaticallyERKb(leaseMgr, &autom);
+-    _ZN22SVPlaybackLeaseManager12requestLeaseERKb(leaseMgr, &autom);
++    fprintf(stderr, "[wrapper-native] lease_request begin\n");
++    if (!_ZN22SVPlaybackLeaseManager12requestLeaseERKb(leaseMgr, &autom)) {
++        fprintf(stderr, "[wrapper-native] lease_request failed\n");
++        return EXIT_FAILURE;
++    }
++    fprintf(stderr, "[wrapper-native] lease_request succeeded\n");
+     FHinstance = _ZN21SVFootHillSessionCtrl8instanceEv();
+ 
+     offlineFlag = offline_available();
+@@ -1077,22 +1735,37 @@ int main(int argc, char *argv[]) {
+     }
+ 
+     // Cache account info
++    fprintf(stderr, "[wrapper-native] storefront begin\n");
+     g_storefront_id = get_account_storefront_id(reqCtx);
+     if (g_storefront_id == NULL) {
+         fprintf(stderr, "[!] failed to get storefront ID\n");
+         return EXIT_FAILURE;
+     }
++    fprintf(stderr, "[wrapper-native] storefront complete\n");
+     g_dev_token = get_dev_token(reqCtx);
+     if (g_dev_token == NULL) {
+         fprintf(stderr, "[!] failed to get dev token\n");
+         return EXIT_FAILURE;
+     }
+-    g_music_token = get_music_user_token(get_guid(), g_dev_token, reqCtx);
++    char *guid = get_guid();
++    if (guid == NULL) {
++        fprintf(stderr, "[!] failed to get device identifier\n");
++        return EXIT_FAILURE;
++    }
++    g_music_token = get_music_user_token(guid, g_dev_token, reqCtx);
++    size_t guid_length = strnlen(guid, AMDL_GUID_MAX + 1);
++    if (guid_length <= AMDL_GUID_MAX) {
++        wipe_memory(guid, guid_length + 1);
++    }
++    free(guid);
+     if (g_music_token == NULL) {
+         fprintf(stderr, "[!] failed to get music token\n");
+         return EXIT_FAILURE;
+     }
+     fprintf(stderr, "[+] account info cached successfully\n");
++    wipe_login_credentials();
++    fprintf(stderr, "[wrapper-native] session_verified\n");
++    fflush(stderr);
+ 
+     write_storefront_id();
+     write_music_token();
+diff --git a/main.cpp b/main.cpp
+index fec64f4385aa0f8d0a5f8eea0c8bab11547e426d..96cf0da2c953966cf85ef0f29a8011152aa5b855 100644
+--- a/main.cpp
++++ b/main.cpp
+@@ -1,6 +1,11 @@
+ #include <cstdio>
+ #include <exception>
+ #include <functional>
++#include <memory>
++
++namespace storeservicescore {
++class StoreErrorCondition;
++}
+ 
+ extern "C" void handle(int fd);
+ 
+@@ -19,10 +24,10 @@ static void endLeaseCb(int const &c) {
+     exit(1);
+ }
+ 
+-static void pbErrCb(void *) {
++static void pbErrCb(std::shared_ptr<storeservicescore::StoreErrorCondition> const &) {
+     fprintf(stderr, "[.] playback error\n");
+     exit(1);
+ }
+ 
+ extern "C" std::function<void (int const&)> endLeaseCallback(endLeaseCb);
+-extern "C" std::function<void (void *)> pbErrCallback(pbErrCb);
+\ No newline at end of file
++extern "C" std::function<void (std::shared_ptr<storeservicescore::StoreErrorCondition> const&)> pbErrCallback(pbErrCb);
+diff --git a/native_abi_harness.c b/native_abi_harness.c
+new file mode 100644
+index 0000000000000000000000000000000000000000..2ad1fab46b4a55b776ddb393cca5a4c75b2e9b1c
+--- /dev/null
++++ b/native_abi_harness.c
+@@ -0,0 +1,575 @@
++/*
++ * This binary exercises only source-matched constructor/destructor paths in
++ * a disposable, no-network rootfs. It initializes the same non-secret
++ * parser defaults as product main, but never invokes product main itself.
++ */
++#define _GNU_SOURCE
++#include <dlfcn.h>
++#include <errno.h>
++#include <stddef.h>
++#include <stdint.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <unistd.h>
++
++static int amdl_native_suppressed_fprintf(FILE *stream, const char *format, ...) {
++    (void)stream;
++    (void)format;
++    return 0;
++}
++
++#define fprintf amdl_native_suppressed_fprintf
++#define main amdl_native_product_main
++#include "main.c"
++#undef main
++#undef fprintf
++
++#define AMDL_NATIVE_ABI_CYCLES 10000
++#define AMDL_NATIVE_ABI_FIXTURE_CYCLES 5
++
++static unsigned long amdl_harness_http_message_created;
++static unsigned long amdl_harness_http_message_released;
++static unsigned long amdl_harness_url_request_created;
++static unsigned long amdl_harness_url_request_destroyed;
++
++static int amdl_native_write_literal(int descriptor, const char *literal) {
++    size_t offset = 0;
++    size_t length = strlen(literal);
++
++    while (offset < length) {
++        ssize_t written = write(descriptor, literal + offset, length - offset);
++        if (written < 0 && errno == EINTR) {
++            continue;
++        }
++        if (written <= 0) {
++            return 0;
++        }
++        offset += (size_t)written;
++    }
++    return 1;
++}
++
++static int amdl_native_stage(const char *stage) {
++    if (strcmp(stage, "parser") == 0) {
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_STAGE parser\n");
++    }
++    if (strcmp(stage, "device_fixture") == 0) {
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_STAGE device_fixture\n");
++    }
++    if (strcmp(stage, "two_factor_suffix") == 0) {
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_STAGE two_factor_suffix\n");
++    }
++    if (strcmp(stage, "init") == 0) {
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_STAGE init\n");
++    }
++    if (strcmp(stage, "init_ctx") == 0) {
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_STAGE init_ctx\n");
++    }
++    if (strcmp(stage, "provider") == 0) {
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_STAGE provider\n");
++    }
++    if (strcmp(stage, "store_error_code") == 0) {
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_STAGE store_error_code\n");
++    }
++    if (strcmp(stage, "cycles") == 0) {
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_STAGE cycles\n");
++    }
++    if (strcmp(stage, "fixture_server") == 0) {
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_STAGE fixture_server\n");
++    }
++    if (strcmp(stage, "fixture_cycles") == 0) {
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_STAGE fixture_cycles\n");
++    }
++    if (strcmp(stage, "complete") == 0) {
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_STAGE complete\n");
++    }
++    return 0;
++}
++
++static int amdl_native_write_provider(const char *provider) {
++    return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_PROVIDER ") &&
++           amdl_native_write_literal(STDERR_FILENO, provider) &&
++           amdl_native_write_literal(STDERR_FILENO, "\n");
++}
++
++static int amdl_native_provider_matches_any(const char *symbol,
++                                            const char *const *expected,
++                                            size_t expected_count,
++                                            const char *lookup_failure,
++                                            const char *owner_failure) {
++    Dl_info details;
++    const char *basename;
++    void *address = dlsym(RTLD_DEFAULT, symbol);
++    size_t index;
++
++    memset(&details, 0, sizeof(details));
++    if (address == NULL || dladdr(address, &details) == 0 || details.dli_fname == NULL) {
++        (void)amdl_native_write_literal(STDERR_FILENO, lookup_failure);
++        return 0;
++    }
++    basename = strrchr(details.dli_fname, '/');
++    basename = basename == NULL ? details.dli_fname : basename + 1;
++    for (index = 0; index < expected_count; ++index) {
++        if (strcmp(basename, expected[index]) == 0) {
++            return amdl_native_write_provider(expected[index]);
++        }
++    }
++    (void)amdl_native_write_literal(STDERR_FILENO, owner_failure);
++    return 0;
++}
++
++static const char *const amdl_native_http_message_provider_names[] = {
++    "libandroidappmusic.so",
++};
++
++static const char *const amdl_native_url_request_d2_provider_names[] = {
++    "libandroidappmusic.so",
++    "libstoreservicescore.so",
++};
++
++static const char *const amdl_native_store_error_code_provider_names[] = {
++    "libstoreservicescore.so",
++};
++
++static int amdl_native_initialise_product_defaults(char **device_copy) {
++    char *harness_argv[] = {"amdl-native-abi-harness", NULL};
++    int count;
++    int index;
++
++    if (device_copy == NULL) {
++        return 0;
++    }
++    *device_copy = NULL;
++    cmdline_parser(1, harness_argv, &args_info);
++    if (args_info.base_dir_arg == NULL || args_info.device_info_arg == NULL) {
++        return 0;
++    }
++    count = split_string_safe(args_info.device_info_arg, "/", device_infos, 9,
++                              device_copy);
++    if (count != 9 || *device_copy == NULL) {
++        return 0;
++    }
++    for (index = 0; index < 9; ++index) {
++        if (device_infos[index] == NULL || device_infos[index][0] == '\0') {
++            return 0;
++        }
++    }
++    return 1;
++}
++
++static int amdl_native_two_factor_suffix_cycle(void) {
++    struct amdl_native_two_factor_fixture {
++        unsigned char password[11];
++        unsigned char guard[16];
++    } fixture;
++    static const char first_code[7] = "123456";
++    static const char second_code[7] = "654321";
++    static const unsigned char expected_first[11] = "base123456";
++    static const unsigned char expected_second[11] = "base654321";
++    size_t index;
++    int result = 0;
++
++    memset(&fixture, 0, sizeof(fixture));
++    memcpy(fixture.password, "base", 4);
++    memset(fixture.guard, 0xa5, sizeof(fixture.guard));
++    amPassword = (char *)fixture.password;
++    amPasswordCapacity = sizeof(fixture.password);
++    amPasswordBaseLength = 4;
++    if (!amdl_apply_two_factor_code(first_code) ||
++        memcmp(fixture.password, expected_first, sizeof(expected_first)) != 0 ||
++        !amdl_apply_two_factor_code(second_code) ||
++        memcmp(fixture.password, expected_second, sizeof(expected_second)) != 0) {
++        goto cleanup;
++    }
++    for (index = 0; index < sizeof(fixture.guard); ++index) {
++        if (fixture.guard[index] != 0xa5) {
++            goto cleanup;
++        }
++    }
++    result = 1;
++
++cleanup:
++    amPassword = NULL;
++    amPasswordCapacity = 0;
++    amPasswordBaseLength = 0;
++    return result;
++}
++
++static int amdl_native_store_error_code_cycle(void) {
++    union amdl_native_store_error_fixture {
++        long double alignment;
++        unsigned char bytes[0x24];
++    } fixture;
++    static const uint32_t sentinels[] = {UINT32_C(0xa1b2c3d4), UINT32_C(0x5e4d3c2b)};
++    uint32_t observed = 0;
++    size_t index;
++
++    if (amdl_store_error_code_value(NULL, &observed) ||
++        amdl_store_error_code_value(fixture.bytes, NULL)) {
++        return 0;
++    }
++    for (index = 0; index < sizeof(sentinels) / sizeof(sentinels[0]); ++index) {
++        memset(&fixture, 0, sizeof(fixture));
++        memcpy(fixture.bytes + 0x20, &sentinels[index], sizeof(sentinels[index]));
++        observed = 0;
++        if (!amdl_store_error_code_value(fixture.bytes, &observed) ||
++            observed != sentinels[index]) {
++            return 0;
++        }
++    }
++    return 1;
++}
++
++static int amdl_harness_counts_match(unsigned long expected_messages,
++                                     unsigned long expected_requests) {
++    return amdl_harness_http_message_created == expected_messages &&
++           amdl_harness_http_message_released == expected_messages &&
++           amdl_harness_url_request_created == expected_requests &&
++           amdl_harness_url_request_destroyed == expected_requests;
++}
++
++static int amdl_native_set_post_fields(struct amdl_http_message *message) {
++    union std_string header_name = new_std_string("Content-Type");
++    union std_string header_value = new_std_string("application/json");
++    static const char body[] = "{}";
++
++    return amdl_http_message_set_header(message, &header_name, &header_value) &&
++           amdl_http_message_set_body_data(message, body, sizeof(body) - 1);
++}
++
++static struct amdl_http_message *amdl_native_create_message_at(const char *url_text,
++                                                               int post) {
++    union std_string url;
++    union std_string method = new_std_string(post ? "POST" : "GET");
++    struct amdl_http_message *message;
++
++    if (url_text == NULL) {
++        return NULL;
++    }
++    url = new_std_string(url_text);
++    message = amdl_http_message_create(&url, &method);
++
++    if (message == NULL) {
++        return NULL;
++    }
++    ++amdl_harness_http_message_created;
++    if (post && !amdl_native_set_post_fields(message)) {
++        amdl_http_message_destroy(message);
++        ++amdl_harness_http_message_released;
++        return NULL;
++    }
++    return message;
++}
++
++static struct amdl_http_message *amdl_native_create_message(int post) {
++    return amdl_native_create_message_at("http://127.0.0.1/", post);
++}
++
++static void amdl_native_destroy_message(struct amdl_http_message *message) {
++    if (message != NULL) {
++        amdl_http_message_destroy(message);
++        ++amdl_harness_http_message_released;
++    }
++}
++
++static void amdl_native_destroy_request(struct amdl_url_request *request) {
++    if (request != NULL) {
++        amdl_url_request_destroy(request);
++        ++amdl_harness_url_request_destroyed;
++    }
++}
++
++static int amdl_native_http_message_cycle(int post) {
++    struct amdl_http_message *message = amdl_native_create_message(post);
++    if (message == NULL) {
++        return 0;
++    }
++    amdl_native_destroy_message(message);
++    return 1;
++}
++
++static int amdl_native_url_request_cycle(struct shared_ptr *request_context,
++                                         int post) {
++    struct amdl_http_message *message = NULL;
++    struct amdl_url_request *request = NULL;
++    int result = 0;
++
++    if (request_context == NULL || request_context->obj == NULL ||
++        request_context->ctrl_blk == NULL) {
++        return 0;
++    }
++    message = amdl_native_create_message(post);
++    if (message == NULL) {
++        goto cleanup;
++    }
++    request = amdl_url_request_create(message, request_context);
++    if (request == NULL) {
++        goto cleanup;
++    }
++    ++amdl_harness_url_request_created;
++    /* Deliberately omit request execution: this gate proves only C2/D2.
++     * Docker has no network and no remote request is issued. */
++    amdl_native_destroy_request(request);
++    request = NULL;
++    result = 1;
++
++cleanup:
++    amdl_native_destroy_request(request);
++    amdl_native_destroy_message(message);
++    return result;
++}
++
++enum amdl_native_fixture_expectation {
++    AMDL_NATIVE_FIXTURE_JSON = 0,
++    AMDL_NATIVE_FIXTURE_REMOTE_ERROR = 1,
++    AMDL_NATIVE_FIXTURE_EMPTY = 2,
++    AMDL_NATIVE_FIXTURE_INVALID_JSON = 3,
++};
++
++static int amdl_native_fixture_case(unsigned int fixture) {
++    switch (fixture) {
++    case 0:
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_FIXTURE_CASE get\n");
++    case 1:
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_FIXTURE_CASE post\n");
++    case 2:
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_FIXTURE_CASE remote_error\n");
++    case 3:
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_FIXTURE_CASE empty\n");
++    case 4:
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_FIXTURE_CASE invalid_json\n");
++    default:
++        return 0;
++    }
++}
++
++static int amdl_native_fixture_failure(unsigned int fixture) {
++    switch (fixture) {
++    case 0:
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_FIXTURE_FAILURE get\n");
++    case 1:
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_FIXTURE_FAILURE post\n");
++    case 2:
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_FIXTURE_FAILURE remote_error\n");
++    case 3:
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_FIXTURE_FAILURE empty\n");
++    case 4:
++        return amdl_native_write_literal(STDERR_FILENO, "AMDL_NATIVE_ABI_FIXTURE_FAILURE invalid_json\n");
++    default:
++        return 0;
++    }
++}
++
++static const char *const amdl_native_fixture_urls[AMDL_NATIVE_ABI_FIXTURE_CYCLES] = {
++    "http://127.0.0.1:18911/fixture/get",
++    "http://127.0.0.1:18911/fixture/post",
++    "http://127.0.0.1:18911/fixture/remote-error",
++    "http://127.0.0.1:18911/fixture/empty",
++    "http://127.0.0.1:18911/fixture/invalid-json",
++};
++
++static const int amdl_native_fixture_posts[AMDL_NATIVE_ABI_FIXTURE_CYCLES] = {
++    0, 1, 0, 0, 0,
++};
++
++static const enum amdl_native_fixture_expectation
++    amdl_native_fixture_expectations[AMDL_NATIVE_ABI_FIXTURE_CYCLES] = {
++        AMDL_NATIVE_FIXTURE_JSON,
++        AMDL_NATIVE_FIXTURE_JSON,
++        AMDL_NATIVE_FIXTURE_REMOTE_ERROR,
++        AMDL_NATIVE_FIXTURE_EMPTY,
++        AMDL_NATIVE_FIXTURE_INVALID_JSON,
++    };
++
++static int amdl_native_fixture_response_data(struct amdl_url_request *request,
++                                             const unsigned char **bytes,
++                                             size_t *length) {
++    struct shared_ptr data = {0};
++    void *response_object = NULL;
++    void *underlying_object = NULL;
++
++    if (bytes == NULL || length == NULL ||
++        !amdl_url_request_response_object(request, &response_object) ||
++        !amdl_url_response_underlying_object(response_object, &underlying_object)) {
++        return AMDL_DATA_VIEW_INVALID_ARGUMENT;
++    }
++    memcpy(&data, (const unsigned char *)underlying_object + 48, sizeof(data));
++    if (data.obj == NULL || data.ctrl_blk == NULL) {
++        return AMDL_DATA_VIEW_INVALID_ARGUMENT;
++    }
++    return amdl_data_view(data.obj, bytes, length);
++}
++
++static int amdl_native_fixture_json_result(struct amdl_url_request *request,
++                                           int expect_valid_json) {
++    const unsigned char *bytes = NULL;
++    size_t length = 0;
++    char *copy = NULL;
++    cJSON *json = NULL;
++    int result = 0;
++
++    if (amdl_native_fixture_response_data(request, &bytes, &length) != AMDL_DATA_VIEW_OK ||
++        bytes == NULL || length == 0 || length > 4096 ||
++        memchr(bytes, '\0', length) != NULL) {
++        goto cleanup;
++    }
++    copy = malloc(length + 1);
++    if (copy == NULL) {
++        goto cleanup;
++    }
++    memcpy(copy, bytes, length);
++    copy[length] = '\0';
++    json = cJSON_ParseWithLengthOpts(copy, length, NULL, 0);
++    result = expect_valid_json ? json != NULL : json == NULL;
++
++cleanup:
++    cJSON_Delete(json);
++    if (copy != NULL) {
++        memset(copy, 0, length + 1);
++        free(copy);
++    }
++    return result;
++}
++
++static int amdl_native_fixture_empty_result(struct amdl_url_request *request) {
++    const unsigned char *bytes = NULL;
++    size_t length = 0;
++    int view = amdl_native_fixture_response_data(request, &bytes, &length);
++
++    return length == 0 &&
++           (view == AMDL_DATA_VIEW_OK || view == AMDL_DATA_VIEW_BYTES_NULL);
++}
++
++static int amdl_native_fixture_request_cycle(struct shared_ptr *request_context,
++                                             unsigned int fixture) {
++    struct amdl_http_message *message = NULL;
++    struct amdl_url_request *request = NULL;
++    int remote_error = 0;
++    int result = 0;
++
++    if (fixture >= AMDL_NATIVE_ABI_FIXTURE_CYCLES || request_context == NULL ||
++        request_context->obj == NULL || request_context->ctrl_blk == NULL) {
++        return 0;
++    }
++    message = amdl_native_create_message_at(amdl_native_fixture_urls[fixture],
++                                            amdl_native_fixture_posts[fixture]);
++    if (message == NULL) {
++        goto cleanup;
++    }
++    request = amdl_url_request_create(message, request_context);
++    if (request == NULL) {
++        goto cleanup;
++    }
++    ++amdl_harness_url_request_created;
++    if (!amdl_url_request_run(request) ||
++        !amdl_url_request_error_state(request, &remote_error)) {
++        goto cleanup;
++    }
++    switch (amdl_native_fixture_expectations[fixture]) {
++    case AMDL_NATIVE_FIXTURE_JSON:
++        result = remote_error == 0 && amdl_native_fixture_json_result(request, 1);
++        break;
++    case AMDL_NATIVE_FIXTURE_REMOTE_ERROR:
++        result = remote_error == 0 && amdl_native_fixture_json_result(request, 1);
++        break;
++    case AMDL_NATIVE_FIXTURE_EMPTY:
++        result = remote_error == 0 && amdl_native_fixture_empty_result(request);
++        break;
++    case AMDL_NATIVE_FIXTURE_INVALID_JSON:
++        result = remote_error == 0 && amdl_native_fixture_json_result(request, 0);
++        break;
++    default:
++        result = 0;
++        break;
++    }
++
++cleanup:
++    amdl_native_destroy_request(request);
++    amdl_native_destroy_message(message);
++    return result;
++}
++
++int main(void) {
++    struct shared_ptr request_context;
++    char *device_copy = NULL;
++    unsigned int cycle;
++    int result = EXIT_FAILURE;
++
++    if (!amdl_native_stage("parser") ||
++        !amdl_native_initialise_product_defaults(&device_copy) ||
++        !amdl_native_stage("device_fixture") ||
++        !amdl_native_stage("two_factor_suffix") ||
++        !amdl_native_two_factor_suffix_cycle() ||
++        !amdl_native_stage("init")) {
++        goto cleanup;
++    }
++    init();
++    if (!amdl_native_stage("init_ctx")) {
++        goto cleanup;
++    }
++    request_context = init_ctx();
++    if (request_context.obj == NULL || request_context.ctrl_blk == NULL ||
++        !amdl_native_stage("provider") ||
++        !amdl_native_provider_matches_any(
++            "_ZTVNSt6__ndk120__shared_ptr_emplaceIN13mediaplatform11HTTPMessageENS_9allocatorIS2_EEEE",
++            amdl_native_http_message_provider_names,
++            sizeof(amdl_native_http_message_provider_names) /
++                sizeof(amdl_native_http_message_provider_names[0]),
++            "AMDL_NATIVE_ABI_PROVIDER_FAILURE http_message_control_lookup\n",
++            "AMDL_NATIVE_ABI_PROVIDER_FAILURE http_message_control_owner\n") ||
++        !amdl_native_provider_matches_any("_ZN17storeservicescore10URLRequestD2Ev",
++                                      amdl_native_url_request_d2_provider_names,
++                                      sizeof(amdl_native_url_request_d2_provider_names) /
++                                          sizeof(amdl_native_url_request_d2_provider_names[0]),
++                                      "AMDL_NATIVE_ABI_PROVIDER_FAILURE url_request_d2_lookup\n",
++                                      "AMDL_NATIVE_ABI_PROVIDER_FAILURE url_request_d2_owner\n") ||
++        !amdl_native_provider_matches_any(
++            "_ZNK17storeservicescore19StoreErrorCondition9errorCodeEv",
++            amdl_native_store_error_code_provider_names,
++            sizeof(amdl_native_store_error_code_provider_names) /
++                sizeof(amdl_native_store_error_code_provider_names[0]),
++            "AMDL_NATIVE_ABI_PROVIDER_FAILURE store_error_code_lookup\n",
++            "AMDL_NATIVE_ABI_PROVIDER_FAILURE store_error_code_owner\n") ||
++        !amdl_native_stage("store_error_code") ||
++        !amdl_native_store_error_code_cycle() ||
++        !amdl_native_stage("cycles")) {
++        goto cleanup;
++    }
++
++    for (cycle = 0; cycle < AMDL_NATIVE_ABI_CYCLES; ++cycle) {
++        if (!amdl_native_http_message_cycle(0) ||
++            !amdl_native_http_message_cycle(1) ||
++            !amdl_native_url_request_cycle(&request_context, 0) ||
++            !amdl_native_url_request_cycle(&request_context, 1)) {
++            goto cleanup;
++        }
++    }
++    if (!amdl_harness_counts_match(4UL * AMDL_NATIVE_ABI_CYCLES,
++                                   2UL * AMDL_NATIVE_ABI_CYCLES) ||
++        !amdl_native_stage("fixture_server") ||
++        !amdl_native_stage("fixture_cycles")) {
++        goto cleanup;
++    }
++    for (cycle = 0; cycle < AMDL_NATIVE_ABI_FIXTURE_CYCLES; ++cycle) {
++        if (!amdl_native_fixture_case(cycle) ||
++            !amdl_native_fixture_request_cycle(&request_context, cycle)) {
++            (void)amdl_native_fixture_failure(cycle);
++            goto cleanup;
++        }
++    }
++    if (!amdl_harness_counts_match(4UL * AMDL_NATIVE_ABI_CYCLES +
++                                       AMDL_NATIVE_ABI_FIXTURE_CYCLES,
++                                   2UL * AMDL_NATIVE_ABI_CYCLES +
++                                       AMDL_NATIVE_ABI_FIXTURE_CYCLES) ||
++        !amdl_native_stage("complete") ||
++        !amdl_native_write_literal(STDOUT_FILENO, "AMDL_NATIVE_ABI_HARNESS_OK\n")) {
++        goto cleanup;
++    }
++    result = EXIT_SUCCESS;
++
++cleanup:
++    free(device_copy);
++    cmdline_parser_free(&args_info);
++    return result;
++}
+diff --git a/url_request_shim.cpp b/url_request_shim.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..e424f510d090619f678e2a7f915f39e5cdca4e2b
+--- /dev/null
++++ b/url_request_shim.cpp
+@@ -0,0 +1,476 @@
++#include "url_request_shim.h"
++
++#include <cerrno>
++#include <cstddef>
++#include <cstdint>
++#include <cstring>
++#include <new>
++#include <unistd.h>
++
++struct shared_ptr {
++    void *obj;
++    void *ctrl_blk;
++};
++
++static void amdl_native_marker(const char *literal, size_t length) {
++#ifdef AMDL_NATIVE_ABI_HARNESS
++    (void)literal;
++    (void)length;
++    return;
++#endif
++    if (literal == nullptr) {
++        return;
++    }
++    while (length > 0) {
++        ssize_t written = write(STDERR_FILENO, literal, length);
++        if (written < 0 && errno == EINTR) {
++            continue;
++        }
++        if (written <= 0) {
++            return;
++        }
++        literal += static_cast<size_t>(written);
++        length -= static_cast<size_t>(written);
++    }
++}
++
++extern "C" void *_ZTVNSt6__ndk120__shared_ptr_emplaceIN13mediaplatform11HTTPMessageENS_9allocatorIS2_EEEE;
++extern "C" void
++_ZN13mediaplatform11HTTPMessageC2ENSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES7_(
++    void *, void *, void *);
++extern "C" void _ZN13mediaplatform11HTTPMessageD2Ev(void *);
++extern "C" void
++_ZN13mediaplatform11HTTPMessage9setHeaderERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES9_(
++    void *, void *, void *);
++extern "C" void _ZN13mediaplatform11HTTPMessage11setBodyDataEPcm(
++    void *, char *, unsigned long);
++
++extern "C" void
++_ZN17storeservicescore10URLRequestC2ERKNSt6__ndk110shared_ptrIN13mediaplatform11HTTPMessageEEERKNS2_INS_14RequestContextEEE(
++    void *, struct shared_ptr *, struct shared_ptr *);
++extern "C" void _ZN17storeservicescore10URLRequestD2Ev(void *);
++extern "C" void *
++_ZN17storeservicescore10URLRequest19setRequestParameterERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES9_(
++    void *, void *, void *);
++extern "C" void *_ZN17storeservicescore10URLRequest3runEv(void *);
++extern "C" struct shared_ptr *_ZNK17storeservicescore10URLRequest5errorEv(void *);
++extern "C" struct shared_ptr *_ZNK17storeservicescore10URLRequest8responseEv(void *);
++extern "C" struct shared_ptr *_ZNK17storeservicescore11URLResponse18underlyingResponseEv(void *);
++extern "C" const unsigned char *_ZNK13mediaplatform4Data5bytesEv(void *);
++extern "C" size_t _ZNK13mediaplatform4Data6lengthEv(void *);
++extern "C" void _ZNSt6__ndk119__shared_weak_count16__release_sharedEv(void *);
++extern "C" const void *_ZNK17storeservicescore19StoreErrorCondition9errorCodeEv(const void *);
++
++extern "C" int amdl_store_error_code_value(
++    const void *condition,
++    uint32_t *out) noexcept {
++    if (out != nullptr) {
++        *out = 0;
++    }
++    try {
++        if (condition == nullptr || out == nullptr) {
++            return 0;
++        }
++        const void *value_address =
++            _ZNK17storeservicescore19StoreErrorCondition9errorCodeEv(condition);
++        if (value_address == nullptr) {
++            return 0;
++        }
++        std::memcpy(out, value_address, sizeof(*out));
++        return 1;
++    } catch (...) {
++        *out = 0;
++        return 0;
++    }
++}
++
++struct alignas(AMDL_HTTP_MESSAGE_STORAGE_ALIGNMENT) amdl_http_message_storage {
++    unsigned char bytes[AMDL_HTTP_MESSAGE_ALLOCATION_BYTES];
++};
++
++/* Locked libc++ control-block evidence: strong count is ctrl+0x08 and
++ * weak count is ctrl+0x10.  The release implementation decrements with
++ * xadd(-1) and dispatches zero-owner cleanup only when the old count is zero;
++ * therefore a zeroed block already represents the shim's one owner.  URLRequest
++ * C2 copies a second strong owner, and URLRequest D2 cannot delete the object
++ * or control block until the shim releases its zero-count owner. */
++
++static_assert(AMDL_HTTP_MESSAGE_ALLOCATION_BYTES - AMDL_HTTP_MESSAGE_OBJECT_OFFSET ==
++                  AMDL_HTTP_MESSAGE_OBJECT_BYTES,
++              "HTTPMessage object envelope changed");
++static_assert(sizeof(amdl_http_message_storage) == AMDL_HTTP_MESSAGE_ALLOCATION_BYTES,
++              "HTTPMessage allocation size changed");
++static_assert(alignof(amdl_http_message_storage) == AMDL_HTTP_MESSAGE_STORAGE_ALIGNMENT,
++              "HTTPMessage storage alignment changed");
++static_assert(AMDL_HTTP_MESSAGE_OBJECT_OFFSET % AMDL_HTTP_MESSAGE_OBJECT_ALIGNMENT == 0,
++              "HTTPMessage object alignment changed");
++
++struct amdl_http_message {
++    amdl_http_message_storage *storage;
++    shared_ptr shared;
++    bool constructed;
++    /*
++     * URLRequest's locked C2 copies this shared_ptr and increments the
++     * control block's strong count.  The shim retains its zero-count owner,
++     * so URLRequest D2 cannot release the control block prematurely.  These
++     * flags are wrapper bookkeeping only; they do not alter the
++     * evidence-locked HTTPMessage object or control-block layout.
++     */
++    bool request_owner_active;
++    bool request_owner_released;
++    bool shared_owner_active;
++};
++
++static void *http_message_object(amdl_http_message_storage *storage) {
++    if (storage == nullptr) {
++        return nullptr;
++    }
++    return storage->bytes + AMDL_HTTP_MESSAGE_OBJECT_OFFSET;
++}
++
++static bool valid_http_message(const amdl_http_message *message) {
++    return message != nullptr && message->constructed && message->storage != nullptr &&
++           message->shared.obj == http_message_object(message->storage) &&
++           message->shared.ctrl_blk == message->storage;
++}
++
++extern "C" struct amdl_http_message *amdl_http_message_create(
++    void *url,
++    void *method) noexcept {
++    amdl_http_message *message = nullptr;
++    try {
++        if (url == nullptr || method == nullptr) {
++            return nullptr;
++        }
++        message = new (std::nothrow) amdl_http_message();
++        if (message == nullptr) {
++            return nullptr;
++        }
++        message->storage = new (std::nothrow) amdl_http_message_storage;
++        if (message->storage == nullptr) {
++            delete message;
++            return nullptr;
++        }
++        std::memset(message->storage, 0, sizeof(*message->storage));
++        message->shared.obj = http_message_object(message->storage);
++        message->shared.ctrl_blk = message->storage;
++        message->constructed = false;
++        message->request_owner_active = false;
++        message->request_owner_released = false;
++        message->shared_owner_active = false;
++        *reinterpret_cast<void **>(message->storage->bytes) =
++            reinterpret_cast<void *>(&_ZTVNSt6__ndk120__shared_ptr_emplaceIN13mediaplatform11HTTPMessageENS_9allocatorIS2_EEEE + 2);
++        _ZN13mediaplatform11HTTPMessageC2ENSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES7_(
++            message->shared.obj, url, method);
++        message->constructed = true;
++        message->shared_owner_active = true;
++        return message;
++    } catch (...) {
++        if (message != nullptr) {
++            if (message->storage != nullptr) {
++                std::memset(message->storage, 0, sizeof(*message->storage));
++                delete message->storage;
++            }
++            delete message;
++        }
++        return nullptr;
++    }
++}
++
++extern "C" int amdl_http_message_set_header(
++    struct amdl_http_message *message,
++    void *name,
++    void *value) noexcept {
++    try {
++        if (!valid_http_message(message) || name == nullptr || value == nullptr) {
++            return 0;
++        }
++        _ZN13mediaplatform11HTTPMessage9setHeaderERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES9_(
++            message->shared.obj, name, value);
++        return 1;
++    } catch (...) {
++        return 0;
++    }
++}
++
++extern "C" int amdl_http_message_set_body_data(
++    struct amdl_http_message *message,
++    const char *body,
++    size_t length) noexcept {
++    try {
++        if (!valid_http_message(message) || body == nullptr || length == 0) {
++            return 0;
++        }
++        _ZN13mediaplatform11HTTPMessage11setBodyDataEPcm(
++            message->shared.obj, const_cast<char *>(body), static_cast<unsigned long>(length));
++        return 1;
++    } catch (...) {
++        return 0;
++    }
++}
++
++extern "C" void amdl_http_message_destroy(struct amdl_http_message *message) noexcept {
++    amdl_native_marker("[wrapper-native] cleanup http_message_d2 begin\n", sizeof("[wrapper-native] cleanup http_message_d2 begin\n") - 1);
++    if (message == nullptr) {
++        amdl_native_marker("[wrapper-native] cleanup http_message_d2 complete\n", sizeof("[wrapper-native] cleanup http_message_d2 complete\n") - 1);
++        return;
++    }
++    /* URLRequest still owns a copied shared_ptr.  Keep the outer metadata
++     * alive until URLRequest D2 has completed before releasing our owner. */
++    if (message->request_owner_active || !message->shared_owner_active ||
++        !valid_http_message(message)) {
++        amdl_native_marker("[wrapper-native] cleanup http_message_d2 deferred\n", sizeof("[wrapper-native] cleanup http_message_d2 deferred\n") - 1);
++        amdl_native_marker("[wrapper-native] cleanup http_message_d2 complete\n", sizeof("[wrapper-native] cleanup http_message_d2 complete\n") - 1);
++        return;
++    }
++    void *control_block = message->storage;
++    try {
++        /* The locked release path invokes HTTPMessage __on_zero_shared (D2)
++         * exactly once, then __release_weak dispatches the vtable D0 once. */
++        _ZNSt6__ndk119__shared_weak_count16__release_sharedEv(control_block);
++    } catch (...) {
++        return;
++    }
++    message->constructed = false;
++    message->shared_owner_active = false;
++    message->request_owner_active = false;
++    message->request_owner_released = true;
++    message->storage = nullptr;
++    message->shared = {nullptr, nullptr};
++    amdl_native_marker("[wrapper-native] cleanup http_message_d2 complete\n", sizeof("[wrapper-native] cleanup http_message_d2 complete\n") - 1);
++    amdl_native_marker("[wrapper-native] cleanup http_message_storage_delete begin\n", sizeof("[wrapper-native] cleanup http_message_storage_delete begin\n") - 1);
++    /* libc++ D0 has already released control_block; never touch, memset, or
++     * delete that storage here. */
++    amdl_native_marker("[wrapper-native] cleanup http_message_storage_delete complete\n", sizeof("[wrapper-native] cleanup http_message_storage_delete complete\n") - 1);
++    delete message;
++}
++
++struct alignas(AMDL_URL_REQUEST_ALIGNMENT) amdl_url_request_storage {
++    unsigned char bytes[AMDL_URL_REQUEST_ALLOCATION_BYTES];
++};
++
++static_assert(AMDL_URL_REQUEST_ALLOCATION_BYTES - AMDL_URL_REQUEST_OBJECT_OFFSET ==
++                  AMDL_URL_REQUEST_OBJECT_BYTES,
++              "locked URLRequest allocation envelope changed");
++static_assert(sizeof(amdl_url_request_storage) == AMDL_URL_REQUEST_ALLOCATION_BYTES,
++              "URLRequest allocation size changed");
++static_assert(alignof(amdl_url_request_storage) == AMDL_URL_REQUEST_ALIGNMENT,
++              "URLRequest storage alignment changed");
++static_assert(alignof(std::max_align_t) == AMDL_URL_REQUEST_ALIGNMENT,
++              "target max_align_t no longer matches the locked ABI");
++
++struct amdl_url_request {
++    amdl_url_request_storage *storage;
++    bool constructed;
++    amdl_http_message *http_message_owner;
++};
++
++static void *url_request_object(amdl_url_request_storage *storage) {
++    if (storage == nullptr) {
++        return nullptr;
++    }
++    return storage->bytes + AMDL_URL_REQUEST_OBJECT_OFFSET;
++}
++
++extern "C" struct amdl_url_request *amdl_url_request_create(
++    struct amdl_http_message *http_message,
++    struct shared_ptr *request_context) noexcept {
++    amdl_url_request *request = nullptr;
++    try {
++        if (!valid_http_message(http_message) || http_message->request_owner_active ||
++            http_message->request_owner_released || request_context == nullptr ||
++            request_context->obj == nullptr || request_context->ctrl_blk == nullptr) {
++            return nullptr;
++        }
++        request = new (std::nothrow) amdl_url_request();
++        if (request == nullptr) {
++            return nullptr;
++        }
++        request->storage = new (std::nothrow) amdl_url_request_storage;
++        if (request->storage == nullptr) {
++            delete request;
++            return nullptr;
++        }
++        std::memset(request->storage, 0, sizeof(*request->storage));
++        request->constructed = false;
++        request->http_message_owner = http_message;
++        _ZN17storeservicescore10URLRequestC2ERKNSt6__ndk110shared_ptrIN13mediaplatform11HTTPMessageEEERKNS2_INS_14RequestContextEEE(
++            url_request_object(request->storage), &http_message->shared, request_context);
++        request->constructed = true;
++        http_message->request_owner_active = true;
++        http_message->request_owner_released = false;
++        return request;
++    } catch (...) {
++        if (request != nullptr) {
++            if (request->storage != nullptr) {
++                std::memset(request->storage, 0, sizeof(*request->storage));
++                delete request->storage;
++            }
++            delete request;
++        }
++        return nullptr;
++    }
++}
++
++static bool valid_url_request(const amdl_url_request *request) {
++    return request != nullptr && request->constructed && request->storage != nullptr;
++}
++
++extern "C" int amdl_url_request_set_parameter(
++    struct amdl_url_request *request,
++    void *name,
++    void *value) noexcept {
++    try {
++        if (!valid_url_request(request) || name == nullptr || value == nullptr) {
++            return 0;
++        }
++        _ZN17storeservicescore10URLRequest19setRequestParameterERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES9_(
++            url_request_object(request->storage), name, value);
++        return 1;
++    } catch (...) {
++        return 0;
++    }
++}
++
++extern "C" int amdl_url_request_run(struct amdl_url_request *request) noexcept {
++    try {
++        if (!valid_url_request(request)) {
++            return 0;
++        }
++        _ZN17storeservicescore10URLRequest3runEv(url_request_object(request->storage));
++        return 1;
++    } catch (...) {
++        return 0;
++    }
++}
++
++extern "C" int amdl_url_request_error_state(
++    struct amdl_url_request *request,
++    int *has_remote_error) noexcept {
++    try {
++        if (!valid_url_request(request) || has_remote_error == nullptr) {
++            return 0;
++        }
++        *has_remote_error = 0;
++        shared_ptr *error = _ZNK17storeservicescore10URLRequest5errorEv(
++            url_request_object(request->storage));
++        if (error == nullptr || ((error->obj == nullptr) != (error->ctrl_blk == nullptr))) {
++            return 0;
++        }
++        *has_remote_error = error->obj != nullptr ? 1 : 0;
++        return 1;
++    } catch (...) {
++        if (has_remote_error != nullptr) {
++            *has_remote_error = 0;
++        }
++        return 0;
++    }
++}
++
++extern "C" int amdl_url_request_response_object(
++    struct amdl_url_request *request,
++    void **response_object) noexcept {
++    try {
++        if (!valid_url_request(request) || response_object == nullptr) {
++            return 0;
++        }
++        *response_object = nullptr;
++        shared_ptr *response = _ZNK17storeservicescore10URLRequest8responseEv(
++            url_request_object(request->storage));
++        if (response == nullptr || response->obj == nullptr || response->ctrl_blk == nullptr) {
++            return 0;
++        }
++        *response_object = response->obj;
++        return 1;
++    } catch (...) {
++        if (response_object != nullptr) {
++            *response_object = nullptr;
++        }
++        return 0;
++    }
++}
++
++extern "C" int amdl_url_response_underlying_object(
++    void *response_object,
++    void **underlying_object) noexcept {
++    try {
++        if (response_object == nullptr || underlying_object == nullptr) {
++            return 0;
++        }
++        *underlying_object = nullptr;
++        shared_ptr *underlying =
++            _ZNK17storeservicescore11URLResponse18underlyingResponseEv(response_object);
++        if (underlying == nullptr || underlying->obj == nullptr || underlying->ctrl_blk == nullptr) {
++            return 0;
++        }
++        *underlying_object = underlying->obj;
++        return 1;
++    } catch (...) {
++        if (underlying_object != nullptr) {
++            *underlying_object = nullptr;
++        }
++        return 0;
++    }
++}
++
++extern "C" void amdl_url_request_destroy(struct amdl_url_request *request) noexcept {
++    amdl_native_marker("[wrapper-native] cleanup url_request_d2 begin\n", sizeof("[wrapper-native] cleanup url_request_d2 begin\n") - 1);
++    amdl_http_message *owner = request != nullptr ? request->http_message_owner : nullptr;
++    try {
++        if (valid_url_request(request)) {
++            _ZN17storeservicescore10URLRequestD2Ev(url_request_object(request->storage));
++            request->constructed = false;
++            if (owner != nullptr && owner->request_owner_active) {
++                owner->request_owner_active = false;
++                owner->request_owner_released = true;
++            }
++        }
++    } catch (...) {
++        if (request != nullptr) {
++            request->constructed = false;
++        }
++    }
++    amdl_native_marker("[wrapper-native] cleanup url_request_d2 complete\n", sizeof("[wrapper-native] cleanup url_request_d2 complete\n") - 1);
++    amdl_native_marker("[wrapper-native] cleanup url_request_storage_delete begin\n", sizeof("[wrapper-native] cleanup url_request_storage_delete begin\n") - 1);
++    if (request == nullptr) {
++        amdl_native_marker("[wrapper-native] cleanup url_request_storage_delete complete\n", sizeof("[wrapper-native] cleanup url_request_storage_delete complete\n") - 1);
++        return;
++    }
++    if (request->storage != nullptr) {
++        std::memset(request->storage, 0, sizeof(*request->storage));
++        delete request->storage;
++        request->storage = nullptr;
++    }
++    amdl_native_marker("[wrapper-native] cleanup url_request_storage_delete complete\n", sizeof("[wrapper-native] cleanup url_request_storage_delete complete\n") - 1);
++    delete request;
++}
++
++extern "C" int amdl_data_view(
++    void *data_object,
++    const unsigned char **bytes,
++    size_t *length) noexcept {
++    if (data_object == nullptr || bytes == nullptr || length == nullptr) {
++        return AMDL_DATA_VIEW_INVALID_ARGUMENT;
++    }
++    *bytes = nullptr;
++    *length = 0;
++    try {
++        size_t data_length = _ZNK13mediaplatform4Data6lengthEv(data_object);
++        *length = data_length;
++    } catch (...) {
++        *length = 0;
++        return AMDL_DATA_VIEW_LENGTH_EXCEPTION;
++    }
++    try {
++        const unsigned char *data_bytes = _ZNK13mediaplatform4Data5bytesEv(data_object);
++        if (data_bytes == nullptr) {
++            *length = 0;
++            return AMDL_DATA_VIEW_BYTES_NULL;
++        }
++        *bytes = data_bytes;
++        return AMDL_DATA_VIEW_OK;
++    } catch (...) {
++        *length = 0;
++        return AMDL_DATA_VIEW_BYTES_EXCEPTION;
++    }
++}
+diff --git a/url_request_shim.h b/url_request_shim.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..ad1de68e9397606b71be95999260f85a7b3d40d4
+--- /dev/null
++++ b/url_request_shim.h
+@@ -0,0 +1,75 @@
++#pragma once
++
++#include <stddef.h>
++#include <stdint.h>
++
++#define AMDL_HTTP_MESSAGE_ALLOCATION_BYTES 0x1e0
++#define AMDL_HTTP_MESSAGE_OBJECT_OFFSET 0x18
++#define AMDL_HTTP_MESSAGE_OBJECT_BYTES 0x1c8
++#define AMDL_HTTP_MESSAGE_STORAGE_ALIGNMENT 16
++#define AMDL_HTTP_MESSAGE_OBJECT_ALIGNMENT 8
++#define AMDL_URL_REQUEST_ALLOCATION_BYTES 0x250
++#define AMDL_URL_REQUEST_OBJECT_OFFSET 0x20
++#define AMDL_URL_REQUEST_OBJECT_BYTES 0x230
++#define AMDL_URL_REQUEST_ALIGNMENT 16
++
++#ifdef __cplusplus
++#define AMDL_C_ABI_NOEXCEPT noexcept
++extern "C" {
++#else
++#define AMDL_C_ABI_NOEXCEPT
++#endif
++
++struct shared_ptr;
++struct amdl_http_message;
++struct amdl_url_request;
++enum amdl_data_view_result {
++    AMDL_DATA_VIEW_OK = 0,
++    AMDL_DATA_VIEW_INVALID_ARGUMENT = 1,
++    AMDL_DATA_VIEW_LENGTH_EXCEPTION = 2,
++    AMDL_DATA_VIEW_BYTES_EXCEPTION = 3,
++    AMDL_DATA_VIEW_BYTES_NULL = 4,
++};
++
++struct amdl_http_message *amdl_http_message_create(void *url, void *method) AMDL_C_ABI_NOEXCEPT;
++int amdl_http_message_set_header(
++    struct amdl_http_message *message,
++    void *name,
++    void *value) AMDL_C_ABI_NOEXCEPT;
++int amdl_http_message_set_body_data(
++    struct amdl_http_message *message,
++    const char *body,
++    size_t length) AMDL_C_ABI_NOEXCEPT;
++void amdl_http_message_destroy(struct amdl_http_message *message) AMDL_C_ABI_NOEXCEPT;
++
++struct amdl_url_request *amdl_url_request_create(
++    struct amdl_http_message *http_message,
++    struct shared_ptr *request_context) AMDL_C_ABI_NOEXCEPT;
++int amdl_url_request_set_parameter(
++    struct amdl_url_request *request,
++    void *name,
++    void *value) AMDL_C_ABI_NOEXCEPT;
++int amdl_url_request_run(struct amdl_url_request *request) AMDL_C_ABI_NOEXCEPT;
++int amdl_url_request_error_state(
++    struct amdl_url_request *request,
++    int *has_remote_error) AMDL_C_ABI_NOEXCEPT;
++int amdl_url_request_response_object(
++    struct amdl_url_request *request,
++    void **response_object) AMDL_C_ABI_NOEXCEPT;
++int amdl_url_response_underlying_object(
++    void *response_object,
++    void **underlying_object) AMDL_C_ABI_NOEXCEPT;
++void amdl_url_request_destroy(struct amdl_url_request *request) AMDL_C_ABI_NOEXCEPT;
++int amdl_data_view(
++    void *data_object,
++    const unsigned char **bytes,
++    size_t *length) AMDL_C_ABI_NOEXCEPT;
++int amdl_store_error_code_value(
++    const void *condition,
++    uint32_t *out) AMDL_C_ABI_NOEXCEPT;
++
++#ifdef __cplusplus
++}
++#endif
++
++#undef AMDL_C_ABI_NOEXCEPT
+diff --git a/wrapper.c b/wrapper.c
+index 4e57f4f2cc28e1e253c7f432b64f382ddca1e200..70e837cde16922f6e7f9b9e1d89684b3e6802d62 100644
+--- a/wrapper.c
++++ b/wrapper.c
+@@ -3,8 +3,10 @@
+ #include <errno.h>
+ #include <fcntl.h>
+ #include <sched.h>
++#include <signal.h>
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <sys/prctl.h>
+ #include <sys/stat.h>
+ #include <sys/sysmacros.h>
+ #include <sys/types.h>
+@@ -15,17 +17,234 @@
+ 
+ #include "cmdline.h"
+ 
+-pid_t child_proc = -1;
++static volatile sig_atomic_t child_proc = -1;
++static volatile sig_atomic_t termination_signal = 0;
++extern char **environ;
++
+ struct gengetopt_args_info args_info;
+ #define CAP_SYS_ADMIN_IDX 21
+ #define CAP_SYS_ADMIN_BIT (1ULL << CAP_SYS_ADMIN_IDX)
++#define MAX_STALE_MOUNT_LAYERS 32
++#define ROOTFS_DIRECTORY "./rootfs"
++#define ROOTFS_DEV_DIRECTORY "./rootfs/dev"
++#define ROOTFS_PROC_TARGET "./rootfs/proc"
++#define ROOTFS_URANDOM_TARGET "./rootfs/dev/urandom"
++#define ROOTFS_MAIN_BINARY "./rootfs/system/bin/main"
++#define ROOTFS_NETWORK_PREFLIGHT_BINARY "./rootfs/system/bin/amdl-network-preflight"
++#define MAIN_BINARY "/system/bin/main"
++#define NETWORK_PREFLIGHT_BINARY "/system/bin/amdl-network-preflight"
+ 
+ static void intHan(int signum) {
+-    if (child_proc != -1) {
+-        kill(child_proc, SIGKILL);
++    termination_signal = signum;
++    sig_atomic_t child = child_proc;
++    if (child > 0) {
++        kill((pid_t)child, SIGKILL);
++    }
++}
++
++static int install_signal_handlers(void) {
++    struct sigaction action;
++    memset(&action, 0, sizeof(action));
++    action.sa_handler = intHan;
++    sigemptyset(&action.sa_mask);
++    if (sigaction(SIGINT, &action, NULL) != 0 || sigaction(SIGTERM, &action, NULL) != 0) {
++        perror("sigaction");
++        return -1;
++    }
++    return 0;
++}
++
++static int reset_child_signal_handlers(void) {
++    struct sigaction action;
++    memset(&action, 0, sizeof(action));
++    action.sa_handler = SIG_DFL;
++    sigemptyset(&action.sa_mask);
++    if (sigaction(SIGINT, &action, NULL) != 0 || sigaction(SIGTERM, &action, NULL) != 0) {
++        perror("reset child sigaction");
++        return -1;
++    }
++    return 0;
++}
++
++static int ensure_directory(const char *path, mode_t mode) {
++    if (mkdir(path, mode) != 0 && errno != EEXIST) {
++        perror(path);
++        return -1;
++    }
++    struct stat status;
++    if (lstat(path, &status) != 0 || !S_ISDIR(status.st_mode)) {
++        fprintf(stderr, "%s is not a directory\n", path);
++        return -1;
++    }
++    return 0;
++}
++
++static int ensure_urandom_target(void) {
++    int fd = open(ROOTFS_URANDOM_TARGET, O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW, 0666);
++    if (fd < 0) {
++        perror("open " ROOTFS_URANDOM_TARGET " failed");
++        return -1;
++    }
++    struct stat status;
++    int valid = fstat(fd, &status) == 0 && (S_ISREG(status.st_mode) || S_ISCHR(status.st_mode));
++    close(fd);
++    if (!valid) {
++        fprintf(stderr, ROOTFS_URANDOM_TARGET " is not a safe mount target\n");
++        return -1;
++    }
++    return 0;
++}
++
++static int validate_regular_file(const char *path) {
++    struct stat status;
++    if (lstat(path, &status) != 0 || !S_ISREG(status.st_mode)) {
++        fprintf(stderr, "%s is not a regular file\n", path);
++        return -1;
++    }
++    return 0;
++}
++
++static int detach_one_mount(const char *target) {
++    for (;;) {
++        if (umount2(target, MNT_DETACH) == 0) {
++            return 0;
++        }
++        if (errno == EINTR) {
++            continue;
++        }
++        if (errno == EINVAL || errno == ENOENT) {
++            return 0;
++        }
++        perror(target);
++        return -1;
++    }
++}
++
++static int detach_stale_mounts(const char *target) {
++    for (unsigned int detached = 0; detached < MAX_STALE_MOUNT_LAYERS; ++detached) {
++        for (;;) {
++            if (umount2(target, MNT_DETACH) == 0) {
++                break;
++            }
++            if (errno == EINTR) {
++                continue;
++            }
++            if (errno == EINVAL || errno == ENOENT) {
++                return 0;
++            }
++            perror(target);
++            return -1;
++        }
++    }
++    fprintf(stderr, "%s has too many stale mount layers\n", target);
++    return -1;
++}
++
++static int cleanup_mounts(int proc_mount_attempted, int urandom_mounted,
++                          int rootfs_cwd, int chrooted) {
++    int failed = 0;
++    if (proc_mount_attempted && detach_one_mount("/proc") != 0) {
++        failed = 1;
++    }
++    if (urandom_mounted) {
++        const char *target = chrooted ? "/dev/urandom" :
++                             (rootfs_cwd ? "./dev/urandom" : ROOTFS_URANDOM_TARGET);
++        if (detach_one_mount(target) != 0) {
++            failed = 1;
++        }
++    }
++    return failed ? -1 : 0;
++}
++
++static int wait_for_child(pid_t child, int *status) {
++    for (;;) {
++        pid_t waited = waitpid(child, status, 0);
++        if (waited == child) {
++            return 0;
++        }
++        if (waited < 0 && errno == EINTR) {
++            continue;
++        }
++        perror("waitpid");
++        return -1;
++    }
++}
++
++static int child_exit_code(int status) {
++    if (WIFEXITED(status)) {
++        return WEXITSTATUS(status);
++    }
++    if (WIFSIGNALED(status)) {
++        return 128 + WTERMSIG(status);
++    }
++    return 1;
++}
++
++static int notify_proc_mount_attempt(int fd) {
++    const char marker = 'P';
++    for (;;) {
++        ssize_t written = write(fd, &marker, 1);
++        if (written == 1) {
++            return 0;
++        }
++        if (written < 0 && errno == EINTR) {
++            continue;
++        }
++        perror("notify proc mount attempt");
++        return -1;
+     }
+ }
+ 
++static int read_proc_mount_attempt(int fd) {
++    char marker = 0;
++    for (;;) {
++        ssize_t count = read(fd, &marker, 1);
++        if (count == 1) {
++            return marker == 'P' ? 1 : -1;
++        }
++        if (count == 0) {
++            return 0;
++        }
++        if (errno == EINTR) {
++            continue;
++        }
++        perror("read proc mount attempt");
++        return -1;
++    }
++}
++
++static void close_descriptor(int *fd) {
++    if (*fd < 0) {
++        return;
++    }
++    close(*fd);
++    *fd = -1;
++}
++
++/* Launcher phase markers. Only fixed stage labels and process identifiers are
++ * written; argv, environment, and credential material never appear. Without
++ * them an initialization watchdog can only report that startup stopped, not
++ * which launcher stage it stopped in. */
++static void launch_marker(const char *stage) {
++    if (stage == NULL) {
++        return;
++    }
++    fprintf(stderr, "[wrapper-launch] %s\n", stage);
++    fflush(stderr);
++}
++
++/* Deliberately reports only pid and pgid. The child can be PID 1 in a fresh
++ * PID namespace after unshare(CLONE_NEWPID), where the inherited parent
++ * identifier reads as 0 and would mislead a log reader. */
++static void launch_marker_identity(const char *stage) {
++    if (stage == NULL) {
++        return;
++    }
++    fprintf(stderr, "[wrapper-launch] %s pid=%ld pgid=%ld\n", stage,
++            (long)getpid(), (long)getpgrp());
++    fflush(stderr);
++}
++
+ int has_cap_sys_admin() {
+     FILE *fp;
+     char line[256];
+@@ -62,42 +281,168 @@ int has_cap_sys_admin() {
+     }
+ }
+ 
++static int parse_inherited_fd(const char *value) {
++    char *end = NULL;
++    errno = 0;
++    long descriptor = strtol(value, &end, 10);
++    if (errno != 0 || end == value || *end != '\0' || descriptor < 3 || descriptor > 1024) {
++        return -1;
++    }
++    return (int)descriptor;
++}
++
+ int main(int argc, char *argv[], char *envp[]) {
+-    cmdline_parser(argc, argv, &args_info);
+-    if (signal(SIGINT, intHan) == SIG_ERR) {
+-        perror("signal");
++    (void)envp;
++    int result = 1;
++    int login_fd = -1;
++    int resume_session = 0;
++    int network_result_fd = -1;
++    int urandom_mounted = 0;
++    int rootfs_cwd = 0;
++    int chrooted = 0;
++    int proc_mount_attempted = 0;
++    int mount_pipe[2] = {-1, -1};
++    char **safe_argv = calloc((size_t)argc + 1, sizeof(char *));
++    if (safe_argv == NULL) {
++        perror("calloc argv");
+         return 1;
+     }
++    int safe_argc = 0;
++    for (int i = 0; i < argc; ++i) {
++        if (strcmp(argv[i], "--resume-session") == 0) {
++            if (resume_session) {
++                fprintf(stderr, "duplicate session restore mode\n");
++                return 1;
++            }
++            resume_session = 1;
++            continue;
++        }
++        if (strcmp(argv[i], "--login-fd") == 0) {
++            if (login_fd != -1 || i + 1 >= argc || (login_fd = parse_inherited_fd(argv[++i])) < 0) {
++                fprintf(stderr, "invalid --login-fd value\n");
++                return 1;
++            }
++            continue;
++        }
++        if (strncmp(argv[i], "--login-fd=", 11) == 0) {
++            if (login_fd != -1 || (login_fd = parse_inherited_fd(argv[i] + 11)) < 0) {
++                fprintf(stderr, "invalid --login-fd value\n");
++                return 1;
++            }
++            continue;
++        }
++        if (strcmp(argv[i], "--network-result-fd") == 0) {
++            if (network_result_fd != -1 || i + 1 >= argc ||
++                (network_result_fd = parse_inherited_fd(argv[++i])) < 0) {
++                fprintf(stderr, "invalid --network-result-fd value\n");
++                return 1;
++            }
++            continue;
++        }
++        if (strncmp(argv[i], "--network-result-fd=", 20) == 0) {
++            if (network_result_fd != -1 ||
++                (network_result_fd = parse_inherited_fd(argv[i] + 20)) < 0) {
++                fprintf(stderr, "invalid --network-result-fd value\n");
++                return 1;
++            }
++            continue;
++        }
++        safe_argv[safe_argc++] = argv[i];
++    }
++    safe_argv[safe_argc] = NULL;
++    unsetenv("AMDL_WRAPPER_RESUME_SESSION");
++    if (resume_session && (login_fd == -1 || network_result_fd != -1)) {
++        fprintf(stderr, "session restore requires login descriptor and no network probe\n");
++        return 1;
++    }
++    if (resume_session && setenv("AMDL_WRAPPER_RESUME_SESSION", "1", 1) != 0) {
++        perror("set session restore mode");
++        return 1;
++    }
++    if (login_fd != -1 && network_result_fd != -1) {
++        fprintf(stderr, "login and network result descriptors are mutually exclusive\n");
++        return 1;
++    }
++    if (login_fd != -1) {
++        int flags = fcntl(login_fd, F_GETFD);
++        if (flags < 0 || fcntl(login_fd, F_SETFD, flags & ~FD_CLOEXEC) != 0) {
++            perror("prepare login fd");
++            return 1;
++        }
++        char value[16];
++        if (snprintf(value, sizeof(value), "%d", login_fd) <= 0 ||
++            setenv("AMDL_WRAPPER_LOGIN_FD", value, 1) != 0) {
++            perror("set login fd environment");
++            return 1;
++        }
++    }
++    if (network_result_fd != -1) {
++        int flags = fcntl(network_result_fd, F_GETFD);
++        if (flags < 0 ||
++            fcntl(network_result_fd, F_SETFD, flags & ~FD_CLOEXEC) != 0) {
++            perror("prepare network result fd");
++            return 1;
++        }
++        char value[16];
++        if (snprintf(value, sizeof(value), "%d", network_result_fd) <= 0 ||
++            setenv("AMDL_NETWORK_RESULT_FD", value, 1) != 0) {
++            perror("set network result fd environment");
++            return 1;
++        }
++    }
+ 
+-    if (mkdir("./rootfs/dev", 0755) != 0 && errno != EEXIST) {
+-        perror("mkdir ./rootfs/dev failed");
+-        return 1;
++    launch_marker_identity("launcher_start");
++    cmdline_parser(safe_argc, safe_argv, &args_info);
++    if (install_signal_handlers() != 0) {
++        goto cleanup;
+     }
+ 
+-    int fd = open("./rootfs/dev/urandom", O_CREAT | O_RDWR, 0666);
+-    if (fd < 0) {
+-        perror("open ./rootfs/dev/urandom failed");
+-        return 1;
++    if (ensure_directory(ROOTFS_DIRECTORY, 0755) != 0 ||
++        ensure_directory(ROOTFS_DEV_DIRECTORY, 0755) != 0 ||
++        ensure_directory(ROOTFS_PROC_TARGET, 0755) != 0 ||
++        ensure_urandom_target() != 0) {
++        goto cleanup;
+     }
++    const char *rootfs_child_binary = network_result_fd != -1 ? ROOTFS_NETWORK_PREFLIGHT_BINARY : ROOTFS_MAIN_BINARY;
++    const char *child_binary = network_result_fd != -1 ? NETWORK_PREFLIGHT_BINARY : MAIN_BINARY;
++    if (validate_regular_file(rootfs_child_binary) != 0) {
++        goto cleanup;
++    }
+-    close(fd);
+ 
+-    if (mount("/dev/urandom", "./rootfs/dev/urandom", NULL, MS_BIND, NULL) != 0) {
++    if (detach_stale_mounts(ROOTFS_PROC_TARGET) != 0 ||
++        detach_stale_mounts(ROOTFS_URANDOM_TARGET) != 0 ||
++        ensure_directory(ROOTFS_PROC_TARGET, 0755) != 0 ||
++        validate_regular_file(ROOTFS_URANDOM_TARGET) != 0) {
++        goto cleanup;
++    }
++
++    if (termination_signal != 0) {
++        result = 128 + termination_signal;
++        goto cleanup;
++    }
++
++    if (mount("/dev/urandom", ROOTFS_URANDOM_TARGET, NULL, MS_BIND, NULL) != 0) {
+         perror("mount /dev/urandom failed");
+-        return 1;
++        goto cleanup;
+     }
++    urandom_mounted = 1;
++    launch_marker("mounts_prepared");
+ 
+-    if (chdir("./rootfs") != 0) {
++    if (chdir(ROOTFS_DIRECTORY) != 0) {
+         perror("chdir");
+-        return 1;
++        goto cleanup;
+     }
++    rootfs_cwd = 1;
+     if (chroot("./") != 0) {
+         perror("chroot");
+-        return 1;
++        goto cleanup;
+     }
++    chrooted = 1;
++    launch_marker("chroot_complete");
+ 
+     if (mkdir("/proc", 0755) != 0 && errno != EEXIST) {
+         perror("mkdir /proc failed");
+-        return 1;
++        goto cleanup;
+     }
+ 
+     chmod("/system/bin/linker64", 0755);
+@@ -106,21 +451,75 @@ int main(int argc, char *argv[], char *envp[]) {
+     if (has_cap_sys_admin()) {
+         if (unshare(CLONE_NEWPID)) {
+             perror("unshare");
+-            return 1;
++            goto cleanup;
+         }
+     }
+ 
+-    child_proc = fork();
+-    if (child_proc == -1) {
++    if (termination_signal != 0) {
++        result = 128 + termination_signal;
++        goto cleanup;
++    }
++
++    if (pipe2(mount_pipe, O_CLOEXEC) != 0) {
++        perror("pipe2");
++        goto cleanup;
++    }
++
++    /* The child liveness marker below also closes the parent-death fork race. */
++    pid_t fork_result = fork();
++    child_proc = (sig_atomic_t)fork_result;
++    if (fork_result == -1) {
+         perror("fork");
+-        return 1;
++        goto cleanup;
+     }
+ 
+-    if (child_proc > 0) {
+-        wait(NULL);
+-        return 0;
++    if (fork_result > 0) {
++        fprintf(stderr, "[wrapper-launch] fork_parent pid=%ld child=%ld pgid=%ld\n",
++                (long)getpid(), (long)fork_result, (long)getpgrp());
++        fflush(stderr);
++        close_descriptor(&mount_pipe[1]);
++        close_descriptor(&login_fd);
++        close_descriptor(&network_result_fd);
++        unsetenv("AMDL_WRAPPER_LOGIN_FD");
++        unsetenv("AMDL_NETWORK_RESULT_FD");
++
++        int child_status = 0;
++        int wait_result = wait_for_child(fork_result, &child_status);
++        child_proc = -1;
++        int marker_result = read_proc_mount_attempt(mount_pipe[0]);
++        close_descriptor(&mount_pipe[0]);
++        if (marker_result < 0) {
++            proc_mount_attempted = 1;
++            result = 1;
++        } else {
++            proc_mount_attempted = marker_result;
++            result = wait_result == 0 ? child_exit_code(child_status) : 1;
++        }
++        if (termination_signal != 0) {
++            result = 128 + termination_signal;
++        }
++        goto cleanup;
+     }
+ 
++    launch_marker_identity("fork_child");
++    close_descriptor(&mount_pipe[0]);
++    if (prctl(PR_SET_PDEATHSIG, SIGKILL) != 0) {
++        perror("prctl PR_SET_PDEATHSIG");
++        return 1;
++    }
++    /* The marker write is the post-prctl parent liveness handshake:
++     * only the parent owns the read end after this child closes its copy.
++     * An already-dead parent yields EPIPE/SIGPIPE; a later death delivers
++     * SIGKILL, including when this child is PID 1 in a new namespace.
++     */
++    if (reset_child_signal_handlers() != 0 || notify_proc_mount_attempt(mount_pipe[1]) != 0) {
++        close_descriptor(&mount_pipe[1]);
++        return 1;
++    }
++    close_descriptor(&mount_pipe[1]);
++    if (termination_signal != 0) {
++        return 128 + termination_signal;
++    }
+     if (mount("proc", "/proc", "proc", 0, NULL) != 0) {
+         perror("mount proc failed");
+         return 1;
+@@ -136,8 +535,27 @@ int main(int argc, char *argv[], char *envp[]) {
+         perror("mkdir mpl_db failed");
+     }
+ 
+-    execve("/system/bin/main", argv, envp);
++    if (network_result_fd != -1) {
++        launch_marker_identity("exec_network_preflight_begin");
++    } else {
++        launch_marker_identity("exec_main_begin");
++    }
++    execve(child_binary, safe_argv, environ);
+     
+     perror("execve");
+     return 1;
+-}
+\ No newline at end of file
++
++cleanup:
++    child_proc = -1;
++    close_descriptor(&mount_pipe[0]);
++    close_descriptor(&mount_pipe[1]);
++    close_descriptor(&login_fd);
++    close_descriptor(&network_result_fd);
++    unsetenv("AMDL_WRAPPER_LOGIN_FD");
++    unsetenv("AMDL_NETWORK_RESULT_FD");
++    if (cleanup_mounts(proc_mount_attempted, urandom_mounted, rootfs_cwd, chrooted) != 0 && result == 0) {
++        result = 1;
++    }
++    free(safe_argv);
++    return result;
++}

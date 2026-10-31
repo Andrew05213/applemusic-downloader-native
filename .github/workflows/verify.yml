@@ -1,0 +1,92 @@
+name: Native Verify
+
+on:
+  workflow_call:
+  pull_request:
+  push:
+    branches: [main, master, 'codex/native-ci-*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_call' }}
+
+env:
+  GOMAXPROCS: '2'
+  GOFLAGS: '-p=2'
+
+jobs:
+  linux:
+    name: Shared backend and native UI
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, Node 24
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0, Node 24
+        with:
+          go-version: '1.25.0'
+          cache-dependency-path: apple-music-downloader/go.sum
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0, Node 24
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Native delivery and private distribution gates
+        run: npm run verify:native
+      - name: Native and shared JavaScript unit tests
+        run: npm test
+      - name: Native Go dependency boundaries
+        run: npm run verify:boundaries
+      - name: Go race, vet and guest cross-build
+        working-directory: apple-music-downloader
+        run: |
+          go test -race ./...
+          go vet ./...
+          mkdir -p ../.artifacts/ci
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -mod=readonly -trimpath -buildvcs=false -o ../.artifacts/ci/amdl-guest ./cmd/amdl-guest
+      - name: Generate account-free AAC streaming fixture
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+          mkdir -p .artifacts/ci/aac-input .artifacts/ci/aac-output
+          ffmpeg -hide_banner -v error -nostdin -f lavfi -i sine=frequency=440:sample_rate=48000 -t 42 -c:a aac -b:a 128k -f hls -hls_time 2 -hls_playlist_type vod -hls_segment_type fmp4 -hls_fmp4_init_filename init.mp4 .artifacts/ci/aac-input/index.m3u8
+          AMDL_STREAM_FIXTURE="$PWD/.artifacts/ci/aac-input" AMDL_STREAM_OUTPUT="$PWD/.artifacts/ci/aac-output" go -C apple-music-downloader test -count=1 -run '^TestStreamGeneratedAACFixture$' ./utils/runv2
+          ffmpeg -hide_banner -v error -xerror -nostdin -i .artifacts/ci/aac-output/complete.m4a -map 0:a:0 -f null -
+      - name: Native and shared UI regression with real AAC
+        env:
+          AMDL_STREAM_BROWSER: chrome
+        run: |
+          npx playwright install --with-deps chromium chrome
+          mkdir -p "$RUNNER_TEMP/amdl-browser"
+          AMDL_BROWSER_TEMP="$RUNNER_TEMP/amdl-browser" AMDL_STREAM_OUTPUT="$PWD/.artifacts/ci/aac-output" npm run test:web
+
+  windows:
+    name: Windows native services
+    runs-on: windows-2025
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, Node 24
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0, Node 24
+        with:
+          go-version: '1.25.0'
+          cache-dependency-path: apple-music-downloader/go.sum
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0, Node 24
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run verify:native
+      - run: npm test
+      - run: npm run verify:boundaries
+      - run: npm run build:native-backend
+      - run: npm run build:native-service
+      - run: npm run test:native-backend
+      - name: Windows native backend regression
+        shell: pwsh
+        # Keep the production owner/ACL and canonical path checks strict.
+        # The helper scopes the elevated runner's default owner/TEMP to this
+        # process; legacy directory-Sync tests remain covered fully on Linux.
+        run: ./electron/native-ci-windows.ps1

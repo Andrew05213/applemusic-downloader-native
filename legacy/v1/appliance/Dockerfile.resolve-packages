@@ -1,0 +1,25 @@
+ARG GO_BUILDER_IMAGE=golang:1.23.1-bookworm@sha256:31817d38d90894d73ce3fe3b7f01c5f213ac7e9681bf462d4ad65afa8e902c7e
+ARG UBUNTU_RUNTIME_IMAGE=ubuntu:22.04@sha256:0d779ea97881505f5ef0039336ee85edba27519bdba968c284c86ee066a973c8
+FROM --platform=linux/amd64 ${GO_BUILDER_IMAGE} AS ca-bootstrap
+
+FROM --platform=linux/amd64 ${UBUNTU_RUNTIME_IMAGE}
+
+ARG UBUNTU_SNAPSHOT=20260728T000000Z
+ENV DEBIAN_FRONTEND=noninteractive
+COPY --from=ca-bootstrap /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY packages.lock /tmp/packages.lock
+RUN printf '%s\n' \
+      'Acquire::Check-Valid-Until "false";' \
+      'Acquire::Retries "3";' \
+      > /etc/apt/apt.conf.d/99amdl-snapshot && \
+    printf '%s\n' \
+      "deb https://snapshot.ubuntu.com/ubuntu/${UBUNTU_SNAPSHOT}/ jammy main restricted universe multiverse" \
+      "deb https://snapshot.ubuntu.com/ubuntu/${UBUNTU_SNAPSHOT}/ jammy-updates main restricted universe multiverse" \
+      "deb https://snapshot.ubuntu.com/ubuntu/${UBUNTU_SNAPSHOT}/ jammy-security main restricted universe multiverse" \
+      > /etc/apt/sources.list && \
+    rm -f /etc/apt/sources.list.d/* && \
+    apt-get update && \
+    sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' /tmp/packages.lock > /tmp/direct-packages && \
+    xargs -r apt-get install -y --no-install-recommends < /tmp/direct-packages && \
+    dpkg-query -W -f='${Package}=${Version}\n' | LC_ALL=C sort > /packages.resolved.lock && \
+    test -s /packages.resolved.lock

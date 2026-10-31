@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Andrew05213/applemusic_downloader/schemas/wsl-appliance-manifest-v1.json",
+  "title": "Apple Music Downloader WSL appliance manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "version",
+    "architecture",
+    "distroName",
+    "channel",
+    "builtAt",
+    "rootfs",
+    "runtime",
+    "inputs",
+    "releasePolicy"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "productVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "sourceDateEpoch": { "type": "integer", "minimum": 1 },
+    "applianceBuildId": { "$ref": "#/$defs/sha256" },
+    "architecture": { "const": "amd64" },
+    "distroName": { "const": "AppleMusicDownloader" },
+    "channel": { "enum": ["local-poc", "private-ci", "private-build", "public"] },
+    "builtAt": { "type": "string", "format": "date-time" },
+    "rootfs": { "$ref": "#/$defs/artifact" },
+    "runtime": { "$ref": "#/$defs/artifact" },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inputLockSha256",
+        "versionsLockSha256",
+        "packagesLockSha256",
+        "packagesResolvedLockSha256",
+        "releasePolicySha256",
+        "wrapperPatchSha256",
+        "backendTreeSha256",
+        "webUiTreeSha256",
+        "wrapperTreeSha256",
+        "wrapperBinarySha256",
+        "androidMainSha256",
+        "noticeSha256",
+        "goBuilderImage",
+        "ubuntuRuntimeImage",
+        "ubuntuSnapshot",
+        "wrapperCommit",
+        "cjsonCommit",
+        "dobbyCommit",
+        "androidNdkVersion",
+        "androidNdkSha256",
+        "cmakeVersion",
+        "cmakeLinuxAmd64Sha256",
+        "mediaplatformBinarySha256",
+        "storeservicescoreBinarySha256",
+        "urlRequestAllocationBytes",
+        "urlRequestObjectOffset",
+        "urlRequestObjectBytes",
+        "urlRequestObjectAlignment",
+        "wrapperBuiltSha256",
+        "androidMainBuiltSha256",
+        "wrapperProvenanceStatus"
+      ],
+      "properties": {
+        "inputLockSha256": { "$ref": "#/$defs/sha256" },
+        "versionsLockSha256": { "$ref": "#/$defs/sha256" },
+        "packagesLockSha256": { "$ref": "#/$defs/sha256" },
+        "packagesResolvedLockSha256": { "$ref": "#/$defs/sha256" },
+        "releasePolicySha256": { "$ref": "#/$defs/sha256" },
+        "wrapperPatchSha256": { "$ref": "#/$defs/sha256" },
+        "backendTreeSha256": { "$ref": "#/$defs/sha256" },
+        "webUiTreeSha256": { "$ref": "#/$defs/sha256" },
+        "wrapperTreeSha256": { "$ref": "#/$defs/sha256" },
+        "wrapperBinarySha256": { "$ref": "#/$defs/sha256" },
+        "androidMainSha256": { "$ref": "#/$defs/sha256" },
+        "noticeSha256": { "$ref": "#/$defs/sha256" },
+        "goBuilderImage": { "$ref": "#/$defs/image" },
+        "ubuntuRuntimeImage": { "$ref": "#/$defs/image" },
+        "ubuntuSnapshot": { "type": "string", "pattern": "^[0-9]{8}T[0-9]{6}Z$" },
+        "wrapperCommit": { "$ref": "#/$defs/commit" },
+        "cjsonCommit": { "$ref": "#/$defs/commit" },
+        "dobbyCommit": { "$ref": "#/$defs/commit" },
+        "androidNdkVersion": { "type": "string", "pattern": "^r[0-9]+[a-z]$" },
+        "androidNdkSha256": { "$ref": "#/$defs/sha256" },
+        "cmakeVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "cmakeLinuxAmd64Sha256": { "$ref": "#/$defs/sha256" },
+        "mediaplatformBinarySha256": { "$ref": "#/$defs/sha256" },
+        "storeservicescoreBinarySha256": { "$ref": "#/$defs/sha256" },
+        "androidAppMusicBinarySha256": { "$ref": "#/$defs/sha256" },
+        "urlRequestAllocationBytes": { "type": "integer", "minimum": 1 },
+        "urlRequestObjectOffset": { "type": "integer", "minimum": 1 },
+        "urlRequestObjectBytes": { "type": "integer", "minimum": 1 },
+        "urlRequestObjectAlignment": { "type": "integer", "minimum": 1 },
+        "httpMessageAllocationBytes": { "type": "integer", "minimum": 1 },
+        "httpMessageObjectOffset": { "type": "integer", "minimum": 1 },
+        "httpMessageObjectBytes": { "type": "integer", "minimum": 1 },
+        "httpMessageStorageAlignment": { "type": "integer", "minimum": 1 },
+        "httpMessageObjectAlignment": { "type": "integer", "minimum": 1 },
+        "storeErrorCodeObjectOffset": { "type": "integer", "minimum": 1 },
+        "storeErrorCodeValueBytes": { "type": "integer", "minimum": 1 },
+        "wrapperBuiltSha256": { "$ref": "#/$defs/sha256" },
+        "wrapperBuiltFromPatchSha256": { "$ref": "#/$defs/sha256" },
+        "androidMainBuiltSha256": { "$ref": "#/$defs/sha256" },
+        "androidNetworkPreflightBuiltSha256": { "$ref": "#/$defs/sha256" },
+        "networkPreflightSourceSha256": { "$ref": "#/$defs/sha256" },
+        "androidCaBundlePath": { "const": "/usr/local/android/cert.pem" },
+        "androidCaBundleSha256": { "$ref": "#/$defs/sha256" },
+        "rendererSha256": { "$ref": "#/$defs/sha256" },
+        "wrapperProvenanceStatus": {
+          "enum": ["mismatched-unverified-local-poc-only", "verified-source-build"]
+        }
+      }
+    },
+    "releasePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["publicReleaseAllowed", "blockers"],
+      "properties": {
+        "publicReleaseAllowed": { "type": "boolean" },
+        "blockers": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "version": { "pattern": "^1\\.(?:2\\.(?:[89]|[1-9][0-9]+)|[3-9]\\.[0-9]+)(?:-[0-9A-Za-z.-]+)?$" }
+        }
+      },
+      "then": {
+        "properties": {
+          "inputs": {
+            "required": [
+              "androidAppMusicBinarySha256",
+              "httpMessageAllocationBytes",
+              "httpMessageObjectOffset",
+              "httpMessageObjectBytes",
+              "httpMessageStorageAlignment",
+              "httpMessageObjectAlignment"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "version": { "pattern": "^1\\.(?:2\\.(?:[1-9][0-9]+)|[3-9]\\.[0-9]+)(?:-[0-9A-Za-z.-]+)?$" }
+        }
+      },
+      "then": {
+        "properties": {
+          "inputs": {
+            "required": [
+              "storeErrorCodeObjectOffset",
+              "storeErrorCodeValueBytes"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "version": { "pattern": "^1\\.(?:2\\.(?:1[2-9]|[2-9][0-9]+)|[3-9]\\.[0-9]+)(?:-[0-9A-Za-z.-]+)?$" }
+        }
+      },
+      "then": {
+        "properties": {
+          "inputs": {
+            "required": [
+              "wrapperBuiltFromPatchSha256"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "version": { "pattern": "^1\\.(?:2\\.(?:1[3-9]|[2-9][0-9]+)|[3-9]\\.[0-9]+)(?:-[0-9A-Za-z.-]+)?$" }
+        }
+      },
+      "then": {
+        "required": [
+          "productVersion",
+          "sourceDateEpoch",
+          "applianceBuildId"
+        ],
+        "properties": {
+          "inputs": {
+            "required": [
+              "networkPreflightSourceSha256",
+              "rendererSha256"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "version": { "pattern": "^1\\.(?:2\\.(?:1[5-9]|[2-9][0-9]+)|[3-9]\\.[0-9]+)(?:-[0-9A-Za-z.-]+)?$" }
+        }
+      },
+      "then": {
+        "properties": {
+          "inputs": {
+            "required": [
+              "androidCaBundlePath",
+              "androidCaBundleSha256"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "version": { "pattern": "^1\\.(?:3\\.(?:[5-9]|[1-9][0-9]+)|(?:[4-9]|[1-9][0-9]+)\\.[0-9]+)(?:-[0-9A-Za-z.-]+)?$" }
+        }
+      },
+      "then": {
+        "properties": {
+          "inputs": {
+            "required": [
+              "androidNetworkPreflightBuiltSha256"
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "commit": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "image": { "type": "string", "pattern": "^[^\\s@]+@sha256:[a-f0-9]{64}$" },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "url", "sha256", "size", "uncompressedSize", "compressedBytes", "uncompressedBytes"],
+      "properties": {
+        "file": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
+        "url": { "type": "string", "pattern": "^(https|file):" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "size": { "type": "integer", "minimum": 1 },
+        "uncompressedSize": { "type": "integer", "minimum": 1 },
+        "compressedBytes": { "type": "integer", "minimum": 1 },
+        "uncompressedBytes": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

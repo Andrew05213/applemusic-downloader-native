@@ -1,0 +1,24 @@
+#!/bin/sh
+
+set -eu
+
+runtime_dir=/run/applemusic-downloader
+lock_file=$runtime_dir/keepalive.lock
+
+/usr/bin/install -d -m 0700 "$runtime_dir"
+umask 077
+exec 9>"$lock_file"
+/usr/bin/chmod 0600 "$lock_file"
+
+# Each Windows desktop process may launch a detached wsl.exe holder.  Only the
+# first helper remains alive; later helpers exit immediately without leaving
+# another foreground WSL client behind.
+if ! /usr/bin/flock -n 9; then
+  exit 0
+fi
+
+trap 'exit 0' HUP INT TERM
+while :; do
+  /usr/bin/sleep 3600 &
+  wait "$!" || :
+done

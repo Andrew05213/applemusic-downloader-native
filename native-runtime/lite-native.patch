@@ -1,0 +1,141 @@
+diff --git a/lite/lite.h b/lite/lite.h
+--- a/lite/lite.h
++++ b/lite/lite.h
+@@ -58,4 +58,5 @@
+ constexpr int CURLOPT_SSL_VERIFYPEER = 64;
+ constexpr int CURLOPT_SSL_VERIFYHOST = 81;
++constexpr int CURLOPT_CAINFO = 10065;
+ constexpr int CURLOPT_FOLLOWLOCATION = 52;
+@@ -98,5 +99,4 @@
+ struct shared_ptr;
+ extern struct shared_ptr g_reqCtx;
+-extern bool g_ssl_verify_disabled;
+ extern bool g_code_from_file;
+diff --git a/lite/apple_api.cpp b/lite/apple_api.cpp
+--- a/lite/apple_api.cpp
++++ b/lite/apple_api.cpp
+@@ -31,5 +31,9 @@
+     if (!init) { LOG_WARN("curl_easy_init not found"); return; }
+     handle = init();
+     ok = (handle != nullptr);
++    if (ok) {
++        ok = setOptInt(CURLOPT_SSL_VERIFYPEER, 1) && setOptInt(CURLOPT_SSL_VERIFYHOST, 2)
++            && setOptStr(CURLOPT_CAINFO, "/usr/local/android/cert.pem");
++    }
+ }
+@@ -44,4 +48,6 @@
+ bool CurlEasy::setOptInt(int opt, int val) {
+     if (!handle) return false;
++    if ((opt == CURLOPT_SSL_VERIFYPEER && val != 1) ||
++        (opt == CURLOPT_SSL_VERIFYHOST && val != 2)) return false;
+     void* lib = getCurl();
+@@ -52,4 +58,6 @@
+ bool CurlEasy::setOptStr(int opt, const char* str) {
+     if (!handle) return false;
++    if (opt == CURLOPT_CAINFO && (!str ||
++        strcmp(str, "/usr/local/android/cert.pem") != 0)) return false;
+     void* lib = getCurl();
+@@ -138,5 +146,4 @@
+     if (loaded)
+-        LOG_INFO("token cache loaded (dev=%.16s... music=%.16s...)",
+-                dev_token.c_str(), music_token.c_str());
++        LOG_INFO("token cache loaded");
+ }
+@@ -185,7 +192,5 @@
+     curl.setOptPtr(CURLOPT_WRITEFUNCTION, (void*)&writeCallback);
+     curl.setOptPtr(CURLOPT_WRITEDATA, &html);
+-    curl.setOptInt(CURLOPT_SSL_VERIFYPEER, 0);
+-    curl.setOptInt(CURLOPT_SSL_VERIFYHOST, 0);
+     curl.setOptInt(CURLOPT_FOLLOWLOCATION, 1);
+@@ -206,7 +211,5 @@
+     jsCurl.setOptPtr(CURLOPT_WRITEFUNCTION, (void*)&writeCallback);
+     jsCurl.setOptPtr(CURLOPT_WRITEDATA, &js);
+-    jsCurl.setOptInt(CURLOPT_SSL_VERIFYPEER, 0);
+-    jsCurl.setOptInt(CURLOPT_SSL_VERIFYHOST, 0);
+     jsCurl.setOptInt(CURLOPT_FOLLOWLOCATION, 1);
+@@ -217,5 +220,5 @@
+     if (!std::regex_search(js, tokenMatch, tokenRe)) { LOG_WARN("devtoken: no JWT in js"); return ""; }
+-    LOG_DEBUG("devtoken: got token %.30s...", tokenMatch.str().c_str());
++    LOG_DEBUG("devtoken acquired");
+     return tokenMatch.str();
+@@ -307,6 +310,4 @@
+     curl.setOptPtr(CURLOPT_WRITEDATA, &resp);
+-    curl.setOptInt(CURLOPT_SSL_VERIFYPEER, 0);
+-    curl.setOptInt(CURLOPT_SSL_VERIFYHOST, 0);
+     curl.setOptInt(CURLOPT_TIMEOUT_MS, 15000);
+@@ -376,6 +377,4 @@
+     curl.setOptPtr(CURLOPT_WRITEDATA, &resp);
+-    curl.setOptInt(CURLOPT_SSL_VERIFYPEER, 0);
+-    curl.setOptInt(CURLOPT_SSL_VERIFYHOST, 0);
+     curl.setOptInt(CURLOPT_TIMEOUT_MS, 15000);
+@@ -477,6 +476,4 @@
+     curl.setOptPtr(CURLOPT_WRITEDATA, &resp);
+-    curl.setOptInt(CURLOPT_SSL_VERIFYPEER, 0);
+-    curl.setOptInt(CURLOPT_SSL_VERIFYHOST, 0);
+     curl.setOptInt(CURLOPT_TIMEOUT_MS, 15000);
+diff --git a/lite/bridge.cpp b/lite/bridge.cpp
+--- a/lite/bridge.cpp
++++ b/lite/bridge.cpp
+@@ -29,7 +29,4 @@
+ uint8_t leaseMgr[256];
+-#ifdef LITE_RELEASE
+-bool g_ssl_verify_disabled = false;
+-#else
+-bool g_ssl_verify_disabled = true;
++#ifndef LITE_RELEASE
++#error "AMDL native Lite must be built in Release mode"
+ #endif
+ bool g_code_from_file = false;
+@@ -65,5 +62,5 @@
+     setenv("ANDROID_ROOT", "/system", 1);
+-    static const char* resolvers[2] = {"223.5.5.5", "223.6.6.6"};
+-    _resolv_set_nameservers_for_net(0, resolvers, 2, ".");
++    static const char* resolvers[1] = {"10.0.2.3"};
++    _resolv_set_nameservers_for_net(0, resolvers, 1, ".");
+ 
+@@ -143,1 +140,0 @@
+ static int (*orig_log_write)(int prio, const char *tag, const char *text);
+-static int (*orig_curl_easy_setopt)(void *curl, int32_t option, ...);
+ 
+@@ -164,16 +160,0 @@
+ }
+ 
+-int curl_easy_setopt_hook(void *curl, int32_t option, ...) {
+-    va_list args;
+-    va_start(args, option);
+-    void* param = va_arg(args, void*);
+-    va_end(args);
+-    if (g_ssl_verify_disabled && (option == 64 || option == 81 || option == 10230)) {
+-        LOG_DEBUG("hooked curl_easy_setopt %d (SSL verify disabled)", option);
+-        orig_curl_easy_setopt(curl, 43, 1L);
+-        return orig_curl_easy_setopt(curl, option, 0L);
+-    }
+-    return orig_curl_easy_setopt(curl, option, param);
+-}
+-
+ void install_hooks() {
+@@ -185,5 +165,2 @@
+-    if (g_ssl_verify_disabled) {
+-        DobbyHook((void*)&curl_easy_setopt, (void*)&curl_easy_setopt_hook, (void**)&orig_curl_easy_setopt);
+-    }
+     LOG_DEBUG("debug hooks installed");
+diff --git a/lite/lite_main.cpp b/lite/lite_main.cpp
+--- a/lite/lite_main.cpp
++++ b/lite/lite_main.cpp
+@@ -185,4 +185,5 @@
+     /* leave storefront empty when not logged in; do not invent "us" */
++    if (g_tokens.music_token.empty()) return WebTokens{};
+ 
+     auto now = std::chrono::steady_clock::now();
+@@ -428,4 +429,8 @@
+         if (g_refresh_stop.load()) break;
+ 
++        {
++            std::lock_guard<std::mutex> lock(g_tokens_mutex);
++            if (g_tokens.music_token.empty()) continue;
++        }
+         LOG_INFO("background token refresh starting");
+@@ -507,3 +512,3 @@
+-        else if (arg == "--debug") { g_log_level = "debug"; g_ssl_verify_disabled = true; }
++        else if (arg == "--debug") { g_log_level = "debug"; }
+         else if (arg == "--code-from-file") g_code_from_file = true;

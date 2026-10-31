@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "sourceDateEpoch": 1786320000,
+  "wrapper": {
+    "commit": "2fd7e0eaef081f93cf687428b965674937832ba4",
+    "url": "https://codeload.github.com/WorldObservationLog/wrapper/tar.gz/2fd7e0eaef081f93cf687428b965674937832ba4",
+    "cacheName": "wrapper-2fd7e0ea.tar.gz",
+    "sha256": "cc9fca1a70692ee7feb73c1aa74805cd6749d29200dad34ddbab3d17467464e8"
+  },
+  "qemu": {
+    "version": "11.1.0",
+    "url": "https://qemu.weilnetz.de/w64/2026/qemu-w64-setup-20260811.exe",
+    "cacheName": "qemu-w64-setup-20260811.exe",
+    "sha512": "5bcf9eed634e8575a37b74f445af41a2fe4106da512d0c30c368301d4c105037fdfab40a5287367a28a957624cddebbc8c07e16c88ab6634f554cdf3d16bf543"
+  },
+  "toolchain": {
+    "image": "applemusic-downloader-v1215-wrapper-harness:retry",
+    "id": "sha256:986dedf03a498e706824fec8e97d6ae47261e1bd8ef1b0d9c0f676d7ffeb7e28",
+    "ndk": "23.1.7779620",
+    "cmake": "3.25.3",
+    "cjson": "c859b25da02955fef659d658b8f324b5cde87be3",
+    "dobby": "9d271803881f467aabfc24593c7dcaeb710fe861"
+  },
+  "debianSnapshot": "20260728T000000Z",
+  "packages": {
+    "linux-image-6.1.0-51-amd64": "6.1.177-1",
+    "busybox-static": "1:1.35.0-4+deb12u1+b1",
+    "cpio": "2.13+dfsg-7.1",
+    "kmod": "30+20221128-1",
+    "ca-certificates": "20230311+deb12u1"
+  }
+}

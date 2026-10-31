@@ -1,0 +1,8 @@
+extends: ./electron-builder.base.cjs
+nsis:
+  artifactName: AppleMusicDownloader-${version}-Offline-Setup.${ext}
+extraResources:
+  - from: electron/generated
+    to: appliance
+    filter:
+      - "*.tar.gz"

@@ -1,0 +1,12 @@
+# The downloader is maintained as normal source in this repository.  Keep
+# only local runtime output out of version control; a blanket `*` rule would
+# silently omit newly added Go source and make clean-clone builds impossible.
+downloads/
+data/
+working/
+*.db
+*.db-*
+*.log
+*.tmp
+*.amdl-*
+/config.yaml
