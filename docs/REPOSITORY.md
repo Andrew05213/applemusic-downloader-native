@@ -1,50 +1,35 @@
-# 仓库结构与维护边界
+# 仓库结构
 
-当前默认入口为 Native 1.0 原生版，已发布产物以[本仓库 Releases](https://github.com/Andrew05213/applemusic-downloader-native/releases)为准。
-源码来自旧项目 2.0 的最新快照，但 Git 历史从新根提交开始，详见[迁移边界](development/native-1.0-migration.md)。
-
-## 源码导航
+本仓库维护 Windows Native 桌面版。使用入口见[用户指南](USER-GUIDE.md)，构建入口见[开发指南](development/README.md)。
 
 | 路径 | 职责 |
 | --- | --- |
 | `src/main/native-main.js` | Electron 主入口、窗口与受控 IPC |
-| `src/preload/native-*.js` | 原生界面的权限桥接 |
+| `src/preload/native-*.js` | 界面权限桥接 |
 | `src/renderer/native-*` | 自有界面、启动画面和播放器 |
-| `electron/native-*.js`、`build-native-*`、`dist-native.js` | 原生开发、构建、缓存与验证工具 |
-| `apple-music-downloader/` | 共享 Go 后端、队列、下载、文件处理和桌面适配 |
-| `apple-music-downloader/internal/` | guest 通信、原生登录与运行组件管理等 |
-| `apple-music-downloader/internal/service/` | 不依赖传输/存储实现的队列、执行器与生命周期接口 |
-| `apple-music-downloader/internal/legacyweb/` | 旧 CLI/Web 的 Wrapper 启动策略，不供原生 guest 登录使用 |
-| `native-runtime/` | Lite/QEMU 锁定输入、构建配方与源码材料收集工具 |
-| `test/`、`e2e/` | 单元、UI 与隔离程序验收 |
-| `docs/` | 当前指南与明确标注的历史记录 |
-| `scripts/` | 仓库维护脚本，不随应用分发 |
-| `web/` | 共享 Go/Web 兼容界面与相关回归，不进入原生安装包 |
-| `legacy/v1/` | 冻结的 1.x 桌面、WSL/DRM 工具和专属测试；仅供查阅 |
+| `electron/` | 原生运行、构建、缓存、打包和验证工具 |
+| `apple-music-downloader/` | Go 服务、队列、下载、播放与文件处理 |
+| `apple-music-downloader/internal/service/` | 共享应用接口和有序退出 |
+| `apple-music-downloader/internal/guestagent/` | guest 控制与媒体协议 |
+| `apple-music-downloader/internal/nativeauth/` | 原生认证适配 |
+| `apple-music-downloader/internal/legacyweb/` | 旧 Web 的 Wrapper 启动策略 |
+| `native-runtime/` | Lite/QEMU 锁定输入、构建配方、补丁和源码材料工具 |
+| `test/`、`e2e/` | 单元、UI 与隔离应用测试 |
+| `web/` | Go serve 兼容界面，不进入桌面安装包 |
+| `scripts/` | 文档、边界与本地构建存储维护 |
+| `docs/` | 用户、开发、架构、测试与发布文档 |
+| `legacy/v1/` | 旧桌面/WSL 代码、工具和专属测试的冻结参考 |
 
-## 旧代码边界
+## 兼容层与保留输入
 
-旧 Electron 主进程、preload、WSL/DRM 工具、Docker/Web 启动助手及其专属测试已移入
-`legacy/v1/`；99 个文件的原路径和 SHA-256 记录在 `legacy/v1/manifest.json`。
-归档保留原始内容，不是独立可运行的 1.x 工程，不要在归档目录中直接运行 npm 或旧脚本。
+Go 根包仍编译部分 CLI/Web 和旧 Wrapper 代码，并非独立的纯原生模块。桌面下载和播放使用独立的 guest 媒体路径；不要根据文件名批量删除共享实现。
 
-旧仓库中的完整 1.4.3 维护入口为 `codex/maintenance-1.x`，固定基线
-`c0719fc61b7a553348e8d7be96321cc37eb0a0d9`。独立检出方式见[旧版维护入口](legacy/README.md#维护-1x)。
+`appliance/release-policy.json` 是打包与校验仍需携带的关闭旧策略，不是当前运行后端。原生策略位于 `native-runtime/release-policy.json`。锁文件、配方、原始许可证和归档清单都是来源验证输入，移动前应检查引用及哈希。
 
-第二阶段将 242 个旧 Appliance/Wrapper 文件与专属 Go 包、命令继续归档，并将
-9 个共享 Web 资源独立到 `web/`。`src/renderer/` 只保留原生界面。
-`appliance/release-policy.json` 仍是打包与校验输入，不移动；Go 根包仍编译部分
-CLI/Web 兼容代码，不能把目录整理当作完整的代码解耦。
-具体依赖和后续拆分限制见[第二阶段依赖边界](development/dependency-boundaries.md)。
-第三阶段已先定义共享接口，拆出旧 Web HTTP 适配与 Wrapper 宿主配置，详见
-[共享 Go 接口与宿主适配](development/shared-go-interfaces.md)。
-第四阶段将 JobAPI 改为消费用例接口；`job_api_composition.go` 绑定具体实现，
-`job_file_service.go` 负责文件身份、句柄和删除准备。领域模型、存储与 Wrapper 进程核心仍在主包，
-详见[JobAPI 与文件用例边界](development/job-api-file-boundaries.md)。
-移动源码、许可证或锁定输入前，必须核查构建白名单、固定路径和哈希验证，不能为整理目录破坏来源校验。
+详见[依赖边界](development/dependency-boundaries.md)、[共享接口](development/shared-go-interfaces.md)及[JobAPI 文件边界](development/job-api-file-boundaries.md)。
 
-## 本地产物与其他工作区
+## 归档与生成文件
 
-构建产物、缓存、打包阶段和归档不提交 Git，位置及清理规则见[构建存储](development/build-storage.md)。
-文档中的历史工作树路径不是要求贡献者复制的目录结构。
-其他工作树可能有独立的未提交修改，不能视为重复备份直接删除；文档治理不授权清理代码或账号资料。
+`legacy/v1/` 不是独立可运行的产品，也不是本仓库 Native 1.0。用途和校验清单见[旧源码说明](legacy/README.md)。
+
+构建产物和缓存不提交 Git；位置与安全清理规则见[构建存储](development/build-storage.md)。安装身份、Go 模块和用户资料的兼容名称见[兼容说明](development/compatibility.md)。

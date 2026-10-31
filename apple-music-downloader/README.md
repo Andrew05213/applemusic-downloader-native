@@ -1,10 +1,9 @@
 English / [简体中文](./README-CN.md)
 
-> **v1.1 packaging note:** use the repository-root README for Docker Web,
-> durable Job API, and the `download URL...` CLI. Those non-interactive entry
-> points accept album, playlist, song, music-video, and station URLs. Legacy
-> interactive artist expansion is intentionally not accepted by the v1.1
-> queue, so it cannot create a job that later fails.
+> **Imported downloader reference:** the upstream instructions below describe
+> historical downloader entry points, not the current Native desktop product.
+> For installation and supported features, use the [project README](../README.md);
+> for current commands and bundled tools, use the [developer guide](../docs/development/README.md).
 
 ### ！！Must be installed first [MP4Box](https://gpac.io/downloads/gpac-nightly-builds/)，And confirm [MP4Box](https://gpac.io/downloads/gpac-nightly-builds/) Correctly added to environment variables
 

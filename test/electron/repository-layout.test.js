@@ -29,7 +29,7 @@ test('current repository navigation links resolve and old WSL instructions are l
    assert.ok(fs.existsSync(path.resolve(root,path.dirname(name),target.split('#')[0])),name+': '+target);
   }
  }
- assert.match(fs.readFileSync(path.join(root,'docs/legacy/README-v1.md'),'utf8'),/1\.x 历史说明（非 2\.0 安装指南）/);
+ assert.match(fs.readFileSync(path.join(root,'docs/legacy/README.md'),'utf8'),/不是本仓库 Native 1\.0/);
 });
 
 test('archive script defaults to preview and has no deletion or Git mutation commands',()=>{

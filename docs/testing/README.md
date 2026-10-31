@@ -1,54 +1,62 @@
-# 测试入口与记录索引
+# 测试指南
 
-## 当前验证
+所有命令从仓库根目录运行。环境准备见[开发指南](../development/README.md)。
 
-从仓库根目录运行：
+## 单元与结构检查
 
 ```powershell
 npm run verify:native
 npm run verify:boundaries
 npm test
 node scripts/check-docs.js --all
+git diff --check
 ```
 
-`npm test` 使用 `electron/native-ci.js` 的原生/共享集合，包含文档回归。
-`npm run test:all` 扫描当前 `test/**/*.test.js`，`npm run test:electron` 只扫描
-`test/electron/*.test.js`。归档的 `legacy/v1/test/` 和 `legacy/v1/e2e/` 不在这些入口中；
-旧测试需在[完整的 1.x 维护树](../legacy/README.md#维护-1x)内准备和验证，不能直接从归档执行。
-`verify:boundaries` 核对三份原生 Go 目标的实际依赖；当前模块的 Go 测试不再发现
-归档的 Appliance/WSL 专属包，但共享 Web 回归仍保留并读取 `web/`。
+`npm test` 使用 `electron/native-ci.js` 的原生/共享集合，包含文档回归。`npm run test:all` 扫描当前 `test/**/*.test.js`，`npm run test:electron` 扫描 Electron 单元测试。它们不包含 `legacy/v1/` 的旧专属测试。
 
-UI 回归用 `npm run test:web`，首次运行前安装测试浏览器：
+Go 模块位于 `apple-music-downloader/`。Linux CI 执行全量 race/vet 和 guest 交叉编译。Windows CI 编译 backend/service，运行协议 smoke 和 Go race；已知旧 Wrapper 会话 directory-Sync 用例在 Windows 跳过，由 Linux 全量覆盖。当前矩阵和跳过表达式以 `.github/workflows/verify.yml`、`electron/native-ci-windows.ps1` 为准。
+
+Windows Go race 需使用 ASCII 临时路径。CI 适配仅设置测试进程的临时路径和默认所有者，并恢复状态，不放宽产品 ACL、目录身份或重解析点校验。
+
+## UI 回归
 
 ```powershell
 npx playwright install chromium
 npm run test:web
 ```
 
-真实 AAC 解码用例另需支持 AAC 的浏览器和已生成的媒体夹具；未设置
-`AMDL_STREAM_OUTPUT` 时会跳过这些用例，不能把普通 UI 通过当作完整播放验收。
-夹具生成、FFmpeg 完整解码和 Chrome 流式播放的实际步骤以
-`.github/workflows/verify.yml` 为准；`AMDL_STREAM_BROWSER` 可指定已安装的测试浏览器 channel。
-普通验证不登录真实账号、不发短信、不下载商业媒体。
+普通 Chromium 回归不等于 AAC 解码验证。真实 AAC 测试需设置 `AMDL_STREAM_OUTPUT` 并使用支持 AAC 的浏览器；`AMDL_STREAM_BROWSER` 可指定已安装 channel。缺少夹具时会跳过相关用例，报告中必须注明。
 
-不要把测试总数写成永久保证；报告应记录实际执行的命令、提交和跳过范围。
+## 合成 AAC 完整链路
 
-## 历史证据
+需要开发者安装的 FFmpeg 和支持 AAC 的 Chrome/Edge。夹具只包含生成的正弦波，不使用账号、验证码或商业媒体。以下为 PowerShell 示例，输出到新的测试目录：
 
-本目录保存各日期的测试和诊断记录。它们是历史证据，不是当前版本的完整验收声明。
-其中安装包路径、测试数量、私有状态和未发布描述仅代表记录当时情况；本轮隔离不改写旧结论。
-当前源码状态见[Native 1.0.0 基线](../releases/1.0.0.md)，旧发布身份见[旧仓库 2.0.0 记录](../releases/2.0.0.md)，当前测试命令见[开发入口](../development/README.md)。
+```powershell
+New-Item -ItemType Directory .artifacts/aac-input, .artifacts/aac-output
+ffmpeg -hide_banner -v error -nostdin -f lavfi -i sine=frequency=440:sample_rate=48000 -t 42 -c:a aac -b:a 128k -f hls -hls_time 2 -hls_playlist_type vod -hls_segment_type fmp4 -hls_fmp4_init_filename init.mp4 .artifacts/aac-input/index.m3u8
+$env:AMDL_STREAM_FIXTURE = (Resolve-Path '.artifacts/aac-input').Path
+$env:AMDL_STREAM_OUTPUT = (Resolve-Path '.artifacts/aac-output').Path
+go -C apple-music-downloader test -count=1 -run '^TestStreamGeneratedAACFixture$' ./utils/runv2
+ffmpeg -hide_banner -v error -xerror -nostdin -i .artifacts/aac-output/complete.m4a -map 0:a:0 -f null -
+$env:AMDL_STREAM_BROWSER = 'chrome'
+npm run test:web
+node electron/native-build-environment.js test/native/native-stream-live.cjs
+```
 
-主要历史主题：
+转换导出生产代码处理后的初始化数据、分片、收据与完整串接流。FFmpeg 完整解码与浏览器直接拖动、延迟尾片测试互相补充；Electron live 测试覆盖真实 sandbox preload、二进制 IPC、能力 HTTP 与 MSE。
 
-- [第四阶段 JobAPI / 文件用例验收](2026-10-31-phase4-job-api-files.md)：句柄所有权、错误契约、文件身份与跨平台安全回归。
-- [第三阶段共享 Go 接口验收](2026-10-31-phase3-shared-go-interfaces.md)：接口契约、CLI/Web 适配、Wrapper 宿主策略和跨平台回归。
-- [第二阶段依赖隔离验收](2026-10-31-phase2-dependency-boundaries.md)：Go/Web、旧 Appliance/Wrapper 边界与跨平台回归。
-- [流式播放验证](2026-10-28-native-fragment-streaming.md)。
-- [并发、ALAC 与空目录](2026-10-28-v2.0.0-concurrency-package.md)。
-- [M4A 索引与时长修复](2026-10-25-fragment-index-duration-fix.md)。
-- [目录选择](2026-10-25-native-download-directories.md)、[任务删除](2026-10-24-native-task-deletion.md)。
-- [窗口化启动与缓存](2026-10-24-native-ui-cache-windowed-package.md)。
-- [历史 Beta 验收指南](v2.0.0-beta.1.md)。
+CI 的 Linux 示例见 `.github/workflows/verify.yml`，不依赖旧 Docker/WSL 构建镜像。
 
-新报告应标明提交、输入/产物身份、实际执行的检查和未验证范围；不应包含密码、Token、会话或未经脱敏的个人诊断。
+## 打包应用验收
+
+构建后使用以下工具和参数：
+
+| 工具 | 参数与用途 |
+| --- | --- |
+| `electron/audit-native-installer.js` | 安装包路径；解包并逐文件对照资源与来源回执 |
+| `test/native/native-electron-live.cjs` | 应用 EXE、隔离 runtime manifest、`--packaged`；实际应用启动、登录入口、目录选择、诊断和合成播放 |
+| `test/native/native-task-delete-live.cjs` | 隔离 manifest、实际服务 EXE；仅删记录、删除文件、空目录及失败重试 |
+
+live 测试要求已构建的**隔离 runtime**，以及真实 AAC 输出夹具。测试会创建隔离资料，不使用安装后的个人会话。不要将联网发行 runtime 或用户资料直接作为测试夹具；Windows 测试目录应保持常规长度，见[兼容限制](../development/compatibility.md)。
+
+安装器解包与隔离应用测试不等于实际覆盖安装测试。报告记录源码提交、输入与产物哈希、执行命令、跳过和未验证范围，不将测试总数写成永久保证。固定版本结果见[发布记录](../releases/1.0.0.md)。

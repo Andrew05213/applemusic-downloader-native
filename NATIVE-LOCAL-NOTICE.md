@@ -32,5 +32,5 @@ Downloads 2.0 Test; a previously selected download directory is retained.
 The predecessor's legacy 1.x profiles/downloads are not imported or removed.
 Uninstall preserves user data and downloaded media.
 
-Automated checks use isolated synthetic profiles, not the owner's real account.
+Automated checks use isolated synthetic profiles, not real user accounts.
 This installer is unsigned and may trigger Windows reputation warnings.

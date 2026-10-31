@@ -1,8 +1,7 @@
 # Renderer 边界
 
-本目录只保留 2.0 自有桌面的 `native-*`、`native.css`；原生 UI 和播放器的路径、
-内容及安装白名单不因本轮整理改变。
+本目录包含 Native 桌面的 `native-*` 资源和 `native.css`，由原生安装器白名单收录。界面通过受控 preload/IPC 与本地服务交互，不加载官方 Apple 网页。
 
-共享 Go/Web 界面已独立到 [web/](../../web/README.md)，不是原生安装器的资源。
-旧 Electron main/preload 和 WSL/DRM 工具位于 `legacy/v1/`。
-当前职责及未拆分的 Go 兼容代码见[依赖边界](../../docs/development/dependency-boundaries.md)。
+共享 Go/Web 界面位于 [web/](../../web/README.md)，不随桌面版分发；旧桌面和 WSL/DRM 参考代码位于 `legacy/v1/`。
+
+播放器链路见[分片流式播放](../../docs/architecture/streaming-playback.md)，后端职责见[依赖边界](../../docs/development/dependency-boundaries.md)。

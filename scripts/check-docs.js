@@ -1,22 +1,10 @@
 'use strict';
 
 // Offline audit of ordinary inline Markdown links, not a full Markdown parser.
-// Historical failures warn by default; --all makes them fail as well.
+// All project-owned documentation is current and checked strictly.
 const fs = require('node:fs');
 const path = require('node:path');
 const ROOT = path.resolve(__dirname, '..');
-const CURRENT = new Set([
-  'README.md', 'docs/README.md', 'docs/USER-GUIDE.md', 'docs/DOCUMENTATION.md',
-  'docs/REPOSITORY.md', 'docs/RELEASE.md', 'docs/UPSTREAMS.md', 'docs/CATALOG_API.md',
-  'docs/development/README.md', 'docs/development/build-storage.md',
-  'docs/compliance/native-2.0-status.md', 'docs/releases/2.0.0.md',
-  'docs/legacy/README.md', 'docs/testing/README.md', 'legacy/README.md',
-  'src/renderer/README.md',
-  'wrapper-linux/README.md', 'web/README.md', 'docs/development/dependency-boundaries.md',
-  'docs/development/shared-go-interfaces.md',
-  'docs/development/job-api-file-boundaries.md',
-  'docs/development/native-1.0-migration.md', 'docs/releases/1.0.0.md',
-]);
 
 function withoutFences(text) {
   return text.replace(/^```[^\n]*\n[\s\S]*?^```[^\n]*$/gm, '');
@@ -44,7 +32,7 @@ function anchors(text) {
 
 function files(root) {
   const result = [
-    'README.md', 'NATIVE-LOCAL-NOTICE.md', 'NATIVE-TEST-NOTICE.md',
+    'README.md', 'NATIVE-LOCAL-NOTICE.md',
     'appliance/README.md', 'legacy/README.md', 'src/renderer/README.md',
     'wrapper-linux/README.md', 'web/README.md',
   ];
@@ -88,7 +76,7 @@ function audit(root = ROOT) {
         try { slug = decodeURIComponent(fragment); } catch { slug = fragment; }
         if (!anchors(fs.readFileSync(absolute, 'utf8')).has(slug)) reason = 'missing heading';
       }
-      if (reason) (CURRENT.has(file) ? errors : warnings).push({file, target, reason});
+      if (reason) errors.push({file, target, reason});
     }
   }
   return {documents: documents.length, localLinks, externalLinksNotChecked, errors, warnings};

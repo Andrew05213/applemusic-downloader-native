@@ -50,4 +50,4 @@ npm test
 
 本项目与 Apple 无隶属关系。请只访问和保存你有权使用的内容。
 
-第三方组件的版权、许可证和来源见 [NOTICE](NOTICE)；对应源码与授权核查尚未全部完成，具体事项保留在[第三方材料清单](docs/compliance/native-2.0-status.md)中。
+第三方组件的版权、许可证和来源见 [NOTICE](NOTICE)；对应源码与授权核查尚未全部完成，具体事项见[第三方材料状态](docs/compliance/native-status.md)。

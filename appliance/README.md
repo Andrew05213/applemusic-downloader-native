@@ -1,11 +1,7 @@
-# Appliance 历史入口
+# Appliance 兼容资料
 
-旧 WSL Appliance 的配方、锁文件、补丁、原生探针、测试和 overlay 已归档到
-`legacy/v1/appliance/`，只供查阅；原始内容及哈希见
-[第二阶段清单](../legacy/v1/phase2-manifest.json)。不要直接运行归档脚本。
+旧 WSL Appliance 配方、锁文件、补丁、探针、测试和 overlay 位于 `legacy/v1/appliance/`，仅供参考，不能在当前流程直接运行。
 
-本目录仅保留 `release-policy.json`：当前原生安装器仍携带这份关闭的旧版策略，
-原生公开构建权限由 `native-runtime/release-policy.json` 独立决定。不能删除、合并或打开旧策略来规避检查。
+本目录保留的 `release-policy.json` 是原生安装器仍需携带、校验的关闭旧策略。当前原生公开构建由 `native-runtime/release-policy.json` 独立控制；不要合并或打开旧策略来规避检查。
 
-需要完整旧版请[独立检出 1.x](../docs/legacy/README.md#维护-1x)。
-当前 2.0 的入口和剩余共享边界见[依赖说明](../docs/development/dependency-boundaries.md)。
+来源见[归档清单](../legacy/v1/phase2-manifest.json)，现行构建见[开发指南](../docs/development/README.md)。

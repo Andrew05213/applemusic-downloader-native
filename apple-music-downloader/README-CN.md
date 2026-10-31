@@ -1,9 +1,8 @@
 [English](./README.md) / 简体中文
 
-> **v1.1 打包说明：** Docker Web、持久化 Job API 与 `download URL...` CLI
-> 请以仓库根目录 README 为准。这些非交互入口支持专辑、歌单、单曲、音乐
-> 视频和电台链接；旧式交互歌手展开不属于 v1.1 队列支持范围，因此会在入队前
-> 被拒绝，避免创建随后失败的任务。
+> **导入源码参考：** 下方上游说明保留历史下载器的功能与命令，不是当前 Native
+> 桌面版的操作指南。安装和支持范围见[项目首页](../README.md)，当前构建命令与
+> 随包工具说明见[开发指南](../docs/development/README.md)。
 
 ### ！！必须先安装[MP4Box](https://gpac.io/downloads/gpac-nightly-builds/)，并确认[MP4Box](https://gpac.io/downloads/gpac-nightly-builds/)已正确添加到环境变量
 

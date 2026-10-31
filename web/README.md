@@ -1,14 +1,9 @@
-# 共享 Go/Web 界面
+# Go/Web 兼容界面
 
-本目录保存与 Go `serve` 命令配套的兼容 Web 界面，不是 2.0 Electron renderer，
-不会进入 2.0 安装包。9 个资源从 `src/renderer/` 原样移入，内部相对链接不变。
+本目录与 Go `serve` 命令配套，不是 Native Electron renderer，也不进入桌面安装包。
 
-从 `apple-music-downloader/` 运行 `serve` 时，静态目录默认 `../web`；
-从仓库根目录启动的服务也可发现 `web/`。`--static-dir` 仍可显式指定其他目录。
-服务不会再自动将 `src/renderer/` 作为 HTTP 静态根目录。
+从 `apple-music-downloader/` 启动服务时，静态目录默认 `../web`；从仓库根目录启动也可发现 `web/`。`--static-dir` 可指定其他目录，不默认暴露 `src/renderer/`。
 
-Web 的登录/Wrapper 生命周期仍属于共享 Go 兼容路径，不是原生 Lite guest 登录和播放适配。
-整理目录不表示它已变成独立的 2.0 Web 产品，也不保证只运行服务就具备完整媒体能力。
-不要使用真实账号来运行普通回归测试。
+Web 的登录和 Wrapper 生命周期属于共享兼容路径，不是原生 Lite guest 的登录或播放适配。仅运行 Web 服务不保证完整媒体能力。回归测试使用合成状态，不使用真实账号。
 
-当前桌面见[用户指南](../docs/USER-GUIDE.md)，开发职责见[依赖边界](../docs/development/dependency-boundaries.md)。
+桌面操作见[用户指南](../docs/USER-GUIDE.md)，开发边界见[依赖说明](../docs/development/dependency-boundaries.md)。
