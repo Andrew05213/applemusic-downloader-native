@@ -1,6 +1,6 @@
-# Apple Music Downloader 2.0 local installation
+# Apple Music Downloader Native installation notes
 
-Version: 2.0.0. Third-party rights and corresponding-source review remain incomplete.
+Version: 1.0.0. Third-party rights and corresponding-source review remain incomplete.
 
 The application uses standard Electron, native Windows Go services and a bundled
 Lite/QEMU runtime. It does not require users to install WSL, Docker, an embedded
@@ -8,7 +8,7 @@ Apple website or a Widevine browser. Music videos and radio/stations remain
 unsupported. Full playback requires the user's own authorized Music session;
 preview fallback is labeled separately from complete-song playback.
 
-This local version includes ordinary M4A export for new ALAC downloads,
+This release includes ordinary M4A export for new ALAC downloads,
 consistent bit-depth descriptions, complete audio sample tables, cover/lyrics/tag
 preservation and weighted download progress. It does not silently repair old
 downloads; choose overwrite or a different directory when downloading them again.
@@ -25,11 +25,11 @@ rights or establish license compliance. The separate legacy WSL policy remains
 publicReleaseAllowed=false. See NOTICE and the source repository compliance
 record for unresolved source, attribution and redistribution issues.
 
-The beta installation identity and AppleMusicDownloader-v2-test data directory
+The predecessor's installation identity and AppleMusicDownloader-v2-test data directory
 are deliberately retained to preserve saved sessions, preferences and task/file
 bindings. The default media folder's compatibility name remains Apple Music
 Downloads 2.0 Test; a previously selected download directory is retained.
-The 1.x application's profiles/downloads are not imported or removed.
+The predecessor's legacy 1.x profiles/downloads are not imported or removed.
 Uninstall preserves user data and downloaded media.
 
 Automated checks use isolated synthetic profiles, not the owner's real account.

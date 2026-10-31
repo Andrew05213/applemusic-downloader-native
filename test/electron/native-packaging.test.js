@@ -25,6 +25,9 @@ test('native installer selects standard Electron and retains compatible per-user
  assert.match(main,/AppleMusicDownloader-v2-test/);assert.match(main,/Apple Music Downloads 2\.0 Test/);
  assert.equal(require('../../appliance/release-policy.json').publicReleaseAllowed,false);
  assert.match(fs.readFileSync(path.join(root,config.nsis.license),'utf8'),/publicReleaseAllowed=false/);
+ const installationNotes=fs.readFileSync(path.join(root,config.nsis.license),'utf8');
+ assert.ok(installationNotes.includes('Version: '+pkg.version+'.'));
+ assert.match(installationNotes,/Apple Music Downloader Native installation notes/);
  assert.ok(config.files.includes('src/main/native-main.js'));assert.ok(config.files.includes('electron/native-service.js'));
  assert.doesNotMatch(JSON.stringify(config.files),/wsl|official-web|apple-music-browser|drm|legacy|src\/\*\*/i);
  assert.equal(config.nsis.include,'electron/installer-native.nsh');assert.doesNotMatch(fs.readFileSync(path.join(root,config.nsis.include),'utf8'),/wsl|unregister|terminate|DeleteReg|RMDir|\.bin/i);
