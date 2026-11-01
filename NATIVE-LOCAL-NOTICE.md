@@ -2,6 +2,11 @@
 
 Version: 1.0.0. Third-party rights and corresponding-source review remain incomplete.
 
+Original project-authored code and modifications the maintainer has the right
+to license are licensed under Apache-2.0; see the included LICENSE and NOTICE.
+Imported code and third-party components retain their existing terms. This
+project license does not grant rights to material with unresolved authorization.
+
 The application uses standard Electron, native Windows Go services and a bundled
 Lite/QEMU runtime. It does not require users to install WSL, Docker, an embedded
 Apple website or a Widevine browser. Music videos and radio/stations remain

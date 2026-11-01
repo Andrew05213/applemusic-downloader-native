@@ -50,6 +50,7 @@ legacy/v1/appliance/rootfs-overlay/etc/wsl.conf text eol=crlf
 legacy/v1/appliance/rootfs-overlay/opt/applemusic-downloader/amdl-appliance-keepalive text eol=crlf
 legacy/v1/appliance/rootfs-overlay/usr/lib/tmpfiles.d/applemusic-downloader.conf text eol=crlf
 NOTICE text eol=lf
+LICENSE text eol=lf
 docs/legacy/NOTICE-v1 text eol=lf
 third-party-licenses/*-LICENSE text eol=lf
 native-runtime/init text eol=lf

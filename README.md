@@ -50,6 +50,12 @@ npm run package:native
 - [依赖与上游来源](docs/UPSTREAMS.md)
 - [完整文档导航](docs/README.md)
 
+## 许可证
+
+本项目由维护者拥有版权或有权授权的原创代码及修改采用 [Apache License 2.0](LICENSE)。Copyright 2026 Andrew05213。
+
+第三方导入代码、历史归档、依赖及运行组件不因根目录许可证而改变授权；原有版权和许可证声明继续保留。来源或授权尚未确认的材料也不因此获得再分发许可，范围和说明见 [NOTICE](NOTICE)。
+
 ## 第三方说明
 
 本项目与 Apple 无隶属关系。请只访问和保存你有权使用的内容。

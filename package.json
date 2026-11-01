@@ -41,7 +41,7 @@
   },
   "keywords": [],
   "author": "Andrew05213",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "devDependencies": {
     "7zip-bin": "5.2.0",
     "@electron/asar": "4.3.1",

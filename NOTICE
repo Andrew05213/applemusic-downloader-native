@@ -1,3 +1,14 @@
+# Apple Music Downloader Native: project license
+
+Copyright 2026 Andrew05213.
+
+Original project-authored code and modifications that the maintainer has the
+right to license are licensed under the Apache License, Version 2.0. See LICENSE.
+This does not relicense imported code, historical archives, dependencies or
+runtime material. Their existing copyright and license notices remain in force.
+Material whose provenance or authorization is unresolved is not granted a
+redistribution license by the project's Apache-2.0 declaration.
+
 # Third-party notices and provenance: Native
 
 The maintainer enabled the native public build gate. This notice is not a
