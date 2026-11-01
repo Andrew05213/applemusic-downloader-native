@@ -54,7 +54,7 @@ async function install(page, { delayedDetails = false, detailPages = false } = {
           const id = url.searchParams.get('id');
           const resource = [album, playlist, library].find(value => value.id === id) || item(id, 'Search Album ' + (Number(id) - 400));
           const secondPage = url.searchParams.get('offset') === '1';
-          const data = { resource, tracks: secondPage ? [item('703', 'Late Detail Song', 'songs')] : [item('701', 'Detail Song One', 'songs'), item('702', 'Detail Song Two', 'songs')], ...(detailPages && !secondPage ? { nextOffset: 1 } : {}) };
+          const data = { ...(!secondPage ? { resource } : {}), tracks: secondPage ? [item('703', 'Late Detail Song', 'songs')] : [item('701', 'Detail Song One', 'songs'), item('702', 'Detail Song Two', 'songs')], ...(detailPages && !secondPage ? { nextOffset: 1 } : {}) };
           if (delayedDetails || (detailPages && secondPage)) return new Promise(resolve => window.pendingDetails.push(() => resolve(data)));
           return data;
         }

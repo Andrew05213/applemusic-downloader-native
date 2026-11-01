@@ -207,7 +207,10 @@
       const data = await api(path); if (generation !== state.generation) return;
       const content = $('catalog-content'); if (!append) content.replaceChildren();
       const searchPage=new URL(path,'http://fixture').pathname==='/api/v1/catalog/search';
-      if (data.resource&&data.resource.type!=='artists') {
+      // Later relationship pages contain tracks without repeating resource
+      // metadata. Append them to the existing detail, keeping its header.
+      const appendingTracks=append&&Array.isArray(data.tracks)&&!!content.querySelector('.track-list');
+      if ((data.resource&&data.resource.type!=='artists')||appendingTracks) {
         if (!append) { const hero = node('div', undefined, 'detail-hero');hero.resource=data.resource; const info = node('div',undefined,'detail-info'); info.append(node('h1', data.resource.title), detailArtist(data.resource),node('p',detailTraits(data.resource),'detail-traits')); const actions = node('div', undefined, 'card-actions'); if (data.tracks?.length) actions.append(button('▶ 播放', () => play(data.tracks.find(item=>!item.unavailableReason)||data.tracks[0]))); actions.append(download(data.resource, '下载全部')); info.append(actions); hero.append(image(data.resource.artwork), info);const related=node('section',undefined,'detail-related');related.hidden=true;content.append(hero, node('div', undefined, 'track-list'),node('p','','detail-metadata'),related);void relatedWorks(data.resource,related,generation); }
         const list = content.querySelector('.track-list'); const start = list.childElementCount; for (const [index, item] of (data.tracks || []).entries()){const row=track(item,start+index);row.dataset.duration=String(Math.max(0,item.duration||0));list.append(row);}drawDetailMetadata(content);
       } else {
