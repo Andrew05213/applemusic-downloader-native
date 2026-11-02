@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path'),os=require('node:os');
-const root=path.resolve(__dirname,'../..'),id='11111111-1111-4111-8111-111111111111';
+const root=path.resolve(__dirname,'../..'),id='11111111111141118111111111111111';
 function fixture(t){
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'native-directory-ipc-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));const file=path.join(dir,'测试歌曲.m4a');fs.writeFileSync(file,'synthetic fixture');
  const handlers=new Map(),calls=[],shellCalls=[];const frame={url:''},win={isDestroyed:()=>false,webContents:{mainFrame:frame}};
