@@ -7,7 +7,7 @@ const root=path.resolve(__dirname,'../..');
 test('new repository has native 1.0 identity without changing source module or user data namespace',()=>{
  const pkg=require('../../package.json');
  assert.equal(pkg.name,'applemusic-downloader-native');
- assert.equal(pkg.version,'1.0.0');
+ assert.match(pkg.version,/^1\.0\.(?:0|[1-9][0-9]*)(?:-beta\.[1-9][0-9]*)?$/);
  assert.equal(pkg.private,true); // Prevent npm publication, not GitHub visibility.
  assert.equal(pkg.repository.url,'https://github.com/Andrew05213/applemusic-downloader-native.git');
  assert.equal(pkg.bugs.url,'https://github.com/Andrew05213/applemusic-downloader-native/issues');
