@@ -2,6 +2,11 @@
 const fs=require('node:fs');const path=require('node:path');const crypto=require('node:crypto');const {spawnSync}=require('node:child_process');
 const {prepare,hash,ROOT,verifyBundleSources}=require('./native-package');const {VERSION}=require('./native-version');
 function run(executable,args,env){const result=spawnSync(executable,args,{cwd:ROOT,env:env||process.env,stdio:'inherit',shell:false,windowsHide:true});if(result.error||result.status!==0)throw new Error('native_dist_step_failed');}
+function prepareElectron(root,env,runner=run){
+ const selected={...env,electron_config_cache:env.ELECTRON_CACHE,ELECTRON_INSTALL_PLATFORM:'win32',ELECTRON_INSTALL_ARCH:'x64'};
+ for(const key of ['ELECTRON_OVERRIDE_DIST_PATH','electron_use_remote_checksums','npm_config_electron_use_remote_checksums','ELECTRON_SKIP_BINARY_DOWNLOAD'])delete selected[key];
+ runner(process.execPath,[path.join(root,'node_modules/electron/install.js')],selected);
+}
 function selectBundle(env=process.env){if(typeof env.AMDL_NATIVE_BUNDLE!=='string'||!env.AMDL_NATIVE_BUNDLE.trim())throw new Error('native_bundle_selection_required');return path.resolve(ROOT,env.AMDL_NATIVE_BUNDLE.trim());}
 function installerOutput(root,version,id){return path.join(root,'.artifacts','installers',version+'-'+id);}
 function main(){
@@ -12,6 +17,9 @@ function main(){
  const id=crypto.randomUUID();const stage=path.join(ROOT,'electron/generated/native-'+id);const output=installerOutput(ROOT,VERSION,id);
  if(fs.existsSync(output))throw new Error('native_output_must_be_new');
  const buildEnv=require('./native-build-environment').buildEnvironment(ROOT);
+ // Electron 45's npm package downloads its runtime on demand. A fresh cloud
+ // runner must prepare it explicitly, just like setup:native does locally.
+ prepareElectron(ROOT,buildEnv);
  run(process.execPath,['electron/build-native-backend.js'],buildEnv);run(process.execPath,['electron/build-native-service.js'],buildEnv);run(process.execPath,['electron/native-build-tools.js'],buildEnv);prepare(stage,bundle);
  const temporary=path.join(ROOT,'.tmp-v2-native','builder-'+id);fs.mkdirSync(temporary,{recursive:true});
  // Builder 26.18 moved tool downloads to a new cache layout. Pass only the
@@ -27,4 +35,4 @@ function main(){
  const result={...verification,installer,installerSHA256:digest,stage,output,privateDistributionOnly:process.env.AMDL_PUBLIC_RELEASE!=='1'};fs.writeFileSync(path.join(output,'native-build-evidence.json'),JSON.stringify(result,null,2)+'\n',{flag:'wx'});process.stdout.write(JSON.stringify(result)+'\n');
 }
 if(require.main===module){try{main();}catch(error){process.stderr.write(error.message+'\n');process.exitCode=1;}}
-module.exports={main,selectBundle,installerOutput};
+module.exports={main,selectBundle,installerOutput,prepareElectron};
