@@ -108,7 +108,7 @@ function bindIPC() {
   });
   handle('native:reveal-job-folder',async(event,id)=>{
     if(!owns(event,owner,nativeURL))throw new Error('native_sender_rejected');
-    if(typeof id!=='string'||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id))throw new Error('native_job_invalid');
+    if(typeof id!=='string'||!/^[a-f0-9]{32}$/.test(id))throw new Error('native_job_invalid');
     if(revealingJobs.has(id))return false;revealingJobs.add(id);
     try{const result=await service.api('/api/native/jobs/'+id+'/location');
       if(!path.isAbsolute(result.directory||'')||!fs.statSync(result.directory).isDirectory())throw new Error('native_directory_missing');
