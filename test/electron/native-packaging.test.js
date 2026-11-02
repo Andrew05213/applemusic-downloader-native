@@ -16,7 +16,7 @@ test('native 1.0 versions are validated independently of public release permissi
 test('native installer selects standard Electron and retains compatible per-user identity',()=>{
  const pkg=require('../../package.json');const config=require('../../electron-builder.native.cjs');
  const lock=require('../../package-lock.json');assert.equal(lock.version,pkg.version);assert.equal(lock.packages['node_modules/electron'].version,'45.0.0');assert.equal(lock.packages['node_modules/electron'].resolved,'https://registry.npmjs.org/electron/-/electron-45.0.0.tgz');
- assert.equal(pkg.version,'1.0.0');assert.equal(pkg.main,'src/main/native-main.js');assert.equal(pkg.devDependencies.electron,'45.0.0');assert.equal(config.electronVersion,'45.0.0');
+ assert.equal(pkg.version,require('../../electron/native-version').VERSION);assert.equal(pkg.main,'src/main/native-main.js');assert.equal(pkg.devDependencies.electron,'45.0.0');assert.equal(config.electronVersion,'45.0.0');
  assert.equal(config.appId,'io.github.andrew05213.applemusicdownloader.v2test');assert.equal(config.nsis.deleteAppDataOnUninstall,false);assert.equal(config.publish,null);
  assert.equal(config.productName,'Apple Music Downloader Native');assert.equal(config.nsis.guid,'762d2d31-e8dd-4aca-a7e5-89dbd09cb138');
  assert.equal(config.nsis.shortcutName,'Apple Music Downloader Native');
