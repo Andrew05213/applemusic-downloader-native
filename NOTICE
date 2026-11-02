@@ -18,22 +18,34 @@ corresponding-source, dependency and authorization review.
 
 The native runtime uses Wrapper Lite from WorldObservationLog/wrapper at
 2fd7e0eaef081f93cf687428b965674937832ba4. Its MIT license is included in
-native-runtime/notices/wrapper-LICENSE. Local patches and input identities are
-recorded in native-runtime/inputs.lock.json and the runtime build evidence.
+the installer at resources/native-runtime/notices/wrapper-LICENSE. Local patches
+and input identities are recorded in native-runtime/inputs.lock.json and the
+runtime build evidence.
 
 QEMU 11.1.0, the Debian Linux kernel and BusyBox are included as runtime
-components. QEMU license texts are in native-runtime/notices. Their exact
+components. QEMU license texts are in the installer's resources/native-runtime/
+notices. A partial Debian Linux and BusyBox source package is provided with
+the 1.0.0 release; it does not contain QEMU corresponding source. The exact
 corresponding source, build inputs and associated notices still require review;
-do not represent this notice as satisfying source-distribution obligations.
+this notice does not itself satisfy source-distribution obligations.
 
 cJSON (copyright 2009-2017 Dave Gamble and contributors, MIT) and Dobby
-(Apache-2.0) are pinned build inputs. Their license texts are included under
-third-party-licenses. Go dependency notices, Android components, QEMU DLLs and
-firmware still require an inventory and delivery review before redistribution.
+(Apache-2.0) are linked into Lite. Their license texts are included under
+resources/third-party-licenses in the installer. Their top-level license texts
+match the pinned upstream versions; other applicable notices remain under review.
 
-The imported downloader attributes the original script to Sorrow. Its complete
-upstream provenance and redistribution rights are not verified. The MIT license
-for utils/runv2 is included in third-party-licenses/runv2-LICENSE.
+Some newer builds may include candidate Go license texts for their actual
+Go binaries in resources/go-licenses. Previously published installers do not
+automatically acquire these files. Go dependency attribution, QEMU DLLs,
+firmware and Android components remain under review.
+
+The Windows application includes Electron. Its license and Chromium notices
+are provided alongside the executable as LICENSE.electron.txt and
+LICENSES.chromium.html.
+
+The imported downloader attributes the original script to Sorrow. The MIT
+license for utils/runv2 is in apple-music-downloader/utils/runv2/LICENSE and is included
+in the installer at resources/third-party-licenses/runv2-LICENSE.
 Android/Apple runtime material and CDM-related material require separate
 authorization review. No rights in third-party material are granted here.
 
