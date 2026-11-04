@@ -32,7 +32,7 @@ function anchors(text) {
 
 function files(root) {
   const result = [
-    'README.md', 'NATIVE-LOCAL-NOTICE.md',
+    'README.md', 'CONTRIBUTING.md', 'NATIVE-LOCAL-NOTICE.md',
     'appliance/README.md', 'legacy/README.md', 'src/renderer/README.md',
     'wrapper-linux/README.md', 'web/README.md',
   ];
