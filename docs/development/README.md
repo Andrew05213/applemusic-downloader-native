@@ -18,7 +18,7 @@
 建议使用空间充足、长度适中的路径，不要放进多层嵌套的工作树：
 
 ```powershell
-git clone https://github.com/Andrew05213/applemusic-downloader-native.git
+git clone --depth 1 https://github.com/Andrew05213/applemusic-downloader-native.git
 cd applemusic-downloader-native
 $env:ELECTRON_CACHE = Join-Path $PWD '.tmp-v2-native/development/electron-cache'
 npm ci --cache .tmp-v2-native/development/npm-cache
@@ -26,6 +26,8 @@ npm run doctor:native
 ```
 
 环境检查逐项显示 Windows/Node/Go/Git/Docker/Buildx/Electron 包/7-Zip 引导工具状态及修复方法。不要从其他工作区复制 node_modules。[Electron 45 采用按需下载](https://www.electronjs.org/docs/latest/tutorial/installation)，setup 会显式安装锁定版本的二进制；npm ci 后尚无 electron.exe 是正常状态。
+
+浅克隆包含维护当前版本所需源码。已外置的旧版二进制不属于 Native 构建输入；普通开发不需获取它们。完整历史仍保留旧文件，`git fetch --unshallow` 会重新下载历史对象。任务入口和二进制存储规则见[贡献指南](../../CONTRIBUTING.md)。
 
 ## 3. 验证与启动
 

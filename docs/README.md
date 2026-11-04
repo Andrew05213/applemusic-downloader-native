@@ -8,6 +8,7 @@
 
 ## 开发
 
+- [维护与贡献入口](../CONTRIBUTING.md)：第一次验证、代码职责和二进制存储规则。
 - [开发与构建](development/README.md)：环境准备、验证、源码运行与安装包构建。
 - [测试指南](testing/README.md)：单元测试、跨平台检查、合成 AAC 和打包应用验收。
 - [仓库结构](REPOSITORY.md)：源码入口与兼容代码的职责。

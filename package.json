@@ -29,6 +29,7 @@
     "build:native-runtime": "node electron/build-native-runtime.js",
     "build:native-toolchain": "node electron/native-toolchain.js",
     "doctor:native": "node scripts/native-dev.js doctor",
+    "legacy:fetch": "node scripts/legacy-binaries.js fetch",
     "setup:native": "node scripts/native-dev.js setup",
     "dev:native": "node scripts/native-dev.js run",
     "package:native": "node scripts/native-dev.js package",

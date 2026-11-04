@@ -21,6 +21,8 @@ electron/generated/
 .claude/
 .worktrees/
 wrapper-linux/rootfs/data/data/
+# Frozen precompiled reference files are distributed as a pinned Release asset.
+/legacy/v1/wrapper-linux/rootfs/system/
 # Preserve only the already-tracked empty-data placeholder in the archive.
 !/legacy/v1/wrapper-linux/rootfs/data/
 /legacy/v1/wrapper-linux/rootfs/data/*

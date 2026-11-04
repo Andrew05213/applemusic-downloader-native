@@ -29,7 +29,7 @@
 开发验证使用 Node.js 22 和 Go 1.25.0。在仓库根目录执行：
 
 ```powershell
-git clone https://github.com/Andrew05213/applemusic-downloader-native.git
+git clone --depth 1 https://github.com/Andrew05213/applemusic-downloader-native.git
 cd applemusic-downloader-native
 npm ci
 npm test
@@ -40,6 +40,8 @@ npm run package:native
 ```
 
 运行与打包需 Windows x64 和已就绪的 Docker Linux 引擎；所需工具链会从公开锁定输入构建，不依赖维护者本机镜像。首次完整准备及环境检查见[从 clone 到运行与打包](docs/development/README.md)，跨平台验证见[测试指南](docs/testing/README.md)。
+
+新贡献者可先看[维护与贡献入口](CONTRIBUTING.md)。旧版预编译运行文件已迁至独立 Release 附件，日常 Native 开发无需下载；完整 Git 历史仍包含旧文件，浅克隆可避免下载这些历史二进制。
 
 欢迎通过 Issue 反馈问题或提交 Pull Request。反馈请附版本、复现步骤和已脱敏的诊断；提交改动前运行相关测试，不上传账号、验证码、Token、会话或下载的音乐。
 

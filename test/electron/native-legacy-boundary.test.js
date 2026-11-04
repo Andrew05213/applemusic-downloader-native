@@ -15,7 +15,9 @@ test('default package does not expose old WSL or appliance commands',()=>{
 
 test('phase two preserves archived inputs and moves shared Web assets without editing them',()=>{
  const manifest=require('../../legacy/v1/phase2-manifest.json');
+ const binary=require('../../scripts/legacy-binaries').definition(root),external=new Map(binary.files.map(f=>[f.path,f.sha256]));
  for(const file of [...manifest.files,...manifest.web]){
+  if(external.has(file.path)){assert.equal(external.get(file.path),file.sha256);continue;}
   assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(root,file.path))).digest('hex'),file.sha256,file.path);
   if(!file.retainedAsStub)assert(!fs.existsSync(path.join(root,file.original)),file.original);
  }

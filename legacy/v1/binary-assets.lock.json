@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "repository": "Andrew05213/applemusic-downloader-native",
+  "tag": "legacy-binaries-20261104",
+  "asset": "legacy-wrapper-rootfs-system-20261104.zip",
+  "sha256": "59251675687fcac695015e455ba4494849bd86029b155117f6470f6e42c687d2",
+  "size": 48718960,
+  "manifest": "legacy/v1/phase2-manifest.json",
+  "manifestSHA256": "f28652376b372f3571ee44c44dc040572cf2d895aa6ca913166b7c941d15db6a",
+  "prefix": "legacy/v1/wrapper-linux/rootfs/system/",
+  "fileCount": 100,
+  "expandedSize": 121309053
+}

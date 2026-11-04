@@ -18,6 +18,7 @@
 | `web/` | Go serve 兼容界面，不进入桌面安装包 |
 | `scripts/` | 文档、边界与本地构建存储维护 |
 | `scripts/native-dev.js` | 环境检查、工作区 runtime 选择与开发/打包入口 |
+| `scripts/legacy-binaries.js` | 可选旧二进制附件获取与校验，不参与 Native 构建 |
 | `native-runtime/toolchain/` | 从公开锁定输入构建 Linux 工具链的配方 |
 | `docs/` | 用户、开发、架构、测试与发布文档 |
 | `legacy/v1/` | 旧桌面/WSL 代码、工具和专属测试的冻结参考 |
@@ -33,5 +34,7 @@ Go 根包仍编译部分 CLI/Web 和旧 Wrapper 代码，并非独立的纯原�
 ## 归档与生成文件
 
 `legacy/v1/` 不是独立可运行的产品，也不是本仓库 Native 1.0。用途和校验清单见[旧源码说明](legacy/README.md)。
+
+旧 `rootfs/system` 预编译程序与库从当前 Git 树外置到 Release，身份记录在 `legacy/v1/binary-assets.lock.json`，原始归档哈希清单保持不变。旧 Git 历史未重写；新贡献者建议从[浅克隆](../CONTRIBUTING.md)开始。
 
 构建产物和缓存不提交 Git；位置与安全清理规则见[构建存储](development/build-storage.md)。安装身份、Go 模块和用户资料的兼容名称见[兼容说明](development/compatibility.md)。
