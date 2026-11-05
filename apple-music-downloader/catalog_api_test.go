@@ -227,7 +227,7 @@ func TestCatalogAPIPublicRoutesNeverAcquireUserTokenAndKeepFailureFixed(t *testi
 		}
 		switch r.URL.Path {
 		case "/v1/catalog/us/charts":
-			fmt.Fprint(w, `{"charts":{}}`)
+			fmt.Fprint(w, `{"results":{}}`)
 		case "/v1/catalog/us/search":
 			fmt.Fprint(w, `{"results":{}}`)
 		case "/v1/catalog/us/albums/123":

@@ -416,17 +416,26 @@ func (c *Client) BrowseCatalog(ctx context.Context, input BrowseRequest) (*Brows
 		scheme: req.URL.Scheme, host: canonicalRedirectHost(req.URL), allowedPaths: []string{req.URL.EscapedPath()},
 	})
 	var raw struct {
-		Data    []browseRawResource         `json:"data"`
-		Next    string                      `json:"next"`
-		Results map[string]browseRawGroup   `json:"results"`
-		Charts  map[string][]browseRawGroup `json:"charts"`
+		Data    []browseRawResource       `json:"data"`
+		Next    string                    `json:"next"`
+		Results map[string]browseRawGroup `json:"results"`
 	}
-	if err := client.decodeJSON(req, &raw); err != nil {
+	// Both endpoints use "results", but charts has an array of charts for each
+	// resource type, whereas search has one resource group. Decode separately
+	// so a valid ChartResponse is not rejected as a malformed SearchResponse.
+	var charts struct {
+		Results map[string][]browseRawGroup `json:"results"`
+	}
+	var destination any = &raw
+	if input.Mode == BrowseModeCharts {
+		destination = &charts
+	}
+	if err := client.decodeJSON(req, destination); err != nil {
 		return nil, browseSafeError(ctx, err)
 	}
 	result := &BrowseResponse{SchemaVersion: 1, Storefront: input.Storefront, Groups: []BrowseGroup{}}
 	if input.Mode != BrowseModeDetail && input.Mode != BrowseModeArtistAlbums {
-		if input.Mode == BrowseModeSearch && raw.Results == nil || input.Mode == BrowseModeCharts && raw.Charts == nil {
+		if input.Mode == BrowseModeSearch && raw.Results == nil || input.Mode == BrowseModeCharts && charts.Results == nil {
 			return nil, ErrBrowseSchema
 		}
 		kinds := []string{BrowseKindSongs, BrowseKindAlbums, BrowseKindPlaylists, BrowseKindMusicVideos}
@@ -438,8 +447,8 @@ func (c *Client) BrowseCatalog(ctx context.Context, input BrowseRequest) (*Brows
 			var exists bool
 			if input.Mode == BrowseModeSearch {
 				group, exists = raw.Results[kind]
-			} else if len(raw.Charts[kind]) > 0 {
-				group, exists = raw.Charts[kind][0], true
+			} else if len(charts.Results[kind]) > 0 {
+				group, exists = charts.Results[kind][0], true
 			}
 			if !exists {
 				continue
