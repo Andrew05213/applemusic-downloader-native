@@ -4,7 +4,14 @@
 
 用于浏览 Apple Music、播放音乐和管理下载的 Windows 桌面工具。提供原生登录界面、ALAC 下载与分片流式播放，无需安装 WSL、Docker 或使用内置官方网页。
 
-[下载与发布记录](https://github.com/Andrew05213/applemusic-downloader-native/releases) · [使用指南](docs/USER-GUIDE.md) · [开发文档](docs/development/README.md) · [问题反馈](https://github.com/Andrew05213/applemusic-downloader-native/issues) · 交流 QQ 群：1131277036
+[下载与发布记录](https://github.com/Andrew05213/applemusic-downloader-native/releases) · [使用指南](docs/USER-GUIDE.md) · [开发文档](docs/development/README.md) · [问题反馈](https://github.com/Andrew05213/applemusic-downloader-native/issues)
+
+<p align="center">
+  <a href="https://github.com/Andrew05213/applemusic-downloader-native/releases/latest"><img alt="Windows x64" src="https://img.shields.io/badge/Windows-x64-4B67B4?style=flat-square&labelColor=2B3245"></a>
+  <a href="LICENSE"><img alt="许可证 Apache-2.0" src="https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF%E8%AF%81-Apache--2.0-4B67B4?style=flat-square&labelColor=2B3245"></a>
+  <a href="https://github.com/Andrew05213/applemusic-downloader-native/issues"><img alt="问题反馈" src="https://img.shields.io/badge/%E9%97%AE%E9%A2%98%E5%8F%8D%E9%A6%88-GitHub%20Issues-4B67B4?style=flat-square&logo=github&logoColor=white&labelColor=2B3245"></a>
+  <img alt="QQ 群 1131277036" src="https://img.shields.io/badge/QQ%20%E7%BE%A4-1131277036-4B67B4?style=flat-square&logo=qq&logoColor=white&labelColor=2B3245">
+</p>
 
 ## 功能
 
