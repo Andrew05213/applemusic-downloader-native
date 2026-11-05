@@ -112,8 +112,7 @@
 .job-heading{display:flex;align-items:flex-start;gap:12px}.job-heading h3{flex:1;min-width:0}.job-heading .job-folder-button{display:grid;place-items:center;flex:none;width:30px;height:30px;margin-top:-5px;padding:5px;background:transparent;color:#b7b7c2;border-radius:5px}
 .job-heading .job-folder-button:hover:enabled{background:#ffffff0d;color:#fff}.job-folder-button .ui-icon{width:18px;height:18px}.job-folder-feedback{color:#b0b0ba;font-size:12px;margin:0 0 10px}
 .native-shell #player{left:var(--sidebar-width);background:#303034c9;border-color:#ffffff15;backdrop-filter:blur(24px);font-size:12px}
-#catalog-content{animation:content-reveal .18s ease both}.native-shell .catalog-card .artwork{transition:filter .15s ease,transform .2s ease}.native-shell .catalog-artwork-action:hover .artwork{filter:brightness(1.06)}
-@keyframes content-reveal{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.native-shell .catalog-card .artwork{transition:filter .15s ease,transform .2s ease}.native-shell .catalog-artwork-action:hover .artwork{filter:brightness(1.06)}
 @media(min-width:760px){.app-header-right{padding-right:150px}}
 @media(max-width:1050px){.app-header-right{gap:10px}.native-shell .native-content{padding:28px 24px 110px}.native-shell .detail-hero>.artwork{width:220px;height:220px}.native-shell .detail-hero{min-height:220px}.native-shell .detail-hero h1{font-size:24px}.native-shell .detail-hero .detail-artist{font-size:20px}}
 @media(max-width:900px){.native-shell.nav-open{--sidebar-width:64px}.nav-open #sidebar{width:244px;box-shadow:16px 0 30px #0005}.nav-open .window-brand .brand-mark,.nav-open .app-name{display:none}.native-shell .native-content{padding:24px 20px 110px}.monitor-icon{display:none}}

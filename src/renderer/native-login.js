@@ -1,6 +1,7 @@
 'use strict';
 (() => {
   const $ = id => document.getElementById(id);
+  const motion = window.nativeMotion;
   let state = 'checking'; let pending = false;
   const messages = { checking: '正在恢复并验证已有会话…', needs_login: '使用 Apple 账户继续', authenticating: '正在登录，请稍候…', needs_2fa: '请输入本次登录的六位验证码', authenticated: '登录成功', unverified: '暂时无法验证已有会话，请先重试', runtime_unavailable: '本机服务暂不可用，请重试' };
   const stageMessages={device_login:'正在验证 Apple 账户…',device_code:'正在验证设备验证码…',music_service_start:'正在启动 Music 服务…',music_tokens:'正在获取 Music 会话…',music_storefront:'正在校验 Music 会话…'};
@@ -42,12 +43,14 @@
     const leafIsCurrent=lastFailure&&lastFailure.stage===value?.stage&&['native_gsa_provider_unavailable','native_login_failed','native_session_unverified','native_auth_required'].includes(currentCode);
     const errorCode=leafIsCurrent?lastFailure.code:currentCode||lastFailure?.code;
     $('login-error').textContent = errors[errorCode] || '';
+    motion?.feedback($('login-error'),$('login-error').textContent);
     const codeReady = state === 'needs_2fa';
     $('account-fields').hidden = state !== 'needs_login'; $('code-field').hidden = !codeReady;
     $('login-email').required = $('login-password').required = state === 'needs_login'; $('login-code').required = codeReady;
     $('two-factor-help').hidden = !codeReady;
     if (!codeReady) $('two-factor-help').open = false;
     if (codeReady && previous !== 'needs_2fa') $('login-code').focus();
+    if(previous!==state)motion?.enter(codeReady?$('code-field'):$('account-fields'),'panel');
     controls();
   }
   window.nativeDesktop.onSession(render);
@@ -55,15 +58,16 @@
   $('login-form').addEventListener('submit', async event => {
     event.preventDefault();
     if (pending || (state !== 'needs_login' && state !== 'needs_2fa')) return;
-    pending = true; $('login-error').textContent = ''; controls();
+    pending = true; $('login-error').textContent = ''; motion?.feedback($('login-error'),''); controls();
     try {
       let next;
       if (state === 'needs_login') next = await window.nativeDesktop.login({ appleEmail: $('login-email').value.trim(), applePassword: $('login-password').value });
       else next = await window.nativeDesktop.submitCode($('login-code').value);
       render(next);
-    } catch (error) { $('login-error').textContent = failure(error); }
+    } catch (error) { $('login-error').textContent = failure(error);motion?.feedback($('login-error'),$('login-error').textContent); }
     finally { $('login-password').value = ''; $('login-code').value = ''; pending = false; controls(); }
   });
-  $('login-recheck').addEventListener('click', async () => { if (pending) return; $('login-error').textContent = ''; try { render(await window.nativeDesktop.recheck()); } catch { render({ state: 'runtime_unavailable' }); } });
+  $('login-recheck').addEventListener('click', async () => { if (pending) return; $('login-error').textContent = ''; motion?.feedback($('login-error'),''); try { render(await window.nativeDesktop.recheck()); } catch { render({ state: 'runtime_unavailable' }); } });
   $('login-cancel').addEventListener('click', () => window.nativeDesktop.cancelLogin().catch(() => {}));
+  motion?.enter(document.querySelector('.login-content'),'panel');
 })();
