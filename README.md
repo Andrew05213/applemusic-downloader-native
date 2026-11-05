@@ -10,7 +10,7 @@
   <a href="https://github.com/Andrew05213/applemusic-downloader-native/releases/latest"><img alt="Windows x64" src="https://img.shields.io/badge/Windows-x64-4B67B4?style=flat-square&labelColor=2B3245"></a>
   <a href="LICENSE"><img alt="许可证 Apache-2.0" src="https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF%E8%AF%81-Apache--2.0-4B67B4?style=flat-square&labelColor=2B3245"></a>
   <a href="https://github.com/Andrew05213/applemusic-downloader-native/issues"><img alt="问题反馈" src="https://img.shields.io/badge/%E9%97%AE%E9%A2%98%E5%8F%8D%E9%A6%88-GitHub%20Issues-4B67B4?style=flat-square&logo=github&logoColor=white&labelColor=2B3245"></a>
-  <img alt="QQ 群 1131277036" src="https://img.shields.io/badge/QQ%20%E7%BE%A4-1131277036-4B67B4?style=flat-square&logo=qq&logoColor=white&labelColor=2B3245">
+  <a href="https://qun.qq.com/universal-share/share?ac=1&amp;authKey=aRFZEm8UHKTmbnDbXMIS9Pb71v0OtSxD%2FEnrQXar%2Bg3%2FkZfYZQKMVCRleIwcV13Q&amp;busi_data=eyJncm91cENvZGUiOiIxMTMxMjc3MDM2IiwidG9rZW4iOiJubVVESUNBODJRSkQ3Q2xMK2VpZWtudjFaNEFlNkloc3ZNVGlaT2hvVWZCVzkwYWJ6MU9ocWJwRExFcFFPQWZzIiwidWluIjoiMzEyOTk0NjcwMSJ9&amp;data=CPyNCmgNvrBf-z0RY3PcYqswhr2yYWEGmBocySkcnBszLAjpuZckyrAk9wups58lj6uLA26mDcYhj1Q9TjhHNw&amp;svctype=4&amp;tempid=h5_group_info"><img alt="QQ 群 1131277036" src="https://img.shields.io/badge/QQ%20%E7%BE%A4-1131277036-4B67B4?style=flat-square&logo=qq&logoColor=white&labelColor=2B3245"></a>
 </p>
 
 ## 功能
