@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 )
 
@@ -15,9 +16,9 @@ import (
 func TestBrowseChartsResultsArraysAndResourceOrder(t *testing.T) {
 	for _, region := range []string{"us", "cn"} {
 		t.Run(region, func(t *testing.T) {
-			calls := 0
+			var calls atomic.Int32
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				calls++
+				calls.Add(1)
 				if r.URL.Path != "/v1/catalog/"+region+"/charts" || r.URL.Query().Get("types") != "songs,albums" || r.URL.Query().Get("limit") != "12" || r.URL.Query().Get("offset") != "" {
 					t.Errorf("incorrect charts query: %s", r.URL)
 				}
@@ -33,8 +34,8 @@ func TestBrowseChartsResultsArraysAndResourceOrder(t *testing.T) {
 			if err != nil || result == nil || len(result.Groups) != 2 {
 				t.Fatalf("charts=%+v err=%v", result, err)
 			}
-			if calls != 1 || result.Storefront != region || result.Groups[0].Type != BrowseKindSongs || result.Groups[1].Type != BrowseKindAlbums {
-				t.Fatalf("incorrect groups or unexpected request count: %+v calls=%d", result, calls)
+			if calls.Load() != 1 || result.Storefront != region || result.Groups[0].Type != BrowseKindSongs || result.Groups[1].Type != BrowseKindAlbums {
+				t.Fatalf("incorrect groups or unexpected request count: %+v calls=%d", result, calls.Load())
 			}
 			if len(result.Groups[0].Items) != 2 || result.Groups[0].Items[0].ID != "102" || result.Groups[0].Items[1].ID != "101" || len(result.Groups[1].Items) != 1 || result.Groups[1].Items[0].ID != "201" {
 				t.Fatalf("chart ranking changed or chart lists were mixed: %+v", result.Groups)
