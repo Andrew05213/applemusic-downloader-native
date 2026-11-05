@@ -10,8 +10,11 @@ function inventory(bundle,output){
  const manifest=JSON.parse(fs.readFileSync(path.join(selected,'bundle.json'),'utf8'));
  if(manifest.isolated!==false||JSON.stringify(manifest)!==JSON.stringify(makeManifest(selected,{isolated:false})))throw Error('qemu_inventory_bundle_invalid');
  const files=walk(path.join(selected,'qemu'));
+ const materials=Object.entries(files).map(([file,identity])=>({path:file,...identity,
+  category:file.startsWith('share/')?'firmware-or-support':file.toLowerCase().endsWith('.dll')?'dll':'executable-or-support',
+  upstreamArchivePath:file,correspondingSourceStatus:'unresolved',buildMaterialStatus:'unresolved',licenseMappingStatus:'unreviewed'}));
  const result={schemaVersion:1,manifestSHA256:hash(path.join(selected,'bundle.json')),qemuInstallerSHA512:JSON.parse(fs.readFileSync(path.join(selected,'evidence/build.json'),'utf8')).qemuInstallerSHA512,
-  files,authorizationReviewComplete:false,notice:'File presence and hashes do not establish source correspondence or redistribution rights.'};
+  files,materials,incomplete:true,authorizationReviewComplete:false,notice:'File presence and hashes do not establish source correspondence or redistribution rights. All distributed files need mapping, including unused DLLs and firmware.'};
  fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,JSON.stringify(result,null,2)+'\n',{flag:'wx'});
  return {output:target,files:Object.keys(files).length,authorizationReviewComplete:false};
 }

@@ -52,6 +52,13 @@ npm run package:native
 - [依赖与上游来源](docs/UPSTREAMS.md)
 - [完整文档导航](docs/README.md)
 
+## 直接上游
+
+- [zhaarey/apple-music-downloader](https://github.com/zhaarey/apple-music-downloader)：本项目下载器的直接上游，原始脚本署名 Sorrow。
+- [WorldObservationLog/wrapper（Wrapper Lite）](https://github.com/WorldObservationLog/wrapper)：提供 Lite 服务；本项目使用的固定版本采用 [MIT License](https://github.com/WorldObservationLog/wrapper/blob/2fd7e0eaef081f93cf687428b965674937832ba4/LICENSE)。
+
+感谢上述项目的作者与贡献者。各上游代码保留其原有版权和适用许可；版本及许可记录见[上游来源](docs/UPSTREAMS.md)。
+
 ## 许可证
 
 本项目由维护者拥有版权或有权授权的原创代码及修改采用 [Apache License 2.0](LICENSE)。Copyright 2026 Andrew05213。
