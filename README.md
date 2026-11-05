@@ -4,7 +4,7 @@
 
 用于浏览 Apple Music、播放音乐和管理下载的 Windows 桌面工具。提供原生登录界面、ALAC 下载与分片流式播放，无需安装 WSL、Docker 或使用内置官方网页。
 
-[下载与发布记录](https://github.com/Andrew05213/applemusic-downloader-native/releases) · [使用指南](docs/USER-GUIDE.md) · [开发文档](docs/development/README.md) · [问题反馈](https://github.com/Andrew05213/applemusic-downloader-native/issues)
+[下载与发布记录](https://github.com/Andrew05213/applemusic-downloader-native/releases) · [使用指南](docs/USER-GUIDE.md) · [开发文档](docs/development/README.md) · [问题反馈](https://github.com/Andrew05213/applemusic-downloader-native/issues) · 交流 QQ 群：1131277036
 
 ## 功能
 
@@ -43,7 +43,7 @@ npm run package:native
 
 新贡献者可先看[维护与贡献入口](CONTRIBUTING.md)。旧版预编译运行文件已迁至独立 Release 附件，日常 Native 开发无需下载；完整 Git 历史仍包含旧文件，浅克隆可避免下载这些历史二进制。
 
-欢迎通过 Issue 反馈问题或提交 Pull Request。反馈请附版本、复现步骤和已脱敏的诊断；提交改动前运行相关测试，不上传账号、验证码、Token、会话或下载的音乐。
+欢迎通过 Issue 反馈问题、加入交流 QQ 群（1131277036）讨论，或提交 Pull Request。反馈请附版本、复现步骤和已脱敏的诊断；提交改动前运行相关测试，不上传账号、验证码、Token、会话或下载的音乐。
 
 ## 项目文档
 
