@@ -32,9 +32,13 @@ test('Debian snapshot failover keeps both suites signed and pinned, and bounds f
  assert.deepEqual([...recipe.matchAll(/signed-by=\/usr\/share\/keyrings\/debian-archive-keyring\.gpg\] https:\/\/%s\/archive\/(debian(?:-security)?)\/(\d{8}T\d{6}Z)\//g)].map(([,suite,snapshot])=>[suite,snapshot]),[['debian',lock.snapshot],['debian-security',lock.snapshot]]);
  assert.match(recipe,/timeout -k 10s "\$limit" apt-get -o Acquire::https::Timeout=15/);
  assert.match(recipe,/snapshot_apt 90s -o APT::Update::Error-Mode=any update/);
- assert.match(recipe,/snapshot_apt 4m install -y --download-only/);
+ assert.match(recipe,/timeout -k 10s 8m python3 \/toolchain\/fetch-snapshot-packages\.py/);
  assert.match(recipe,/apt-get install -y --no-download/);
  assert.doesNotMatch(recipe,/trusted=yes|allow-unauthenticated|Verify-(?:Peer|Host)=false/);
+ const fetcher=fs.readFileSync(path.join(ROOT,'native-runtime/toolchain/fetch-snapshot-packages.py'),'utf8');
+ assert.match(fetcher,/apt-get", "--print-uris", "--download-only"/);
+ assert.match(fetcher,/apt-cache", "show"/);
+ assert.match(fetcher,/hashlib\.file_digest\(stream, "sha256"\)\.hexdigest\(\) == sha256/);
 });
 test('toolchain builds only whitelisted context files and binds cache to immutable image identity',t=>{
  const root=fixture(t),expected=definition(root),imageID='sha256:'+'a'.repeat(64),calls=[];
