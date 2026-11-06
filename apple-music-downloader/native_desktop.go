@@ -52,6 +52,26 @@ func (n *nativeDesktop) executor(root string) JobExecutor {
 	return processJobExecutor{executable: currentExecutable, outputRootFor: func() string { return root }, commandRunner: osCommandRunner{}, native: true, credentialProvider: n.downloadCredentials}
 }
 
+func (n *nativeDesktop) waitForDownloadSession(ctx context.Context) error {
+	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		agent, err := n.control.Agent()
+		if err != nil {
+			return errors.New("native_runtime_unavailable")
+		}
+		if _, err = agent.Credentials(ctx); !errors.Is(err, nativeauth.ErrUnverified) {
+			return err
+		}
+		// The guest coalesces verification and owns its retry backoff. Only
+		// this job's worker waits; it never starts a password login.
+		if err := sleepDownloadRetry(ctx, time.Second); err != nil {
+			return err
+		}
+	}
+}
+
 // Recovered queued tasks can be claimed before guest/session restoration has
 // completed. Wait for the unified login instead of permanently failing them
 // during every application restart; cancellation still belongs to the queue.
@@ -316,6 +336,7 @@ func serveNativeDesktop(args []string, input io.Reader, output io.Writer) error 
 		return errors.New("native_directory_unavailable")
 	}
 	engine, _ := NewEngine(native.executor(*destination), 2)
+	engine.waitForSession = native.waitForDownloadSession
 	native.manager, err = newServerJobManager(ctx, store, engine)
 	if err != nil {
 		_ = store.Close()

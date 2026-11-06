@@ -403,6 +403,7 @@
     } finally {resolvingJobName=false;}
   }
   const downloadFailures = {
+    session_verification_pending:'Music 会话未完成复验。可重试未完成曲目。',
     license_failed:'解密许可获取失败。请重新验证会话，并检查该资源的地区与订阅权限。',
     session_rejected:'授权被拒绝（HTTP 401）。请到设置中重新验证或登录。',
     resource_forbidden:'资源访问被拒绝（HTTP 403）。请检查账号地区、订阅和资源权限。',
@@ -589,13 +590,14 @@
     }
     card.job=job;card.querySelector('h3').textContent = jobHeading(job);card.querySelector('h3').title=job.url;drawJobTransfer(card);
     if(card.jobStatus!==undefined&&card.jobStatus!==job.status)motion?.enter(card.querySelector('.job-summary'),'feedback');card.jobStatus=job.status;
-    card.querySelector('.job-summary').textContent = (statusNames[job.status] || job.status) + ' · 成功 ' + job.succeeded + ' · 失败 ' + job.failed + ' · 跳过 ' + job.skipped + ' · 不可用 ' + job.unavailable;
-    const items = card.querySelector('ul'), signature = JSON.stringify(job.items || []);
+    const waitingForSession=job.status==='running'&&(job.items||[]).some(item=>item.status==='interrupted'&&item.errorCode==='session_verification_pending');
+    card.querySelector('.job-summary').textContent = (waitingForSession?'等待会话恢复':statusNames[job.status] || job.status) + ' · 成功 ' + job.succeeded + ' · 失败 ' + job.failed + ' · 跳过 ' + job.skipped + ' · 不可用 ' + job.unavailable;
+    const items = card.querySelector('ul'), signature = JSON.stringify([waitingForSession,job.items || []]);
     const failedItems=(job.items||[]).filter(item=>item.status==='failed'||item.status==='unavailable');
     card.querySelector('.job-failure').textContent=['failed','partial','interrupted'].includes(job.status)?(job.errorCode&&job.errorCode!=='execution_failed'?downloadFailure(job):failedItems.length?downloadFailure(failedItems[0]):downloadFailure(job)):'';
     if (card.itemsSignature !== signature) {
       const scroll = items.scrollTop; items.replaceChildren();
-      for (const item of job.items || []) {const row=node('li',(item.name||item.sourceId)+' · '+(statusNames[item.status]||item.status));if(['failed','unavailable','interrupted'].includes(item.status))row.append(node('p',downloadFailure(item),'job-item-failure'));items.append(row);}
+      for (const item of job.items || []) {const paused=waitingForSession&&item.status==='interrupted'&&item.errorCode==='session_verification_pending';const row=node('li',(item.name||item.sourceId)+' · '+(paused?'等待会话恢复':statusNames[item.status]||item.status));if(['failed','unavailable','interrupted'].includes(item.status))row.append(node('p',paused?'恢复后自动续跑未完成的曲目。':downloadFailure(item),'job-item-failure'));items.append(row);}
       items.hidden = !job.items?.length; items.scrollTop = scroll; card.itemsSignature = signature;
     }
     // Preserve the actual button nodes across polling, including pointer-down
