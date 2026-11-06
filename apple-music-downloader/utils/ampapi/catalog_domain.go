@@ -7,6 +7,7 @@ import (
 
 const (
 	BrowseModeCharts         = "charts"
+	BrowseModeDiscover       = "discover"
 	BrowseModeSearch         = "search"
 	BrowseModeDetail         = "detail"
 	BrowseModeHome           = "home"

@@ -16,6 +16,7 @@
 - [共享 Go 接口](development/shared-go-interfaces.md)：应用接口、退出顺序与宿主适配。
 - [JobAPI 与文件服务](development/job-api-file-boundaries.md)：文件身份、句柄所有权和安全删除。
 - [分片流式播放](architecture/streaming-playback.md)：媒体链路、缓冲、取消与下载隔离。
+- [UI 动效维护](development/ui-motion.md)：统一节奏、减少动态效果与交互回归。
 - [Catalog API](CATALOG_API.md)：共享目录查询与地区处理。
 - [构建存储](development/build-storage.md)：产物、缓存与清理规则。
 - [CI 与发布](RELEASE.md)：运行组件输入、安装器验证与正式发布步骤。

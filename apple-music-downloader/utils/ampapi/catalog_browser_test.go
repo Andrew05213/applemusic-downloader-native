@@ -118,7 +118,7 @@ func TestBrowseChartsAndAllResourceKinds(t *testing.T) {
 				}
 				switch r.URL.Path {
 				case "/v1/catalog/us/charts":
-					fmt.Fprintf(w, `{"charts":{%q:[{"data":[%s]}]}}`, kind, resource)
+					fmt.Fprintf(w, `{"results":{%q:[{"data":[%s]}]}}`, kind, resource)
 				case "/v1/catalog/us/" + kind + "/" + id:
 					fmt.Fprintf(w, `{"data":[%s]}`, resource)
 				default:

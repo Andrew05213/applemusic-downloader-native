@@ -20,7 +20,7 @@ Debian 部分资料包 SHA-256 为 `acb61042cae090736b2250d630bbf570dd782919e117
 
 | 组件 | 输入与现有资料 | 未完成事项 |
 | --- | --- | --- |
-| Wrapper Lite | WorldObservationLog/wrapper，commit `2fd7e0eaef081f93cf687428b965674937832ba4`；MIT 文本在 `native-runtime/notices/wrapper-LICENSE`，补丁在 native-runtime | 核对最终分发材料及相关声明 |
+| Wrapper Lite | Andrew05213/wrapper 的 `work` 分支，commit `15fe0cb75b866e7460bf8d28d155e813a870e076`，源自 WorldObservationLog/wrapper；构建时复制源码 LICENSE 到 runtime 的 `notices/wrapper-LICENSE`，补丁在 native-runtime | 核对最终分发材料及相关声明 |
 | QEMU Windows | 11.1.0，发行者安装器及 SHA-512 在锁文件，许可证文本随 runtime 保留 | 对应该发行二进制的源码、补丁、配置、构建脚本，以及附带 DLL/固件的来源与许可 |
 | Debian Linux | `linux-image-6.1.0-51-amd64=6.1.177-1` | 完整构建配置、实际二进制对应性及交付核查 |
 | Debian BusyBox | `busybox-static=1:1.35.0-4+deb12u1+b1`，已提供源包版本 `1:1.35.0-4+deb12u1` | 二进制重建与源码对应性核查 |

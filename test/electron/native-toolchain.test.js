@@ -25,6 +25,21 @@ test('toolchain recipe mutations invalidate evidence even with a matching image 
  fs.appendFileSync(path.join(root,'native-runtime/toolchain/install.py'),'\n# changed recipe\n');
  assert.throws(()=>verifyEvidence(receipt,root),/native_toolchain_evidence_mismatch/);
 });
+test('Debian snapshot failover keeps both suites signed and pinned, and bounds fetches',()=>{
+ const recipe=fs.readFileSync(path.join(ROOT,'native-runtime/toolchain/Dockerfile'),'utf8');
+ const lock=require('../../native-runtime/toolchain/inputs.lock.json');
+ assert.match(recipe,/for host in snapshot-fastly\.debian\.org snapshot-cloudflare\.debian\.org snapshot\.debian\.org;/);
+ assert.deepEqual([...recipe.matchAll(/signed-by=\/usr\/share\/keyrings\/debian-archive-keyring\.gpg\] https:\/\/%s\/archive\/(debian(?:-security)?)\/(\d{8}T\d{6}Z)\//g)].map(([,suite,snapshot])=>[suite,snapshot]),[['debian',lock.snapshot],['debian-security',lock.snapshot]]);
+ assert.match(recipe,/timeout -k 10s "\$limit" apt-get -o Acquire::https::Timeout=15/);
+ assert.match(recipe,/snapshot_apt 90s -o APT::Update::Error-Mode=any update/);
+ assert.match(recipe,/timeout -k 10s 8m python3 \/toolchain\/fetch-snapshot-packages\.py/);
+ assert.match(recipe,/apt-get install -y --no-download/);
+ assert.doesNotMatch(recipe,/trusted=yes|allow-unauthenticated|Verify-(?:Peer|Host)=false/);
+ const fetcher=fs.readFileSync(path.join(ROOT,'native-runtime/toolchain/fetch-snapshot-packages.py'),'utf8');
+ assert.match(fetcher,/apt-get", "--print-uris", "--download-only"/);
+ assert.match(fetcher,/apt-cache", "show"/);
+ assert.match(fetcher,/hashlib\.file_digest\(stream, "sha256"\)\.hexdigest\(\) == sha256/);
+});
 test('toolchain builds only whitelisted context files and binds cache to immutable image identity',t=>{
  const root=fixture(t),expected=definition(root),imageID='sha256:'+'a'.repeat(64),calls=[];
  fs.writeFileSync(path.join(root,'.env'),'SENTINEL_DO_NOT_COPY');

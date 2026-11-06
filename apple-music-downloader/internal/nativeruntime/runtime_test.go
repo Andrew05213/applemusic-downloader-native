@@ -172,7 +172,7 @@ func TestCommandAndStateImage(t *testing.T) {
 			t.Fatal("QEMU arguments contain a Unicode path")
 		}
 	}
-	if !strings.Contains(joined, "-accel tcg") || !strings.Contains(joined, "hostfwd=tcp:127.0.0.1:12340-:12340") || !strings.Contains(joined, "file=data.img,format=raw,if=virtio") {
+	if !strings.Contains(joined, "-accel tcg,tb-size=64 ") || !strings.Contains(joined, "hostfwd=tcp:127.0.0.1:12340-:12340") || !strings.Contains(joined, "file=data.img,format=raw,if=virtio") {
 		t.Fatalf("incorrect command: %s", joined)
 	}
 	disk := filepath.Join(state, "data.img")

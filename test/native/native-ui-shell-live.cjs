@@ -19,13 +19,14 @@ if(!process.versions.electron){
   const album=item('300','Fixture Album'),other=item('302','Other Work');
   const tracks=[{id:'701',type:'songs',title:'Fixture Song',artist:'Fixture Artist',duration:216000,downloadable:true,url:'https://music.apple.com/us/song/701'}];
   const serve=async target=>{counts[target]=(counts[target]||0)+1;const u=new URL(target,'http://fixture');
-   if(u.pathname==='/api/v1/catalog/home'||u.pathname==='/api/v1/catalog/charts')return {groups:[{type:'albums',title:'最近播放',items:[album,other]}]};
+   if(u.pathname==='/api/v1/catalog/home')return {groups:[{type:'albums',title:'最近播放',items:[album,other]}]};
+   if(u.pathname==='/api/v1/catalog/discover')return {groups:[{type:'albums',layout:'shelf',title:'本周新发行',items:[album,other]}]};
    if(u.pathname==='/api/v1/catalog/library')return {groups:[]};
    if(u.pathname==='/api/v1/catalog/detail')return {resource:u.searchParams.get('id')==='302'?other:album,tracks};
    if(u.pathname==='/api/v1/catalog/artist-albums')return {groups:[{type:'albums',items:[album,other]}]};
    if(u.pathname==='/api/v1/jobs')return {jobs:[{id:'job-fixture',title:'Fixture Album',url:album.url,status:'running',total:10,succeeded:2,failed:0,skipped:0,unavailable:0,transfer:{at:Date.now(),bytes:4096,bytesPerSecond:2097152,phase:'downloading'}}]};
    if(target==='/api/v1/capabilities')return {queue:{state:'ready'},jobExecutorConfigured:true,qualities:{'aac-lc':{available:true}}};
-   if(target==='/api/v1/settings/download')return {settings:{songFileFormat:'{title}'}};
+   if(target==='/api/v1/settings/download')return {settings:{downloadRegion:'',metadataRegion:'',lyricsRegion:'',language:'',saveLyrics:false,embedLyrics:true,lyricsType:'lyrics',lyricsFormat:'lrc',embedCover:true,coverFormat:'jpg',coverSize:'500x500',saveArtistCover:false,saveAnimatedArtwork:false,useSongInfoForPlaylist:false,alacMax:192000,songFileFormat:'{title}'}};
    if(target==='/api/v1/settings/download-concurrency')return {downloadConcurrency:3};
    if(target==='/api/native/state')return {runtime:{phase:'ready'},downloadDirectory:'fixture only'};
    throw Error('unhandled fixture route');
@@ -44,7 +45,7 @@ if(!process.versions.electron){
   await win.loadURL(pathToFileURL(path.join(root,'src/renderer/native-index.html')).href);win.webContents.send('native:backend-ready');
   await wait(`document.querySelectorAll('.catalog-card').length===2&&[...document.querySelectorAll('.catalog-card img')].every(img=>img.naturalWidth>0)&&document.querySelector('#monitor-speed').textContent==='2.0 MiB/s'`);
   await painted();await fs.promises.writeFile(path.join(output,'home.png'),(await win.webContents.capturePage()).toPNG());
-  await evaluate(`document.querySelector('[data-feed="charts"]').click()`);await wait(`document.querySelector('#page-title').textContent==='排行榜'&&document.querySelectorAll('.catalog-card').length===2`);
+  await evaluate(`document.querySelector('[data-feed="discover"]').click()`);await wait(`document.querySelector('#page-title').textContent==='新发现'&&document.querySelectorAll('.discover-cover-shelf .catalog-card').length===2`);
   await evaluate(`document.querySelector('[data-feed="home"]').click()`);await wait(`document.querySelector('#page-title').textContent==='主页'&&document.querySelectorAll('.catalog-card').length===2`);
   assert.equal(counts['/api/v1/catalog/home?region=us&offset=0'],1,'returning home fetched upstream again');
   await evaluate(`document.querySelector('.catalog-title-action').click()`);await wait(`document.querySelector('.detail-metadata')?.textContent.includes('© 2026 Fixture')&&document.querySelectorAll('.detail-related .catalog-card').length===1`);
@@ -53,9 +54,16 @@ if(!process.versions.electron){
   const back=await evaluate(`(()=>{const r=document.querySelector('#browse-back').getBoundingClientRect();return{x:r.x,y:r.y};})()`);assert.ok(back.x<=12&&back.y<=16);
   const info=await cache.info();assert.equal(info.limitMB,500);assert.ok(info.usedBytes>0);assert.ok(info.hits>0);assert.equal(imageFetches,2,'reused artwork bypassed cache');
   await evaluate(`document.querySelector('[data-view="settings"]').click()`);await wait(`document.querySelector('#cache-usage').textContent.includes('500 MB')`);
+  const settingsPicker=await evaluate(`(()=>{const select=document.querySelector('#quality');return{customizable:CSS.supports('appearance','base-select'),appearance:getComputedStyle(select).appearance,rate:document.querySelector('[data-preference="alacMax"] option:checked').textContent};})()`);
+  assert.deepEqual(settingsPicker,{customizable:true,appearance:'base-select',rate:'192 kHz'});
+  await painted();await fs.promises.writeFile(path.join(output,'settings.png'),(await win.webContents.capturePage()).toPNG());
+  await evaluate(`document.querySelector('#quality').showPicker()`);await wait(`document.querySelector('#quality').matches(':open')`);
+  await painted();await fs.promises.writeFile(path.join(output,'settings-picker.png'),(await win.webContents.capturePage()).toPNG());
+  win.webContents.sendInputEvent({type:'keyDown',keyCode:'Escape'});win.webContents.sendInputEvent({type:'keyUp',keyCode:'Escape'});
+  await wait(`!document.querySelector('#quality').matches(':open')`);
   const sentinel=path.join(output,'download-sentinel.m4a');await fs.promises.writeFile(sentinel,'untouched fixture');await evaluate(`document.querySelector('#cache-limit').value='250';document.querySelector('#save-cache-limit').click()`);await wait(`document.querySelector('#cache-usage').textContent.includes('250 MB')`);
   await evaluate(`document.querySelector('#clear-cache').click()`);await wait(`document.querySelector('#cache-feedback').textContent.includes('缓存已清理')`);assert.equal(await fs.promises.readFile(sentinel,'utf8'),'untouched fixture');
-  const evidence={passed:true,electron:process.versions.electron,platform:process.platform,isolatedProfile:true,remoteRequests:false,back,cacheBeforeClear:info,imageFetches,counts,requests:requests.length};await fs.promises.writeFile(path.join(output,'evidence.json'),JSON.stringify(evidence,null,2));
+  const evidence={passed:true,electron:process.versions.electron,platform:process.platform,isolatedProfile:true,remoteRequests:false,back,cacheBeforeClear:info,imageFetches,counts,requests:requests.length,settingsPicker};await fs.promises.writeFile(path.join(output,'evidence.json'),JSON.stringify(evidence,null,2));
   win.destroy();console.log(JSON.stringify({passed:true,evidence:path.join(output,'evidence.json')}));app.exit(0);
  }).catch(error=>{console.error(error);app.exit(1);});
 }

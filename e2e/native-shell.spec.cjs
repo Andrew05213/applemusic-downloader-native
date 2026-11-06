@@ -16,7 +16,7 @@ async function install(page,{clock=false}={}){
     if(u.pathname==='/api/v1/capabilities')return {queue:{state:'ready'},jobExecutorConfigured:true,qualities:{alac:{available:true},'aac-lc':{available:true}}};
     if(target==='/api/v1/jobs?active=true&limit=100'){if(f.hold)await new Promise(resolve=>f.pending.push(resolve));if(f.failed)throw Error('offline');return {jobs:structuredClone(f.jobs)};}
     if(target==='/api/v1/jobs?limit=30')return {jobs:structuredClone(f.jobs)};
-    if(u.pathname==='/api/v1/catalog/home'||u.pathname==='/api/v1/catalog/charts')return {groups:[{type:'albums',title:'最近播放',items:[album]}]};
+    if(u.pathname==='/api/v1/catalog/home')return {groups:[{type:'albums',title:'最近播放',items:[album]}]};
     if(u.pathname==='/api/v1/catalog/library')return {groups:[{type:'library-playlists',title:'我的歌单',items:[library]}]};
     if(u.pathname==='/api/v1/catalog/library-detail')return {resource:library,tracks};
     if(u.pathname==='/api/v1/catalog/detail')return {resource:u.searchParams.get('id')==='302'?other:album,tracks};

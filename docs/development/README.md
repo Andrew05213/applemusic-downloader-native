@@ -73,6 +73,8 @@ npm run build:native-toolchain -- --no-cache
 
 公开基础镜像固定到 linux/amd64 manifest 摘要；Debian 使用固定快照；NDK/CMake 校验 SHA-256；cJSON/Dobby 固定 Git commit 和递归子模块。当前保留的工具版本为 NDK r23b、CMake 3.25.3，版本身份见锁文件。
 
+Debian 签名索引优先从 Fastly 快照入口读取，超时或失败时再尝试 Cloudflare 和原站，三个入口使用相同的快照日期。包名和版本只由快照索引决定；下载可使用 Debian CDN 或快照入口，每个文件都必须符合签名索引中的大小和 SHA-256。网络步骤设有时间上限，无法取得精确文件时停止构建。
+
 构建记录绑定配方/锁文件哈希与实际镜像 ID，缓存命中后仍复验；guest 编译和组装在断网模式执行。工具链不包含 Apple runtime、账号或旧测试镜像。它只在开发构建中使用，不随成品安装。
 
 记录是本地完整性与新鲜度证据，**不是签名证明，也不承诺不同机器构建出相同 Docker image ID**。有意更新配方会使旧 runtime 失效并要求重建，不能改标签冒充相同输入。独立工作流 `Native Toolchain From Source` 从公开输入重新构建，不发布镜像或 NDK 附件。

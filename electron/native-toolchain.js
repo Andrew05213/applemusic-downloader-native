@@ -4,7 +4,7 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {spawnSync}=require('node:child_process');
 const ROOT=path.resolve(__dirname,'..');
-const FILES=['inputs.lock.json','Dockerfile','install.py','extract-ndk.py'];
+const FILES=['inputs.lock.json','Dockerfile','install.py','extract-ndk.py','fetch-snapshot-packages.py'];
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 function definition(root=ROOT){
  const directory=path.join(root,'native-runtime/toolchain');

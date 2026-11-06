@@ -104,7 +104,7 @@ func TestHomeWithoutUserTokenUsesOnlyPublicCharts(t *testing.T) {
 		if r.URL.Path != "/v1/catalog/us/charts" || r.Header.Get("Media-User-Token") != "" {
 			t.Error("public fallback scope")
 		}
-		fmt.Fprint(w, `{"charts":{}}`)
+		fmt.Fprint(w, `{"results":{}}`)
 	}))
 	defer server.Close()
 	c := NewClient(server.Client())

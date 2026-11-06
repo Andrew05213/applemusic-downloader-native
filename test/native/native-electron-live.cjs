@@ -68,6 +68,16 @@ async function main(){
   evidence.deviceOnlyEntryVerified=true;
   assert.equal(await login.locator('#login-error').textContent(),'登录未完成，请导出诊断后重试。');
   await login.getByRole('button',{name:'暂不登录'}).click();await new Promise(resolve=>setTimeout(resolve,2500));assert.equal(app.windows().filter(win=>win.url().endsWith('/native-login.html')).length,0);
+  // Exercise the packaged discovery route with network deliberately disabled.
+  // An isolated backend must reject the request, not fall back to the charts.
+  assert.equal(await owner.getByRole('button',{name:'排行榜',exact:true}).count(),0);
+  const discoverResult=await owner.evaluate(async()=>{try{await window.nativeDesktop.api('/api/v1/catalog/discover?region=cn');return 'unexpected_success';}catch(error){return error.message;}});
+  assert.match(discoverResult,/native_runtime_isolated/);
+  await owner.getByRole('button',{name:'新发现',exact:true}).click();
+  await expect(owner.locator('#page-title')).toHaveText('新发现');
+  await expect(owner.getByRole('button',{name:'重新载入',exact:true})).toBeVisible();
+  evidence.discoveryEntryAndIsolatedRouteVerified=true;
+  await owner.getByRole('button',{name:'设置与状态',exact:true}).click();
   if(process.env.AMDL_STREAM_OUTPUT){
     // Exercise the adapter shipped inside the extracted ASAR with generated
     // sine-wave AAC only. This does not authenticate or request Apple media.

@@ -22,6 +22,7 @@ Windows 上运行、调试和打包完整桌面版还需要 Docker Linux 引擎�
 | --- | --- |
 | 窗口、系统对话框和文件夹定位 | `src/main/native-main.js`、`src/preload/` |
 | 页面、导航和播放界面 | `src/renderer/native-*` |
+| 界面动效与减少动态效果 | [动效维护](docs/development/ui-motion.md)、`src/renderer/native-motion.*` |
 | 下载任务、目录 API、文件与元数据 | `apple-music-downloader/` |
 | guest 控制、登录会话 | `apple-music-downloader/internal/guestagent/`、`internal/nativeauth/` |
 | runtime、工具链、安装包和 CI | `native-runtime/`、`electron/`、`.github/workflows/` |

@@ -1,0 +1,33 @@
+/* Corporate / calm: responsive feedback, small distances, no bounce or parallax.
+   Primary = view/group entry; secondary = controls/artwork; ambient = busy wash.
+   Continuous polling never retriggers an entrance. No animation gates an action. */
+:root{--motion-ease:cubic-bezier(.2,0,0,1);--motion-quick:140ms;--motion-standard:260ms;--motion-slow:420ms}
+.native-shell button,.login-page button{transition:background-color var(--motion-quick) var(--motion-ease),color var(--motion-quick) var(--motion-ease),opacity var(--motion-quick) var(--motion-ease),scale 180ms var(--motion-ease)}
+:is(.native-shell,.login-page) :is(button.primary,#browse-back,#nav-toggle,#refresh-catalog,#stop-playback,.job-actions button,.setting-row button,.track-row button,.search-song-row button,.login-actions button):active:enabled{scale:.97;transition-duration:80ms}
+.native-shell :is(.catalog-artwork-action,.search-best-card){overflow:clip}
+.native-shell .catalog-card .artwork,.native-shell .search-best-card .artwork,.personal-mix-artwork{transition:scale 180ms var(--motion-ease),filter var(--motion-quick) var(--motion-ease)}
+@media(hover:hover) and (pointer:fine){
+ .native-shell .catalog-artwork-action:hover:enabled .artwork,.native-shell .search-best-card:hover .artwork{scale:1.018;transition-duration:90ms}
+ .native-shell .personal-mix-cover:hover:enabled .personal-mix-artwork{scale:1.018;transition-duration:90ms}
+}
+.native-shell .catalog-artwork-action:active:enabled .artwork,.native-shell .personal-mix-cover:active:enabled .personal-mix-artwork{scale:.99;transition-duration:80ms}
+.personal-mix-card .personal-mix-play{transition:opacity var(--motion-quick) var(--motion-ease),transform var(--motion-quick) var(--motion-ease),background-color var(--motion-quick) var(--motion-ease)}
+.native-shell input,.native-shell select,.login-page input{transition:border-color var(--motion-quick) var(--motion-ease),background-color var(--motion-quick) var(--motion-ease)}
+#sidebar nav button:before{transform-origin:center;transition:opacity var(--motion-quick) var(--motion-ease),transform var(--motion-standard) var(--motion-ease)}
+#sidebar nav button:not([aria-current=page]):before{content:"";position:absolute;left:-5px;top:9px;bottom:9px;width:3px;border-radius:2px;background:#fa3b60;opacity:0;transform:scaleY(.4)}
+#sidebar nav button[aria-current=page]:before{opacity:1;transform:scaleY(1)}
+.native-shell .track-row,.native-shell .search-song-row{transition:background-color var(--motion-quick) var(--motion-ease)}
+.native-shell .dot{transition:background-color var(--motion-standard) var(--motion-ease)}
+.native-shell .job progress::-webkit-progress-value,#monitor-progress::-webkit-progress-value{transition:width var(--motion-standard) linear}
+.native-shell .job{position:relative;isolation:isolate}
+.native-shell .job[aria-busy=true]:before{content:"";position:absolute;inset:0 -10px;z-index:-1;pointer-events:none;border-radius:8px;background:#ef4867;animation:native-busy-wash 2.2s ease-in-out 2;opacity:0}
+#refresh-catalog[aria-busy=true] .ui-icon{animation:native-busy-turn 900ms linear 3}
+@keyframes native-busy-wash{0%,100%{opacity:0}50%{opacity:.055}}
+@keyframes native-busy-turn{to{transform:rotate(360deg)}}
+/* OS preference takes effect immediately, including an already running action. */
+@media(prefers-reduced-motion:reduce){
+ .native-shell *,.native-shell *:before,.native-shell *:after,.login-page *,.login-page *:before,.login-page *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+ .native-shell button,.native-shell .artwork,.native-shell .personal-mix-artwork,.login-page button{scale:none!important}
+ .native-shell .job progress::-webkit-progress-value,#monitor-progress::-webkit-progress-value{transition:none!important;animation:none!important}
+ .native-shell .job[aria-busy=true]:before{opacity:.025}
+}
