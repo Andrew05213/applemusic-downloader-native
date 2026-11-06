@@ -1,6 +1,6 @@
 # Apple Music Downloader Native installation notes
 
-Version: 1.0.2-beta.3. Third-party rights and corresponding-source review remain incomplete.
+Version: 1.0.2. Third-party rights and corresponding-source review remain incomplete.
 
 Original project-authored code and modifications the maintainer has the right
 to license are licensed under Apache-2.0; see the included LICENSE and NOTICE.
@@ -12,6 +12,9 @@ Lite/QEMU runtime. It does not require users to install WSL, Docker, an embedded
 Apple website or a Widevine browser. Music videos and radio/stations remain
 unsupported. Full playback requires the user's own authorized Music session;
 preview fallback is labeled separately from complete-song playback.
+
+The New discovery page replaces the standalone charts entry. It follows the
+selected catalog region and shows public editorial picks, releases and songs.
 
 This release includes ordinary M4A export for new ALAC downloads,
 consistent bit-depth descriptions, complete audio sample tables, cover/lyrics/tag
