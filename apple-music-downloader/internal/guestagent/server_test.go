@@ -2,6 +2,7 @@ package guestagent
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -17,6 +18,65 @@ func (emptyRunner) StartService(context.Context) error { return nil }
 func (emptyRunner) Stop(context.Context) error         { return nil }
 func (emptyRunner) Tokens(context.Context) (nativeauth.Tokens, error) {
 	return nativeauth.Tokens{}, nativeauth.ErrAuthRequired
+}
+
+func TestMediaPreflightDistinguishesRenewalTimeoutFromLoginRequired(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		cause  error
+		status int
+		code   string
+	}{
+		{"renewal_timeout", context.DeadlineExceeded, 503, "native_session_unverified"},
+		{"authorization_rejected", nativeauth.ErrAuthRequired, 401, "native_auth_required"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			verifierError := tc.cause
+			m := nativeauth.New(&musicFixtureRunner{}, func(context.Context, nativeauth.Tokens) (string, error) {
+				return "us", verifierError
+			})
+			defer m.Close()
+			if err := m.Restore(ctx); err != nil {
+				t.Fatal(err)
+			}
+			capability := strings.Repeat("a", 64)
+			forwarded := 0
+			h, err := NewServer(ctx, capability, m, func(w http.ResponseWriter, _ *http.Request) error {
+				forwarded++
+				_, err := io.WriteString(w, "{}")
+				return err
+			}, func() {})
+			if err != nil {
+				t.Fatal(err)
+			}
+			request := func(method, path string) *httptest.ResponseRecorder {
+				req := httptest.NewRequest(method, path, nil)
+				req.Header.Set("Authorization", "Bearer "+capability)
+				out := httptest.NewRecorder()
+				h.ServeHTTP(out, req)
+				return out
+			}
+			for _, target := range []string{"/session/credentials", "/m3u8?adamId=123"} {
+				if out := request("GET", target); out.Code != tc.status || !strings.Contains(out.Body.String(), tc.code) {
+					t.Fatalf("%s: HTTP %d %s", target, out.Code, out.Body.String())
+				}
+			}
+			if out := request("POST", "/decrypt"); out.Code != tc.status || forwarded != 0 {
+				t.Fatalf("media request passed unverified preflight: HTTP %d forwarded=%d", out.Code, forwarded)
+			}
+			if out := request("DELETE", "/decrypt"); out.Code != 200 || forwarded != 1 {
+				t.Fatal("existing stream cleanup was blocked")
+			}
+			verifierError = nil
+			if err := m.Restore(ctx); err != nil {
+				t.Fatal(err)
+			}
+			if out := request("GET", "/m3u8?adamId=123"); out.Code != 200 || forwarded != 2 {
+				t.Fatal("media did not resume after successful verification")
+			}
+		})
+	}
 }
 func (emptyRunner) Login(context.Context, nativeauth.Credentials, <-chan string, func()) error {
 	return nativeauth.ErrLoginFailed

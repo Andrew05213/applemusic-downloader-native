@@ -6,10 +6,43 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"io"
 	"net"
+	"sync/atomic"
 	"time"
+
+	"github.com/Andrew05213/applemusic_downloader/internal/nativeauth"
 )
+
+// The net.Pipe byte protocol cannot encode a session error. Preserve it on
+// the reader's side before closing the pipe, without passing upstream data.
+type decryptorSessionFailure struct{ cause error }
+type decryptorConn struct {
+	net.Conn
+	failure atomic.Pointer[decryptorSessionFailure]
+}
+
+func (c *decryptorConn) pipeError(err error) error {
+	if cause := c.failure.Load(); err != nil && cause != nil {
+		return cause.cause
+	}
+	return err
+}
+func (c *decryptorConn) Read(p []byte) (int, error) {
+	n, err := c.Conn.Read(p)
+	return n, c.pipeError(err)
+}
+func (c *decryptorConn) Write(p []byte) (int, error) {
+	n, err := c.Conn.Write(p)
+	return n, c.pipeError(err)
+}
+func (c *decryptorConn) SetReadDeadline(t time.Time) error {
+	return c.pipeError(c.Conn.SetReadDeadline(t))
+}
+func (c *decryptorConn) SetWriteDeadline(t time.Time) error {
+	return c.pipeError(c.Conn.SetWriteDeadline(t))
+}
 
 // DialDecryptor adapts the existing sample protocol in memory, not on another
 // public TCP port. Each owned stream preserves Lite's native CBCS context.
@@ -20,6 +53,7 @@ func (c *Client) DialDecryptor(ctx context.Context) (net.Conn, error) {
 	}
 	stream := hex.EncodeToString(raw)
 	client, server := net.Pipe()
+	conn := &decryptorConn{Conn: client}
 	go func() {
 		defer server.Close()
 		defer func() {
@@ -68,6 +102,10 @@ func (c *Client) DialDecryptor(ctx context.Context) (net.Conn, error) {
 				}
 				result, err := c.Decrypt(ctx, stream, adam, uri, body)
 				if err != nil {
+					if errors.Is(err, nativeauth.ErrUnverified) || errors.Is(err, nativeauth.ErrAuthRequired) {
+						conn.failure.Store(&decryptorSessionFailure{cause: err})
+						_ = server.Close()
+					}
 					return
 				}
 				if _, err := io.Copy(server, bytesReader(result)); err != nil {
@@ -76,7 +114,7 @@ func (c *Client) DialDecryptor(ctx context.Context) (net.Conn, error) {
 			}
 		}
 	}()
-	return client, nil
+	return conn, nil
 }
 
 // sliceReader keeps the adapter's write-all behavior explicit.

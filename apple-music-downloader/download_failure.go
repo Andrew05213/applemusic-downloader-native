@@ -12,6 +12,8 @@ import (
 
 var failureHTTPStatus = regexp.MustCompile(`(?i)(?:http(?:/[0-9.]+)?\s+|status(?:_code)?[=: ]+)(401|403|404|429|5\d\d)\b`)
 
+const downloadSessionWaitCode = "session_verification_pending"
+
 type downloadStageError struct{ code, message string }
 
 func (e *downloadStageError) Error() string { return e.code + ": " + e.message }
@@ -24,6 +26,9 @@ func downloadItemDiagnostic(stage string, err error) (string, string) {
 		return safe.code, safe.message
 	}
 	if err != nil {
+		if errors.Is(err, nativeauth.ErrUnverified) {
+			return downloadSessionWaitCode, "waiting for Music session verification before resuming unfinished tracks"
+		}
 		if errors.Is(err, nativeauth.ErrAuthRequired) {
 			return "session_rejected", "saved Music session requires verification; sign in again if retry fails"
 		}

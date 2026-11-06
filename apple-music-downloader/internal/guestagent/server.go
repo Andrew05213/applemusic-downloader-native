@@ -50,6 +50,15 @@ func respond(w http.ResponseWriter, status int, value any) {
 func failure(w http.ResponseWriter, status int, code string) {
 	respond(w, status, map[string]string{"code": code})
 }
+func sessionFailure(w http.ResponseWriter, err error) {
+	if errors.Is(err, nativeauth.ErrUnverified) {
+		// The request has not reached Lite. A transient verification failure
+		// is not evidence that Apple rejected the account or these credentials.
+		failure(w, http.StatusServiceUnavailable, nativeauth.ErrUnverified.Error())
+		return
+	}
+	failure(w, http.StatusUnauthorized, nativeauth.ErrAuthRequired.Error())
+}
 func decode(w http.ResponseWriter, r *http.Request, value any, limit int64) bool {
 	reader := http.MaxBytesReader(w, r.Body, limit)
 	defer reader.Close()
@@ -121,7 +130,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case r.URL.Path == "/session/credentials" && r.Method == http.MethodGet:
 		tokens, err := s.session.Ensure(r.Context())
 		if err != nil {
-			failure(w, 401, nativeauth.ErrAuthRequired.Error())
+			sessionFailure(w, err)
 			return
 		}
 		// This route is private backend-to-agent. Never serialize it in a UI event.
@@ -135,7 +144,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// Capability authentication above remains mandatory for cleanup.
 		if r.Method != http.MethodDelete {
 			if _, err := s.session.Ensure(r.Context()); err != nil {
-				failure(w, 401, nativeauth.ErrAuthRequired.Error())
+				sessionFailure(w, err)
 				return
 			}
 		}

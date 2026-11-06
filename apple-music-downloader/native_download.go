@@ -47,7 +47,7 @@ func initializeNativeChild() error {
 	Config.GetM3u8Mode = "all"
 	Config.GetM3u8FromDevice = false
 	var err error
-	nativeDownloadClient, err = guestclient.New(inheritedProcessCredentials.NativeLitePort, inheritedProcessCredentials.NativeLiteCapability)
+	nativeDownloadClient, err = guestclient.NewDownloadClient(inheritedProcessCredentials.NativeLitePort, inheritedProcessCredentials.NativeLiteCapability)
 	return err
 }
 

@@ -17,6 +17,8 @@ type Engine struct {
 	executor   JobExecutor
 	maxRetries int
 	sleep      func(context.Context, time.Duration) error
+	// Only the native engine can verify and resume a parked download.
+	waitForSession func(context.Context) error
 }
 
 func NewEngine(executor JobExecutor, maxRetries int) (*Engine, error) {
@@ -104,7 +106,7 @@ func (e *Engine) execute(ctx context.Context, job Job, sink JobEventSink) (JobRe
 			sink(event)
 		}
 	}
-	for attempt := 0; attempt <= maxRetries; attempt++ {
+	for attempt := 0; ; {
 		allowedSources = nil
 		if sources := retrySourceIDs(job); len(sources) > 0 {
 			allowedSources = make(map[string]bool, len(sources))
@@ -122,6 +124,7 @@ func (e *Engine) execute(ctx context.Context, job Job, sink JobEventSink) (JobRe
 		for _, file := range result.Files {
 			files[file.RelativePath] = file
 		}
+		var parked []string
 		if len(items) > 0 {
 			result = JobResult{Total: len(items)}
 			for _, item := range items {
@@ -142,6 +145,12 @@ func (e *Engine) execute(ctx context.Context, job Job, sink JobEventSink) (JobRe
 					result.Skipped++
 				case JobItemStatusUnavailable:
 					result.Unavailable++
+				case JobItemStatusInterrupted:
+					if e.waitForSession != nil && item.ErrorCode == downloadSessionWaitCode {
+						parked = append(parked, item.SourceID)
+					} else {
+						result.Failed++
+					}
 				default:
 					result.Failed++
 				}
@@ -154,6 +163,38 @@ func (e *Engine) execute(ctx context.Context, job Job, sink JobEventSink) (JobRe
 		}
 		sort.Slice(result.Files, func(i, j int) bool { return result.Files[i].RelativePath < result.Files[j].RelativePath })
 		sink(JobEventInput{Type: EventTypeProgress, Data: map[string]any{"total": result.Total, "succeeded": result.Succeeded, "failed": result.Failed, "skipped": result.Skipped, "unavailable": result.Unavailable}})
+		if len(parked) > 0 && ctx.Err() == nil {
+			sink(JobEventInput{Type: EventTypeLog, Data: map[string]string{"level": "warn", "message": "waiting for Music session verification before resuming unfinished tracks"}})
+			if waitErr := e.waitForSession(ctx); waitErr != nil {
+				if ctx.Err() != nil {
+					return result, ctx.Err()
+				}
+				for i, item := range result.Items {
+					if item.Status != JobItemStatusInterrupted || item.ErrorCode != downloadSessionWaitCode {
+						continue
+					}
+					item.Status = JobItemStatusFailed
+					item.ErrorCode, item.ErrorMessage = downloadItemDiagnostic("credentials", waitErr)
+					result.Items[i] = merge(item)
+					result.Failed++
+					sink(JobEventInput{Type: EventTypeItem, Data: result.Items[i]})
+				}
+				return result, waitErr
+			}
+			sort.Strings(parked)
+			job.Items = nil
+			job.RetryItemIDs = parked
+			job.RetryAll = false
+			for _, sourceID := range parked {
+				job.Items = append(job.Items, JobItem{ID: sourceID, SourceID: sourceID, Status: JobItemStatusQueued})
+				attempts[sourceID]++
+				item := items[sourceID]
+				item.Status, item.ErrorCode, item.ErrorMessage = JobItemStatusQueued, "", ""
+				sink(JobEventInput{Type: EventTypeItem, Data: merge(item)})
+			}
+			// Session recovery is separate from ordinary 3/6-second retries.
+			continue
+		}
 		retryable := isRetryableDownloadError(err)
 		if len(items) > 0 {
 			job.Items = nil
@@ -200,6 +241,6 @@ func (e *Engine) execute(ctx context.Context, job Job, sink JobEventSink) (JobRe
 		for _, sourceID := range job.RetryItemIDs {
 			attempts[sourceID]++
 		}
+		attempt++
 	}
-	return result, err
 }
