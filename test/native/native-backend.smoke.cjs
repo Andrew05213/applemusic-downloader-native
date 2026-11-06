@@ -9,7 +9,7 @@ const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 
 const executable = path.resolve(__dirname, '../../electron/bin/amdl-desktop.exe');
-const commit = '2fd7e0eaef081f93cf687428b965674937832ba4';
+const commit = require('../../native-runtime/inputs.lock.json').wrapper.commit;
 
 function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'amdl-native-smoke-'));

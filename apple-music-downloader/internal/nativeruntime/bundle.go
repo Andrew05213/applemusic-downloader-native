@@ -19,7 +19,7 @@ import (
 	"strings"
 )
 
-const WrapperCommit = "2fd7e0eaef081f93cf687428b965674937832ba4"
+const WrapperCommit = "15fe0cb75b866e7460bf8d28d155e813a870e076"
 
 var (
 	ErrBundleMissing  = errors.New("native_bundle_missing")
@@ -281,7 +281,7 @@ func (b *Bundle) command(stateDir string, port int) Command {
 		network += ",restrict=on"
 	}
 	command := Command{Path: asset(b.QEMU), Cwd: stateDir, Args: []string{
-		"-L", inputs + "/firmware", "-accel", "tcg", "-cpu", "max", "-m", "512", "-smp", "2",
+		"-L", inputs + "/firmware", "-accel", "tcg,tb-size=64", "-cpu", "max", "-m", "512", "-smp", "2",
 		"-kernel", inputs + "/kernel", "-initrd", inputs + "/initrd",
 		"-append", "console=ttyS0 quiet net.ifnames=0 biosdevname=0 lite_args_b64=" + base64.StdEncoding.EncodeToString([]byte(guestArgs)),
 		"-display", "none", "-serial", "null", "-monitor", "none", "-no-reboot",

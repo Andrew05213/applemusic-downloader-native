@@ -16,8 +16,9 @@ complete license clearance or a source offer; unresolved obligations remain.
 See docs/compliance/native-status.md in the source repository for the open
 corresponding-source, dependency and authorization review.
 
-The native runtime uses Wrapper Lite from WorldObservationLog/wrapper at
-2fd7e0eaef081f93cf687428b965674937832ba4. Its MIT license is included in
+The native runtime uses the Andrew05213/wrapper work branch at
+15fe0cb75b866e7460bf8d28d155e813a870e076, derived from
+WorldObservationLog/wrapper. The upstream MIT copyright and license are retained in
 the installer at resources/native-runtime/notices/wrapper-LICENSE. Local patches
 and input identities are recorded in native-runtime/inputs.lock.json and the
 runtime build evidence.

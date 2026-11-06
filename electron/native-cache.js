@@ -10,7 +10,7 @@ const MB = 1024 * 1024;
 function catalogTarget(target) {
   if (typeof target !== 'string' || target.length > 4096) return null;
   const u = new URL(target, 'http://cache');
-  if (u.origin !== 'http://cache' || !/^\/api\/v1\/catalog\/(?:home|charts|search|detail|library|library-detail|recommendation|artist-albums)$/.test(u.pathname)) return null;
+  if (u.origin !== 'http://cache' || !/^\/api\/v1\/catalog\/(?:home|discover|search|detail|library|library-detail|recommendation|artist-albums)$/.test(u.pathname)) return null;
   u.searchParams.sort();
   return u.pathname + u.search;
 }

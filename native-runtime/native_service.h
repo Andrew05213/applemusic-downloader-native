@@ -1,6 +1,5 @@
 #pragma once
-extern bool native_decrypt(const std::string&, const std::string&, const std::string&, const std::string&, std::string&);
-extern void native_decrypt_close(const std::string&);
+// The pinned Wrapper supplies the stream API in lite.h.
 // Included after Lite's JSON and token helpers. These routes exist only in
 // agent-owned service mode, bound to guest loopback with no host forwarding.
 static void native_routes(httplib::Server& server) {

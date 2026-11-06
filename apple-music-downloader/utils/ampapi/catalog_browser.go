@@ -32,6 +32,7 @@ type BrowseResource struct {
 	Artist            string                  `json:"artist"`
 	AlbumTitle        string                  `json:"albumTitle,omitempty"`
 	Description       string                  `json:"description,omitempty"`
+	EditorialLabel    string                  `json:"editorialLabel,omitempty"`
 	PlaylistType      string                  `json:"playlistType,omitempty"`
 	ReleaseDate       string                  `json:"releaseDate,omitempty"`
 	Genres            []string                `json:"genres,omitempty"`
@@ -69,6 +70,7 @@ type BrowseGroup struct {
 	Items            []BrowseResource `json:"items"`
 	NextOffset       *int             `json:"nextOffset"`
 	Title            string           `json:"title,omitempty"`
+	Layout           string           `json:"layout,omitempty"`
 	RecommendationID string           `json:"recommendationId,omitempty"`
 }
 
@@ -326,6 +328,12 @@ func (c *Client) BrowseCatalog(ctx context.Context, input BrowseRequest) (*Brows
 	}
 	if !ValidCatalogStorefront(input.Storefront) || !ValidBrowseOffset(input.Offset) {
 		return nil, ErrBrowseSchema
+	}
+	if input.Mode == BrowseModeDiscover {
+		if input.Offset != 0 || input.Kind != "" || input.ID != "" || input.Term != "" {
+			return nil, ErrBrowseSchema
+		}
+		return c.browseDiscover(ctx, input.Storefront)
 	}
 	if input.Mode == BrowseModeHome || input.Mode == BrowseModeRecommendation || input.Mode == BrowseModeLibrary || input.Mode == BrowseModeLibraryDetail {
 		return c.browsePersonal(ctx, input)

@@ -36,7 +36,7 @@
     document.querySelector('.native-toolbar').hidden = state.view==='browse'&&!!state.detail;
     $('browse-back').disabled = !((state.view==='browse' && (state.detail || searching)) || viewHistory.length);
     for(const control of document.querySelectorAll('[data-feed]')) { const active=state.view==='browse'&&!searching&&control.dataset.feed===state.feed;control.classList.toggle('selected',active);if(active)control.setAttribute('aria-current','page');else control.removeAttribute('aria-current'); }
-    $('page-title').textContent = state.view==='browse' ? searching?'搜索':({home:'主页',charts:'排行榜',library:'我的歌单'}[state.feed]||'主页') : {tasks:'下载任务',settings:'设置与状态'}[state.view];
+    $('page-title').textContent = state.view==='browse' ? searching?'搜索':({home:'主页',discover:'新发现',library:'我的歌单'}[state.feed]||'主页') : {tasks:'下载任务',settings:'设置与状态'}[state.view];
     for(const control of document.querySelectorAll('.sidebar-playlist')) {if(state.view==='browse'&&state.detail?.id===control.dataset.id)control.setAttribute('aria-current','page');else control.removeAttribute('aria-current');}
   }
   function view(name, remember = true) { const changed=name!==state.view;if(changed)motion?.cancelAll();if(remember&&changed){viewHistory.push(state.view);if(viewHistory.length>20)viewHistory.shift();}state.view = name; for (const value of ['browse', 'tasks', 'settings']) { $(value + '-view').hidden = value !== name; for (const control of document.querySelectorAll('[data-view="' + value + '"]')) { if (value === name) control.setAttribute('aria-current', 'page'); else control.removeAttribute('aria-current'); } }updateNavigation();if(changed)motion?.enter(name==='tasks'?$('page-title'):$(name+'-view'),'page',remember?1:-1);if (name === 'tasks') void jobs(); if (name === 'settings') void settings(); }
@@ -69,7 +69,20 @@
   function preview(item,generation){
     if(state.previewGeneration===generation)return state.previewPromise;
     state.previewGeneration=generation;
-    state.previewPromise=(async()=>{if(generation!==state.playbackGeneration)return;releaseStream();const url=safePreview(item.previewUrl);if(!url){$('audio').pause();$('audio').removeAttribute('src');$('audio').load();$('player-status').textContent='完整播放与试听均不可用';return;}$('audio').dataset.mode='试听';$('audio').src=url;try{await $('audio').play();if(generation===state.playbackGeneration)$('player-status').textContent='试听 · 非完整歌曲';}catch{if(generation===state.playbackGeneration)$('player-status').textContent='试听暂不可用';}})();
+    state.previewPromise=(async()=>{
+      if(generation!==state.playbackGeneration)return;
+      releaseStream();
+      let url=safePreview(item.previewUrl);
+      if(!url&&item.discoveryTrack){
+        try {const data=await api(detailPath(item,item.discoveryRegion));url=safePreview(data.resource?.previewUrl);}
+        catch {/* A discovery entry has no preview until catalog detail is resolved. */}
+        if(generation!==state.playbackGeneration)return;
+      }
+      if(!url){$('audio').pause();$('audio').removeAttribute('src');$('audio').load();$('player-status').textContent='完整播放与试听均不可用';return;}
+      $('audio').dataset.mode='试听';$('audio').src=url;
+      try{await $('audio').play();if(generation===state.playbackGeneration)$('player-status').textContent='试听 · 非完整歌曲';}
+      catch{if(generation===state.playbackGeneration)$('player-status').textContent='试听暂不可用';}
+    })();
     return state.previewPromise;
   }
   async function play(item) {
@@ -201,10 +214,69 @@
     if(!item.artistId){slot.hidden=true;return;}slot.hidden=false;const title='更多'+(item.relatedArtist||item.artist||'同音乐人')+'的作品';
     try{const data=await api('/api/v1/catalog/artist-albums?'+new URLSearchParams({region:$('region').value,id:item.artistId,offset:'0'}));if(generation!==state.generation||!slot.isConnected)return;const seen=new Set([item.id]),items=(data.groups||[]).flatMap(group=>group.items||[]).filter(value=>{if(value.type!=='albums'||seen.has(value.id))return false;seen.add(value.id);return true;}).slice(0,12);slot.replaceChildren();if(!items.length){slot.hidden=true;return;}slot.append(node('h2',title));const grid=node('div',undefined,'catalog-grid related-grid');for(const value of items)grid.append(card(value,false,true));slot.append(grid);}catch{if(generation!==state.generation||!slot.isConnected)return;slot.replaceChildren(node('h2',title));const feedback=node('div',undefined,'related-feedback');feedback.append(node('span','其他作品暂时无法载入'),button('重试',()=>relatedWorks(item,slot,generation)));slot.append(feedback);}
   }
+  function discoverFeature(item, index) {
+    const value = node('article',undefined,'discover-feature');
+    const label = '查看 ' + item.title + ' 详情';
+    const cover = button('',()=>detail(item),label);
+    cover.className='catalog-artwork-action discover-feature-cover';
+    const artwork = image(item.artwork);
+    if(index<2)artwork.loading='eager';
+    cover.append(artwork);
+    value.append(node('p',item.editorialLabel||(item.type==='albums'?'专辑':'歌单'),'discover-kicker'));
+    const title = node('h3');
+    const link = button(item.title,()=>detail(item),label);
+    link.className='catalog-title-action';link.title=item.title;title.append(link);
+    value.append(title,node('p',item.artist,'discover-credit'),cover);
+    if(item.description)value.append(node('p',item.description,'discover-description'));
+    for(const control of [cover,link])preloadOnIntent(control,()=>detailPath(item));
+    return value;
+  }
+  function renderDiscover(content, data) {
+    for(const [index,group] of (data.groups||[]).entries()){
+      if(!group.items?.length)continue;
+      const featured=group.layout==='featured',tracks=group.layout==='tracks';
+      const section=node('section',undefined,'discover-section');
+      const title=group.title||(tracks?'新歌':featured?'编辑精选':'新发行与歌单');
+      const heading=node('h2',title,featured?'discover-feature-heading':undefined);
+      heading.id='discover-heading-'+index;
+      section.setAttribute('aria-labelledby',heading.id);
+      const row=node('div',undefined,'discover-shelf '+(featured?'discover-feature-shelf':tracks?'discover-track-shelf':'catalog-grid discover-cover-shelf'));
+      row.tabIndex=0;
+      row.setAttribute('role',tracks?'list':'group');
+      row.setAttribute('aria-label',title);
+      if(tracks)for(const item of group.items)row.append(searchSongRow({...item,discoveryTrack:true,discoveryRegion:data.storefront||$('region').value}));
+      else for(const [i,item] of group.items.entries())row.append(featured?discoverFeature(item,i):card(item));
+      const header=node('div',undefined,'discover-section-heading');
+      const controls=node('div',undefined,'discover-scroll-actions');
+      controls.hidden=true;
+      const move = direction => row.scrollBy({left:direction*row.clientWidth});
+      const prev=button('‹',()=>move(-1),'向左浏览 '+title);
+      const next=button('›',()=>move(1),'向右浏览 '+title);
+      section.syncDiscoveryShelf=()=>{
+        const end=row.scrollWidth-row.clientWidth;
+        controls.hidden=end<=1;
+        prev.setAttribute('aria-disabled',String(row.scrollLeft<=1));
+        next.setAttribute('aria-disabled',String(row.scrollLeft>=end-1));
+      };
+      row.addEventListener('scroll',section.syncDiscoveryShelf,{passive:true});
+      controls.append(prev,next);header.append(heading,controls);
+      section.append(header,row);content.append(section);
+    }
+    requestAnimationFrame(syncDiscoveryShelves);
+  }
+  function syncDiscoveryShelves(){for(const section of $('catalog-content').querySelectorAll('.discover-section'))section.syncDiscoveryShelf();}
+  window.addEventListener('resize',syncDiscoveryShelves,{passive:true});
+  const isDiscover = path => !!path && new URL(path,'http://fixture').pathname==='/api/v1/catalog/discover';
   async function browse(path, append = false) {
+    const discoveryPage=isDiscover(path);
+    if(!append && path!==state.catalogPath && (discoveryPage||isDiscover(state.catalogPath))){
+      motion?.cancelTree($('catalog-content'));
+      $('catalog-content').replaceChildren();
+      $('catalog-more').hidden=true;
+    }
     if(!append)state.catalogPath=path;
     motion?.cancelTree($('catalog-content'));$('refresh-catalog').setAttribute('aria-busy','true');
-    const generation = ++state.generation; notice('正在读取目录…');
+    const generation = ++state.generation; notice(discoveryPage?'正在读取新发现…':'正在读取目录…');
     try {
       const data = await api(path); if (generation !== state.generation) return;
       const content = $('catalog-content'); if (!append) content.replaceChildren();
@@ -212,7 +284,9 @@
       // Later relationship pages contain tracks without repeating resource
       // metadata. Append them to the existing detail, keeping its header.
       const appendingTracks=append&&Array.isArray(data.tracks)&&!!content.querySelector('.track-list');
-      if ((data.resource&&data.resource.type!=='artists')||appendingTracks) {
+      if (discoveryPage) {
+        renderDiscover(content,data);
+      } else if ((data.resource&&data.resource.type!=='artists')||appendingTracks) {
         if (!append) { const hero = node('div', undefined, 'detail-hero');hero.resource=data.resource; const info = node('div',undefined,'detail-info'); info.append(node('h1', data.resource.title), detailArtist(data.resource),node('p',detailTraits(data.resource),'detail-traits')); const actions = node('div', undefined, 'card-actions'); if (data.tracks?.length) actions.append(button('▶ 播放', () => play(data.tracks.find(item=>!item.unavailableReason)||data.tracks[0]))); actions.append(download(data.resource, '下载全部')); info.append(actions); hero.append(image(data.resource.artwork), info);const related=node('section',undefined,'detail-related');related.hidden=true;content.append(hero, node('div', undefined, 'track-list'),node('p','','detail-metadata'),related);void relatedWorks(data.resource,related,generation); }
         const list = content.querySelector('.track-list'); const start = list.childElementCount; for (const [index, item] of (data.tracks || []).entries()){const row=track(item,start+index);row.dataset.duration=String(Math.max(0,item.duration||0));list.append(row);}drawDetailMetadata(content);
       } else {
@@ -244,13 +318,21 @@
       }
       const next = data.nextOffset; $('catalog-more').hidden = !Number.isInteger(next); $('catalog-more').onclick = () => { const url = new URL(path, 'http://fixture'); url.searchParams.set('offset', String(next)); void browse(url.pathname + url.search, true); };
       if(!append)motion?.content(content);
-      notice((data.resource||data.tracks?.length || data.groups?.some(group => group.items?.length)) ? '' : '暂无内容。'); observe({ state: state.session }); return true;
-    } catch { if (generation === state.generation) notice('目录暂不可用，请检查登录与网络后重试。'); return false; }
+      notice((data.resource||data.tracks?.length || data.groups?.some(group => group.items?.length)) ? '' : discoveryPage?'当前地区暂无发现内容。':'暂无内容。'); observe({ state: state.session }); return true;
+    } catch {
+      if (generation === state.generation) {
+        notice(discoveryPage?'新发现暂时无法载入，请检查网络后重试。':'目录暂不可用，请检查登录与网络后重试。');
+        const content=$('catalog-content');
+        if(discoveryPage&&!content.querySelector('.discover-section'))content.replaceChildren(button('重新载入',()=>browse(path)));
+      }
+      return false;
+    }
     finally {if(generation===state.generation)$('refresh-catalog').removeAttribute('aria-busy');}
   }
   function discardDetail() { state.detail = null; state.browseSnapshot = null;detailHistory.length=0;updateNavigation(); }
-  function feed(mode) { searching=false;discardDetail(); state.feed = mode;updateNavigation(); return browse('/api/v1/catalog/' + mode + '?' + new URLSearchParams({ region: $('region').value, ...(mode === 'charts' ? {} : {offset: '0'}) })); }
-  function takeSnapshot(){motion?.cancelTree($('catalog-content'));const content=document.createDocumentFragment();const scrolls=[...$('catalog-content').querySelectorAll('.catalog-grid,.search-song-list')].map(element=>({element,x:element.scrollLeft,y:element.scrollTop}));const snapshot={content,scrolls,detail:state.detail,region:$('region').value,moreHidden:$('catalog-more').hidden,moreAction:$('catalog-more').onclick,notice:$('notice').textContent,trigger:document.activeElement,x:window.scrollX,y:window.scrollY};content.append(...$('catalog-content').childNodes);return snapshot;}
+  const feedPath = mode => '/api/v1/catalog/' + mode + '?' + new URLSearchParams({region:$('region').value,...(mode==='discover'?{}:{offset:'0'})});
+  function feed(mode) { searching=false;discardDetail(); state.feed = mode;updateNavigation(); return browse(feedPath(mode)); }
+  function takeSnapshot(){motion?.cancelTree($('catalog-content'));const content=document.createDocumentFragment();const scrolls=[...$('catalog-content').querySelectorAll('.catalog-grid,.search-song-list,.discover-shelf')].map(element=>({element,x:element.scrollLeft,y:element.scrollTop}));const snapshot={content,scrolls,detail:state.detail,path:state.catalogPath,region:$('region').value,moreHidden:$('catalog-more').hidden,moreAction:$('catalog-more').onclick,notice:$('notice').textContent,trigger:document.activeElement,x:window.scrollX,y:window.scrollY};content.append(...$('catalog-content').childNodes);return snapshot;}
   function detail(item, replace=false) {
     const entering = !state.detail;
     if (entering) {
@@ -267,8 +349,10 @@
     const snapshot = detailHistory.length?detailHistory.pop():state.browseSnapshot;
     if(snapshot?.detail)state.detail=snapshot.detail;else discardDetail();updateNavigation();
     if (!snapshot || snapshot.region !== $('region').value) { void feed(state.feed); return; }
+    state.catalogPath=snapshot.path;
     $('catalog-content').replaceChildren(snapshot.content); $('catalog-more').hidden = snapshot.moreHidden; $('catalog-more').onclick = snapshot.moreAction;
     for(const scroll of snapshot.scrolls||[]){scroll.element.scrollLeft=scroll.x;scroll.element.scrollTop=scroll.y;}
+    requestAnimationFrame(syncDiscoveryShelves);
     for (const control of document.querySelectorAll('[data-catalog-page]')) control.disabled = false;
     notice(snapshot.notice === '正在读取目录…' ? '' : snapshot.notice); observe({state:state.session});
     if (snapshot.trigger?.isConnected) snapshot.trigger.focus({preventScroll:true});
@@ -573,11 +657,11 @@
   for (const token of ['{tracknum:02d}', '{disk}', '{title}', '{artist}', '{album}', '{album_artist}', '{year}', '{song_id}', ' - ', '. ']) $('filename-tokens').append(button(token, () => { const field = $('filename'); field.setRangeText(token, field.selectionStart, field.selectionEnd, 'end'); field.focus(); }));
   for (const control of document.querySelectorAll('[data-view]')) control.onclick = () => view(control.dataset.view);
   for (const control of document.querySelectorAll('[data-feed]')) control.onclick = () => { view('browse'); void feed(control.dataset.feed); };
-  function setSidebar(expanded,save=false){const changed=document.body.classList.contains('nav-open')!==expanded;document.body.classList.toggle('nav-open',expanded);$('nav-toggle').setAttribute('aria-expanded',String(expanded));$('nav-toggle').setAttribute('aria-label',expanded?'收起侧边栏':'展开侧边栏');if(changed&&expanded)motion?.enter(document.querySelector('.sidebar-scroll'),'panel');if(save)try{localStorage.setItem('native-v2-sidebar',expanded?'expanded':'collapsed');}catch{}}
+  function setSidebar(expanded,save=false){const changed=document.body.classList.contains('nav-open')!==expanded;document.body.classList.toggle('nav-open',expanded);$('nav-toggle').setAttribute('aria-expanded',String(expanded));$('nav-toggle').setAttribute('aria-label',expanded?'收起侧边栏':'展开侧边栏');if(changed)requestAnimationFrame(syncDiscoveryShelves);if(changed&&expanded)motion?.enter(document.querySelector('.sidebar-scroll'),'panel');if(save)try{localStorage.setItem('native-v2-sidebar',expanded?'expanded':'collapsed');}catch{}}
   let sidebarPreference='';try{sidebarPreference=localStorage.getItem('native-v2-sidebar')||'';}catch{}setSidebar(innerWidth>900&&sidebarPreference!=='collapsed');
   $('nav-toggle').onclick = () => setSidebar(!document.body.classList.contains('nav-open'),true);
   $('sidebar-search-toggle').onclick=()=>{setSidebar(true);$('search-input').focus();};
-  for(const control of document.querySelectorAll('[data-feed]'))preloadOnIntent(control,()=>'/api/v1/catalog/'+control.dataset.feed+'?'+new URLSearchParams({region:$('region').value,...(control.dataset.feed==='charts'?{}:{offset:'0'})}));
+  for(const control of document.querySelectorAll('[data-feed]'))preloadOnIntent(control,()=>feedPath(control.dataset.feed));
   $('quality').onchange=()=>gate();
   $('session-light').onclick = () => { view('settings'); if(state.session !== 'authenticated') void desktop.openLogin().catch(()=>notice('登录窗口暂不可用。')); }; $('open-login').onclick = () => desktop.openLogin().catch(()=>notice('登录窗口暂不可用。')); $('recheck').onclick = () => desktop.recheck().catch(() => notice('验证暂不可用，请检查网络。'));
   $('export-log').onclick = () => desktop.exportDiagnostics().catch(()=>notice('诊断导出未完成。')); $('browse-back').onclick = goBack;

@@ -7,7 +7,7 @@ const { VERSION } = require('./native-version');
 function allowedAPI(method, target) {
   if (typeof target !== 'string' || target.length > 4096 || !target.startsWith('/api/') || /[\r\n\\#]/.test(target)) return false;
   const path = target.split('?')[0];
-  if (method === 'GET') return /^\/api\/(?:native\/(?:state|jobs\/[a-f0-9-]+\/location)|v1\/(?:catalog\/(?:session|search|charts|home|detail|library|library-detail|recommendation|artist-albums)|capabilities|settings\/download(?:-concurrency)?|jobs(?:\/[a-f0-9-]+(?:\/files)?)?|files))$/.test(path);
+  if (method === 'GET') return /^\/api\/(?:native\/(?:state|jobs\/[a-f0-9-]+\/location)|v1\/(?:catalog\/(?:session|search|discover|home|detail|library|library-detail|recommendation|artist-albums)|capabilities|settings\/download(?:-concurrency)?|jobs(?:\/[a-f0-9-]+(?:\/files)?)?|files))$/.test(path);
   if (method === 'POST') return /^\/api\/(?:native\/(?:login|two-factor|cancel-login|recheck|retry|playback)|v1\/(?:jobs(?:\/[a-f0-9-]+\/(?:retry|cancel))?|browser-download\/resolve))$/.test(path);
   if (method === 'PUT') return path==='/api/native/download-directory'||/^\/api\/v1\/settings\/download(?:-concurrency)?$/.test(path);
   if (method === 'DELETE') return path === '/api/native/playback' || /^\/api\/v1\/(?:jobs\/[a-f0-9-]+(?:\/record)?|settings\/download(?:-concurrency)?)$/.test(path);
@@ -65,7 +65,11 @@ class NativeService extends EventEmitter {
     if(target==='/api/native/playback'){this.playbackPrepare?.abort();this.cancelPlaybackChunks();}
     const abort = new AbortController(); this.requests.add(abort);
     if(target==='/api/native/playback'&&method==='POST')this.playbackPrepare=abort;
-    if (method === 'GET' && target.startsWith('/api/v1/catalog/')) { this.catalog?.abort(); this.catalog = abort; }
+    // A region change also refreshes the private sidebar library. It must not
+    // cancel the independent public discovery request (or vice versa).
+    const catalogSlot = method !== 'GET' || !target.startsWith('/api/v1/catalog/') ? null
+      : target.split('?')[0] === '/api/v1/catalog/discover' ? 'discoveryCatalog' : 'catalog';
+    if (catalogSlot) { this[catalogSlot]?.abort(); this[catalogSlot] = abort; }
     const timer = setTimeout(() => abort.abort(), target === '/api/native/playback' && method === 'POST' ? 60000 : 90000);
     try {
       const response = await fetch(this.origin + target, { method, redirect: 'error', headers: { Authorization: 'Bearer ' + this.token, 'Content-Type': 'application/json' }, body: options.body === undefined ? undefined : JSON.stringify(options.body), signal: abort.signal });
@@ -75,7 +79,7 @@ class NativeService extends EventEmitter {
       if (!response.ok) throw new Error(/^[a-z_]+$/.test(result?.error?.code) ? result.error.code : 'native_api_failed');
       if (target === '/api/native/playback' && method === 'POST' && /^\/api\/native\/playback\/[a-f0-9]{32}$/.test(result.mediaPath)) result.mediaURL = this.origin + result.mediaPath;
       return result;
-    } finally { clearTimeout(timer); this.requests.delete(abort); if (this.catalog === abort) this.catalog = null;if(this.playbackPrepare===abort)this.playbackPrepare=null; }
+    } finally { clearTimeout(timer); this.requests.delete(abort); if (catalogSlot && this[catalogSlot] === abort) this[catalogSlot] = null;if(this.playbackPrepare===abort)this.playbackPrepare=null; }
   }
   cancelPlaybackChunks(base) {for(const [abort,target] of this.playbackRequests)if(!base||target.startsWith(base+'/'))abort.abort();}
   async playbackChunk(target) {

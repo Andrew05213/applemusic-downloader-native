@@ -5,7 +5,7 @@
 | 组件 | 来源与身份依据 |
 | --- | --- |
 | 原始下载器 | [zhaarey/apple-music-downloader](https://github.com/zhaarey/apple-music-downloader)；历史 Gitlink 为 `4bd24bf5374053fbab070f61ee7ae2addcf589bc`，当前作为普通源码维护；原脚本署名 Sorrow，完整来源和再分发授权仍待确认 |
-| Wrapper Lite | [WorldObservationLog/wrapper](https://github.com/WorldObservationLog/wrapper)，commit `2fd7e0eaef081f93cf687428b965674937832ba4`；归档哈希、补丁和工具链身份在 native-runtime |
+| Wrapper Lite | [Andrew05213/wrapper](https://github.com/Andrew05213/wrapper) 的 `work` 分支，锁定 commit `15fe0cb75b866e7460bf8d28d155e813a870e076`；源自 [WorldObservationLog/wrapper](https://github.com/WorldObservationLog/wrapper)，保留上游 MIT 声明；归档哈希、补丁和工具链身份在 native-runtime |
 | QEMU Windows | 11.1.0，发行者安装器及 SHA-512 在 native-runtime/inputs.lock.json；具体源码对应性、DLL/固件许可待核查 |
 | Debian Linux / BusyBox | 固定快照与二进制包版本在同一锁文件；部分源码资料包不等于完整对应源码提供 |
 | cJSON / Dobby | commit 分别为 `c859b25da02955fef659d658b8f324b5cde87be3`、`9d271803881f467aabfc24593c7dcaeb710fe861`，许可证在 third-party-licenses |
@@ -24,6 +24,10 @@
 Go 模块、安装身份和资料目录中的旧名称属于[兼容标识](development/compatibility.md)，不是当前版本号。
 
 ## 更新依赖
+
+Wrapper Lite 从维护者的 `work` 分支选择提交，构建只下载锁定的完整 SHA。升级时同步锁文件中的提交、归档 URL、缓存名与 SHA-256，Dockerfile 的归档校验，以及 Go 运行时的提交校验；重新构建 runtime 并复验补丁，不复用旧 Release 的 runtime 输入。历史来源记录不改写。
+
+AMDL 的私有路由直接调用上游流式接口，由上游负责上下文持有、释放和空闲回收，本地不再附加重复实现。AMDL 仍构建自己的 guest，保留登录、TLS 和 DNS 补丁；宿主 Go 启动器单独设置 TCG 缓存上限 64 MiB，不使用上游通用启动器。升级后应复验 Lite 编译、短路径 guest 启停与真实账号播放。
 
 更新上游、版本或补丁时，同时核对不可变来源、许可文本、构建配置、二进制身份和对应源码；重新构建并验证受影响组件，不修改历史证据冒充旧产物已获验证。
 

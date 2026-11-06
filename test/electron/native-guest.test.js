@@ -13,8 +13,15 @@ const root = path.resolve(__dirname, '../..');
 
 test('native guest inputs pin sources, package snapshot and QEMU publisher digest', () => {
   const lock = require('../../native-runtime/inputs.lock.json');
-  assert.equal(lock.wrapper.commit, '2fd7e0eaef081f93cf687428b965674937832ba4');
-  assert.equal(lock.wrapper.sha256, 'cc9fca1a70692ee7feb73c1aa74805cd6749d29200dad34ddbab3d17467464e8');
+  assert.equal(lock.wrapper.repository, 'https://github.com/Andrew05213/wrapper');
+  assert.equal(lock.wrapper.branch, 'work');
+  assert.equal(lock.wrapper.commit, '15fe0cb75b866e7460bf8d28d155e813a870e076');
+  assert.equal(lock.wrapper.sha256, '6c4a846c2664077c983d252b16e65114cac2d01bc6a632c67f14ea04a1a25041');
+  assert.equal(lock.wrapper.url, 'https://codeload.github.com/Andrew05213/wrapper/tar.gz/'+lock.wrapper.commit);
+  assert.equal(lock.wrapper.cacheName, 'wrapper-andrew05213-'+lock.wrapper.commit.slice(0,8)+'.tar.gz');
+  assert.match(fs.readFileSync(path.join(root,'native-runtime/Dockerfile'),'utf8'),new RegExp(lock.wrapper.sha256+'  wrapper\\.tar\\.gz'));
+  const runtimeSource=fs.readFileSync(path.join(root,'apple-music-downloader/internal/nativeruntime/bundle.go'),'utf8');
+  assert.equal(runtimeSource.match(/const WrapperCommit = "([a-f0-9]{40})"/)[1],lock.wrapper.commit);
   assert.equal(lock.qemu.sha512, '5bcf9eed634e8575a37b74f445af41a2fe4106da512d0c30c368301d4c105037fdfab40a5287367a28a957624cddebbc8c07e16c88ab6634f554cdf3d16bf543');
   assert.equal(lock.toolchain.definition, 'native-runtime/toolchain/inputs.lock.json');
   assert.match(require('../../electron/native-toolchain').definition().definitionSHA256, /^[a-f0-9]{64}$/);
@@ -73,7 +80,12 @@ test('native guest recipe preserves strict TLS, source pins and a fail-closed da
   assert.match(init, /qemu_fw_cfg\/by_name\/opt\/amdl\/control\/raw/);
   assert.doesNotMatch(init, /--login|--debug|config\.yaml|cookie/i);
   const session=fs.readFileSync(path.join(root,'native-runtime/lite-session.patch'),'utf8');
-  assert.match(session,/getKdContext\(adam, uri\)/);assert.match(session,/NfcRKVnxuKZy04KWbdFu71Ou/);
+  assert.doesNotMatch(session,/^diff --git .*playback\.cpp|^\+.*getKdContext\(/m);
+  assert.match(session,/native_code\(entered\)/);
+  assert.match(session,/g_native_service && \(g_host != "127\.0\.0\.1" \|\| g_cors_enabled\)/);
+  const service=fs.readFileSync(path.join(root,'native-runtime/native_service.h'),'utf8');
+  assert.match(service,/native_decrypt\(stream, adam, uri, req\.body, output\)/);
+  assert.match(service,/native_decrypt_close\(req\.get_header_value\("X-AMDL-Stream"\)\)/);
   const adapter=fs.readFileSync(path.join(root,'apple-music-downloader/internal/guestclient/client.go'),'utf8');
   assert.doesNotMatch(adapter,/"\/key\?|aes\.NewCipher|crypto\/aes/);
 });

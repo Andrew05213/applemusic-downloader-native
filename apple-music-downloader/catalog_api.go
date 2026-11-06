@@ -66,7 +66,7 @@ func NewCatalogAPI(dependencies CatalogAPIDependencies) *CatalogAPI {
 func RegisterCatalogRoutes(router *mux.Router, api *CatalogAPI) {
 	router.HandleFunc("/api/v1/catalog/session", api.handleCatalogSession).Methods(http.MethodGet)
 	for _, operation := range []string{
-		ampapi.BrowseModeCharts, ampapi.BrowseModeSearch, ampapi.BrowseModeDetail,
+		ampapi.BrowseModeCharts, ampapi.BrowseModeDiscover, ampapi.BrowseModeSearch, ampapi.BrowseModeDetail,
 		ampapi.BrowseModeHome, ampapi.BrowseModeRecommendation, ampapi.BrowseModeLibrary, ampapi.BrowseModeLibraryDetail,
 		ampapi.BrowseModeArtistAlbums,
 	} {
@@ -215,6 +215,20 @@ func (a *CatalogAPI) handleCatalogBrowse(w http.ResponseWriter, r *http.Request)
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 12*time.Second)
 	defer cancel()
+	if operation == ampapi.BrowseModeDiscover {
+		result, err := a.deps.Client.BrowseCatalog(ctx, input)
+		switch {
+		case errors.Is(err, context.DeadlineExceeded):
+			writeAPIError(w, 504, "catalog_timeout", "discovery request timed out", "retry or select another catalog region")
+		case errors.Is(err, ampapi.ErrBrowseSchema):
+			writeAPIError(w, 502, "catalog_schema_invalid", "discovery data could not be read", "retry or select another catalog region")
+		case err != nil:
+			writeAPIError(w, 502, "catalog_unavailable", "discovery feed could not be loaded", "retry or select another catalog region")
+		default:
+			writeJSON(w, 200, result)
+		}
+		return
+	}
 	private := operation == ampapi.BrowseModeLibrary || operation == ampapi.BrowseModeLibraryDetail || operation == ampapi.BrowseModeRecommendation
 	if private || operation == ampapi.BrowseModeHome {
 		input.MediaUserToken = a.deps.MediaUserToken(ctx)

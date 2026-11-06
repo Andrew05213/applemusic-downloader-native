@@ -79,8 +79,32 @@ test('native service uses fixed argv, stdin capability, private headers and comp
 });
 
 test('native renderer API does not expose tokens, arbitrary origins or guest routes',()=>{
-  for(const target of ['/api/native/state','/api/v1/catalog/home?region=us','/api/v1/jobs'])assert.equal(allowedAPI('GET',target),true);
-  for(const target of ['https://example.com','/session/credentials','/api/native/tokens','/api/v1/jobs#other','/api/../native/state'])assert.equal(allowedAPI('GET',target),false);
+  for(const target of ['/api/native/state','/api/v1/catalog/home?region=us','/api/v1/catalog/discover?region=cn','/api/v1/jobs'])assert.equal(allowedAPI('GET',target),true);
+  for(const target of ['https://example.com','/session/credentials','/api/native/tokens','/api/v1/jobs#other','/api/../native/state','/api/v1/catalog/charts'])assert.equal(allowedAPI('GET',target),false);
+  assert.equal(allowedAPI('POST','/api/v1/catalog/discover?region=cn'),false);
+});
+test('changing discovery region supersedes the older discovery request without cancelling the library',async t=>{
+  const {child,service,receipt}=pendingService();
+  t.after(()=>child.emit('close',0));
+  receipt();await service.ready;
+  let finishLibrary;
+  const libraryDone=new Promise(resolve=>{finishLibrary=resolve;});
+  t.mock.method(globalThis,'fetch',async(url,{signal})=>{
+    const path=new URL(url).pathname;
+    if(path==='/api/v1/catalog/library'){
+      await libraryDone;
+      signal.throwIfAborted();
+      return Response.json({library:true});
+    }
+    if(url.endsWith('region=us'))return new Promise((resolve,reject)=>signal.addEventListener('abort',()=>reject(signal.reason),{once:true}));
+    return Response.json({storefront:'cn'});
+  });
+  const older=assert.rejects(service.api('/api/v1/catalog/discover?region=us'),{name:'AbortError'});
+  const library=service.api('/api/v1/catalog/library?region=cn');
+  assert.deepEqual(await service.api('/api/v1/catalog/discover?region=cn'),{storefront:'cn'});
+  finishLibrary();
+  await older;
+  assert.deepEqual(await library,{library:true});
 });
 test('retired SMS control routes are blocked for every method',()=>{
   for(const target of ['/api/native/sms/send','/api/native/sms/code']){
