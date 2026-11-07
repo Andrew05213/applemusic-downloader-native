@@ -319,6 +319,20 @@ func (c *Controller) SubmitCode(ctx context.Context, code string) (nativeauth.Sn
 	}
 	return agent.Code(ctx, code)
 }
+func (c *Controller) Interaction(ctx context.Context) (*nativeauth.Interaction, error) {
+	agent, err := c.Agent()
+	if err != nil {
+		return nil, err
+	}
+	return agent.Interaction(ctx)
+}
+func (c *Controller) SubmitInteraction(ctx context.Context, input nativeauth.InteractionAnswer) error {
+	agent, err := c.Agent()
+	if err != nil {
+		return err
+	}
+	return agent.SubmitInteraction(ctx, input)
+}
 func (c *Controller) RecheckSession(ctx context.Context) (nativeauth.Snapshot, error) {
 	agent, err := c.Agent()
 	if err != nil {

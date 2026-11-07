@@ -6,11 +6,13 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -152,19 +154,122 @@ func (r *LiteRunner) Tokens(ctx context.Context) (nativeauth.Tokens, error) {
 func (r *LiteRunner) Login(ctx context.Context, credentials nativeauth.Credentials, codes <-chan string, challenge func()) error {
 	return r.loginInput(ctx, credentials, codes, challenge, false)
 }
+
+func decodeLiteLoginFailure(line string) (nativeauth.StageEvent, bool) {
+	return decodeLiteLoginRecord(line, false)
+}
+func decodeLiteLoginResponse(line string) (nativeauth.StageEvent, bool) {
+	return decodeLiteLoginRecord(line, true)
+}
+func decodeLiteLoginRecord(line string, response bool) (nativeauth.StageEvent, bool) {
+	raw, ok := strings.CutPrefix(line, "AMDL_NATIVE_EVENT:")
+	if !ok || len(raw) > 512 {
+		return nativeauth.StageEvent{}, false
+	}
+	var value struct {
+		Type       string `json:"type"`
+		Reason     string `json:"reason"`
+		Response   *uint8 `json:"storeResponseType"`
+		Error      *int32 `json:"storeErrorCode"`
+		External   *int64 `json:"storeExternalErrorCode"`
+		Protocol   *int64 `json:"storeProtocolErrorCode"`
+		AuthStatus *int32 `json:"storeAuthStatus"`
+		HTTPStatus int    `json:"httpStatus"`
+	}
+	decoder := json.NewDecoder(strings.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	expectedType := "login_failure"
+	if response {
+		expectedType = "login_response"
+	}
+	if decoder.Decode(&value) != nil || decoder.Decode(new(any)) != io.EOF || value.Type != expectedType || response && value.Reason != "" {
+		return nativeauth.StageEvent{}, false
+	}
+	code := map[string]string{
+		"input_invalid": "native_login_input_invalid", "store_bridge_failed": "native_login_store_bridge_failed",
+		"store_no_response": "native_login_store_no_response", "store_response_failed": "native_login_store_response_failed",
+		"interaction_timeout": "native_login_interaction_timeout", "interaction_unavailable": "native_login_interaction_unavailable", "interaction_unsupported": "native_login_interaction_unsupported", "internal_error": "native_login_internal_error", "token_cache_failed": "native_login_token_cache_failed", "cancelled": "native_auth_cancelled",
+	}[value.Reason]
+	if !response && (code == "" || (value.Response != nil || value.Error != nil || value.External != nil || value.Protocol != nil || value.AuthStatus != nil || value.HTTPStatus != 0) && value.Reason != "store_response_failed") {
+		return nativeauth.StageEvent{}, false
+	}
+	if value.External != nil && (*value.External < -9007199254740991 || *value.External > 9007199254740991) {
+		return nativeauth.StageEvent{}, false
+	}
+	if value.Protocol != nil && (*value.Protocol < -9007199254740991 || *value.Protocol > 9007199254740991) || value.HTTPStatus != 0 && (value.HTTPStatus < 100 || value.HTTPStatus > 599) {
+		return nativeauth.StageEvent{}, false
+	}
+	event := nativeauth.StageEvent{Code: code, StoreResponseType: value.Response, StoreErrorCode: value.Error, StoreExternalErrorCode: value.External, StoreProtocolErrorCode: value.Protocol, StoreAuthStatus: value.AuthStatus, HTTPStatus: value.HTTPStatus}
+	if response {
+		event.Stage = "device_login"
+		event.Outcome = "waiting"
+		event.Code = ""
+		event.LoginEvent = "store_response_received"
+	}
+	return event, true
+}
+
+func decodeLiteLoginEvent(line string) (nativeauth.StageEvent, bool) {
+	raw, ok := strings.CutPrefix(line, "AMDL_NATIVE_EVENT:")
+	if !ok || len(raw) > 128 {
+		return nativeauth.StageEvent{}, false
+	}
+	var value struct {
+		Type  string `json:"type"`
+		Event string `json:"event"`
+	}
+	decoder := json.NewDecoder(strings.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if decoder.Decode(&value) != nil || decoder.Decode(new(any)) != io.EOF || value.Type != "login_event" || !nativeauth.KnownDeviceLoginEvent(value.Event) {
+		return nativeauth.StageEvent{}, false
+	}
+	return nativeauth.StageEvent{Stage: "device_login", Outcome: "waiting", LoginEvent: value.Event}, true
+}
+
+func recordLiteLoginFailure(ctx context.Context, event nativeauth.StageEvent, waitErr error, storeBinding bool) {
+	if storeBinding || errors.Is(ctx.Err(), context.Canceled) {
+		return
+	}
+	event.Stage, event.Outcome = "device_login", "failed"
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		event = nativeauth.StageEvent{Stage: "device_login", Outcome: "failed", Code: "native_login_process_timeout"}
+	}
+	var exit *exec.ExitError
+	if errors.As(waitErr, &exit) {
+		if status, ok := exit.Sys().(syscall.WaitStatus); ok && status.Signaled() {
+			if signal := status.Signal(); signal > 0 && signal <= 64 {
+				event.ExitSignal = uint8(signal)
+			}
+			if event.Code == "" {
+				event.Code = "native_login_process_signalled"
+			}
+		} else if code := exit.ExitCode(); code >= 0 && code <= 255 {
+			numeric := uint8(code)
+			event.ExitCode = &numeric
+		}
+	}
+	if event.Code == "" {
+		event.Code = "native_login_process_exited"
+	}
+	nativeauth.ReportEvent(ctx, event)
+}
+
 func (r *LiteRunner) loginInput(ctx context.Context, input any, codes <-chan string, challenge func(), storeBinding bool) error {
 	cmd := r.command("--native-login-stdin", "--base-dir", r.base)
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
+		recordLiteLoginFailure(ctx, nativeauth.StageEvent{Code: "native_login_protocol_failed"}, nil, storeBinding)
 		return nativeauth.ErrLoginFailed
 	}
 	defer stdin.Close()
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
+		recordLiteLoginFailure(ctx, nativeauth.StageEvent{Code: "native_login_protocol_failed"}, nil, storeBinding)
 		return nativeauth.ErrLoginFailed
 	}
 	cmd.Stderr = io.Discard
 	if cmd.Start() != nil {
+		recordLiteLoginFailure(ctx, nativeauth.StageEvent{Code: "native_login_process_start_failed"}, nil, storeBinding)
 		return nativeauth.ErrLoginFailed
 	}
 	finished := make(chan struct{})
@@ -190,13 +295,68 @@ func (r *LiteRunner) loginInput(ctx context.Context, input any, codes <-chan str
 	}
 	if err != nil {
 		_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
-		_ = cmd.Wait()
+		waitErr := cmd.Wait()
+		recordLiteLoginFailure(ctx, nativeauth.StageEvent{Code: "native_login_protocol_failed"}, waitErr, storeBinding)
 		return nativeauth.ErrLoginFailed
 	}
 	scanner := bufio.NewScanner(stdout)
-	scanner.Buffer(make([]byte, 4096), 32768)
+	scanner.Buffer(make([]byte, 4096), nativeauth.MaxInteractionBytes)
 	valid := true
+	var failure nativeauth.StageEvent
+	eventCount := 0
 	for scanner.Scan() {
+		if strings.HasPrefix(scanner.Text(), "AMDL_NATIVE_INTERACTION:") {
+			q, err := nativeauth.DecodeInteraction(strings.TrimPrefix(scanner.Text(), "AMDL_NATIVE_INTERACTION:"))
+			if err != nil || storeBinding {
+				valid = false
+				failure.Code = "native_login_protocol_failed"
+				_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+				break
+			}
+			answer, err := nativeauth.RequestInteraction(ctx, q)
+			q = nil
+			if err != nil {
+				valid = false
+				failure.Code = "native_login_interaction_unavailable"
+				if errors.Is(err, context.DeadlineExceeded) {
+					failure.Code = "native_login_interaction_timeout"
+				}
+				_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+				break
+			}
+			answer.Scope = ""
+			raw, _ := json.Marshal(map[string]any{"type": "interaction_response", "response": answer})
+			raw = append(raw, '\n')
+			_, err = stdin.Write(raw)
+			for i := range raw {
+				raw[i] = 0
+			}
+			answer = nativeauth.InteractionAnswer{}
+			if err != nil {
+				valid = false
+				failure.Code = "native_login_protocol_failed"
+				_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+				break
+			}
+			continue
+		}
+		if event, ok := decodeLiteLoginEvent(scanner.Text()); ok && !storeBinding && eventCount < 128 && failure.Code == "" {
+			nativeauth.ReportEvent(ctx, event)
+			eventCount++
+			if event.LoginEvent == "interaction_answer_rejected" {
+				valid = false
+				failure.Code = "native_login_input_invalid"
+				_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+				break
+			}
+		}
+		if event, ok := decodeLiteLoginResponse(scanner.Text()); ok && !storeBinding && eventCount < 128 {
+			nativeauth.ReportEvent(ctx, event)
+			eventCount++
+		}
+		if event, ok := decodeLiteLoginFailure(scanner.Text()); ok && failure.Code == "" {
+			failure = event
+		}
 		if scanner.Text() != `AMDL_NATIVE_EVENT:{"type":"two_factor_required"}` {
 			continue
 		}
@@ -232,9 +392,14 @@ func (r *LiteRunner) loginInput(ctx context.Context, input any, codes <-chan str
 	// Drain completes before Wait; never close a pipe while its scanner is live.
 	waitErr := cmd.Wait()
 	if ctx.Err() != nil {
+		recordLiteLoginFailure(ctx, failure, waitErr, storeBinding)
 		return nativeauth.ErrCancelled
 	}
 	if !valid || waitErr != nil {
+		if !valid && failure.Code == "" {
+			failure.Code = "native_login_protocol_failed"
+		}
+		recordLiteLoginFailure(ctx, failure, waitErr, storeBinding)
 		return nativeauth.ErrLoginFailed
 	}
 	return nil

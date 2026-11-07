@@ -41,3 +41,27 @@
 .personal-mixes:focus-visible{outline:2px solid #ed6c86;outline-offset:2px}
 @media(hover:none),(max-width:800px){.personal-mix-card .personal-mix-play{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.personal-mix-artwork,.personal-mix-card .personal-mix-play{transition:none}}
+.interaction-message{white-space:pre-wrap;overflow-wrap:anywhere;max-height:220px;overflow:auto;user-select:text}
+.interaction-buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+#interaction-title{font-size:20px;overflow-wrap:anywhere}
+#interaction-note,#interaction-expiry{font-size:13px;line-height:1.5;color:#b9b9c2}
+.has-auth-interaction .music-mark,.has-auth-interaction .login-actions{display:none}
+.has-auth-interaction .login-content{padding-top:24px}
+.has-auth-interaction .login-content h1{font-size:22px}
+#auth-interaction{margin-top:22px}
+#auth-interaction h2{font-size:17px;line-height:1.4;margin-bottom:10px}
+#auth-interaction .interaction-message{font-size:14px;font-weight:400;line-height:1.6;color:#d4d4dc}
+#interaction-note{margin-top:10px}
+#interaction-original{font-size:13px;color:#aaaab3;margin-top:12px}
+#interaction-original summary{cursor:pointer}
+#interaction-original-text{margin-top:8px}
+.interaction-buttons button.primary{order:2}
+#interaction-form{margin-top:18px}
+.account-phone-options{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.65fr);gap:10px;margin:-4px 0 8px}
+.account-phone-options:has(label:last-child[hidden]){grid-template-columns:minmax(0,1fr)}
+.login-content .account-phone-options label{font-size:12px;gap:5px;margin:0}
+.account-phone-options select,.account-phone-options input{width:100%;font-size:13px;box-sizing:border-box}
+.account-phone-hint{font-size:12px;line-height:1.5;margin:0 0 16px;overflow-wrap:anywhere}
+.download-action{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.download-action .ui-icon{width:16px;height:16px;flex:none}
+.login-content img.music-mark{width:48px;height:48px;border-radius:10px}

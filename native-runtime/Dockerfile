@@ -14,7 +14,7 @@ COPY inputs.lock.json /native-build/
 COPY lite-native.patch lite-session.patch lite-store-bridge.patch native_login.h native_service.h native_store_bridge.h /native-build/
 COPY wrapper.tar.gz /native-build/wrapper.tar.gz
 RUN set -eux; \
-    echo '6c4a846c2664077c983d252b16e65114cac2d01bc6a632c67f14ea04a1a25041  wrapper.tar.gz' | sha256sum -c -; \
+    echo 'c61e1b921d6a298bb3c1cf01e67f523b951d94de2d9ebdcd2dc53957bbb3cd3f  wrapper.tar.gz' | sha256sum -c -; \
     test "$(git -C /src/cjson rev-parse HEAD)" = c859b25da02955fef659d658b8f324b5cde87be3; \
     test "$(git -C /src/dobby rev-parse HEAD)" = 9d271803881f467aabfc24593c7dcaeb710fe861; \
     grep -q 'Pkg.Revision = 23.1.7779620' /opt/android-ndk-r23b/source.properties; \

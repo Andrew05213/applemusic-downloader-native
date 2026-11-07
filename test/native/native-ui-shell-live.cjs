@@ -50,6 +50,9 @@ if(!process.versions.electron){
   assert.equal(counts['/api/v1/catalog/home?region=us&offset=0'],1,'returning home fetched upstream again');
   await evaluate(`document.querySelector('.catalog-title-action').click()`);await wait(`document.querySelector('.detail-metadata')?.textContent.includes('© 2026 Fixture')&&document.querySelectorAll('.detail-related .catalog-card').length===1`);
   assert.ok(await evaluate(`document.querySelector('.detail-hero img').naturalWidth>0`));
+  const downloadIcon=await evaluate(`(()=>{const b=document.querySelector('.track-row [data-download]');return {hasTray:b.querySelector('svg path:last-child')?.getAttribute('d')==='M4 16v5h16v-5',paths:b.querySelectorAll('svg path').length,label:b.getAttribute('aria-label'),bareArrow:b.textContent.includes('↓')};})()`);
+  assert.equal(downloadIcon.hasTray,true);assert.equal(downloadIcon.paths,3);assert.equal(downloadIcon.bareArrow,false);assert.match(downloadIcon.label,/下载/);
+  await wait(`document.querySelector('.brand-mark').naturalWidth===256`);
   await painted();await fs.promises.writeFile(path.join(output,'detail.png'),(await win.webContents.capturePage()).toPNG());
   const back=await evaluate(`(()=>{const r=document.querySelector('#browse-back').getBoundingClientRect();return{x:r.x,y:r.y};})()`);assert.ok(back.x<=12&&back.y<=16);
   const info=await cache.info();assert.equal(info.limitMB,500);assert.ok(info.usedBytes>0);assert.ok(info.hits>0);assert.equal(imageFetches,2,'reused artwork bypassed cache');

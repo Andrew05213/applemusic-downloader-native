@@ -4,6 +4,10 @@ const {makeManifest}=require('./build-native-runtime');const {VERSION}=require('
 const ROOT=path.resolve(__dirname,'..');const ELECTRON='45.0.0';
 const UI_FILES=['src/main/native-main.js','src/preload/native-preload.js','src/preload/native-startup-preload.js','src/renderer/native-startup.html','src/renderer/native-startup.js','src/renderer/native-startup.css','src/renderer/native-index.html','src/renderer/native-login.html','src/renderer/native-login.js','src/renderer/native-renderer.js','src/renderer/native-stream.js','src/renderer/native.css','src/renderer/native-shell.css','electron/native-cache.js','electron/native-service.js','electron/native-login.js','electron/native-startup.js','electron/native-version.js','electron/native-diagnostics.js'];
 UI_FILES.push('src/renderer/native-motion.js','src/renderer/native-motion.css');
+UI_FILES.push('electron/native-interaction.js','src/renderer/native-auth-interaction.js');
+UI_FILES.push('src/renderer/native-auth-presentation.js');
+UI_FILES.push('src/renderer/native-account-input.js');
+UI_FILES.push('src/assets/app-icon.png','src/assets/app-icon.ico');
 const hash=file=>crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 const SOURCE_FIELDS={patchSHA256:'lite-native.patch',recipeSHA256:'Dockerfile',initSHA256:'init',assemblySHA256:'build-guest.sh',
  sessionPatchSHA256:'lite-session.patch',nativeLoginSHA256:'native_login.h',nativeServiceSHA256:'native_service.h',

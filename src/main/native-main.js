@@ -6,6 +6,7 @@ const net = require('node:net');
 const { pathToFileURL } = require('node:url');
 const { NativeService, allowedAPI } = require('../../electron/native-service');
 const { NativeLoginCoordinator, safeSession } = require('../../electron/native-login');
+const authInteraction = require('../../electron/native-interaction');
 const { VERSION } = require('../../electron/native-version');
 const { NativeCache, catalogTarget, artworkHandler } = require('../../electron/native-cache');
 protocol?.registerSchemesAsPrivileged?.([{scheme:'amdl-artwork',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
@@ -20,6 +21,7 @@ let startup; let startupWindow; let mainLoaded; let mainRevealed = false;
 let directoryPickerPending=false;const revealingJobs=new Set();
 const actionStages={'native:login':'desktop_login_submit','native:two-factor':'desktop_code','native:recheck':'desktop_recheck'};
 const renderer = path.join(__dirname, '../renderer');
+const appIcon = path.join(__dirname, '../assets/app-icon.png');
 const preload = path.join(__dirname, '../preload/native-preload.js');
 const nativeURL = pathToFileURL(path.join(renderer, 'native-index.html')).href;
 const loginURL = pathToFileURL(path.join(renderer, 'native-login.html')).href;
@@ -94,7 +96,7 @@ function bindIPC() {
   handle('native:playback-cancel',(event,base)=>{if(!owns(event,owner,nativeURL)||typeof base!=='string'||!/^\/api\/native\/playback\/[a-f0-9]{32}$/.test(base))throw Error('native_sender_rejected');service.cancelPlaybackChunks(base);return true;});
   handle('native:open-login', () => { login.open(); return true; });
   handle('native:api', (event, target, options = {}) => {
-    if (!owns(event, owner, nativeURL) || !allowedAPI(options.method || 'GET', target) || JSON.stringify(options.body || {}).length > 32768 || target.startsWith('/api/native/login') || target.startsWith('/api/native/two-factor') || target.startsWith('/api/native/download-directory') || /^\/api\/native\/jobs\//.test(target)) throw new Error('native_api_rejected');
+    if (!owns(event, owner, nativeURL) || !allowedAPI(options.method || 'GET', target) || JSON.stringify(options.body || {}).length > 32768 || target.startsWith('/api/native/interaction') || target.startsWith('/api/native/login') || target.startsWith('/api/native/two-factor') || target.startsWith('/api/native/download-directory') || /^\/api\/native\/jobs\//.test(target)) throw new Error('native_api_rejected');
     if((options.method||'GET')==='GET'&&catalogTarget(target)&&cache)return cache.json(target,()=>service.api(target,options));
     return service.api(target, options);
   });
@@ -130,6 +132,17 @@ function bindIPC() {
     const next = await service.api('/api/native/login', { method: 'POST', body: { appleEmail: input.appleEmail, applePassword: input.applePassword } }); observe(next); return state;
   });
   handle('native:two-factor', async (event, code) => { if (!owns(event, login.window, loginURL) || typeof code !== 'string' || !/^\d{6}$/.test(code)) throw new Error('native_code_rejected'); const next = await service.api('/api/native/two-factor', { method: 'POST', body: { code } }); observe(next); return state; });
+  handle('native:get-auth-interaction', async event => {
+    if(!owns(event,login.window,loginURL))throw Error('native_sender_rejected');
+    return authInteraction.request((await service.api('/api/native/interaction')).interaction);
+  });
+  handle('native:answer-auth-interaction', async(event,input)=>{
+    if(!owns(event,login.window,loginURL))throw Error('native_sender_rejected');
+    const q=(await service.api('/api/native/interaction')).interaction;
+    const body=authInteraction.answer(q,input);
+    try{return await service.api('/api/native/interaction',{method:'POST',body});}
+    finally{for(const v of body.values)v.value='';}
+  });
   handle('native:cancel-login', async () => { try { observe(await service.api('/api/native/cancel-login', { method: 'POST' })); } catch {} if (login.window && !login.window.isDestroyed()) login.window.close(); return true; });
   let rechecking;
   handle('native:recheck', () => {
@@ -165,12 +178,12 @@ app.whenReady().then(async () => {
   cache=new NativeCache(path.join(app.getPath('userData'),'ui-cache'));await cache.ready;await cache.clear('personal');
   uiSession.protocol.handle('amdl-artwork',artworkHandler(cache,(...args)=>electronNet.fetch(...args)));
   uiSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
-  owner = new BrowserWindow({ show: false, width: 1440, height: 900, minWidth: 760, minHeight: 560, ...(process.platform==='win32'?{titleBarStyle:'hidden',titleBarOverlay:{color:'#29292b',symbolColor:'#c1c1ca',height:60}}:{}), backgroundColor: '#202020', webPreferences: { preload, session: uiSession, sandbox: true, contextIsolation: true, nodeIntegration: false, autoplayPolicy: 'no-user-gesture-required' } });
+  owner = new BrowserWindow({ icon:appIcon, show: false, width: 1440, height: 900, minWidth: 760, minHeight: 560, ...(process.platform==='win32'?{titleBarStyle:'hidden',titleBarOverlay:{color:'#29292b',symbolColor:'#c1c1ca',height:60}}:{}), backgroundColor: '#202020', webPreferences: { preload, session: uiSession, sandbox: true, contextIsolation: true, nodeIntegration: false, autoplayPolicy: 'no-user-gesture-required' } });
   owner.setTitle('Apple Music Downloader Native · '+VERSION);
   owner.setMenuBarVisibility(false); isolated(owner, nativeURL);
   const ownerID = owner.webContents.id;
   login = new NativeLoginCoordinator({ createWindow: () => {
-    const win = new BrowserWindow({ parent: owner, width: 460, height: 560, resizable: false, title: '登录 Apple Music', backgroundColor: '#202024', webPreferences: { preload, session: uiSession, sandbox: true, contextIsolation: true, nodeIntegration: false } });
+    const win = new BrowserWindow({ icon:appIcon, parent: owner, width: 460, height: 560, resizable: false, title: '登录 Apple Music', backgroundColor: '#202024', webPreferences: { preload, session: uiSession, sandbox: true, contextIsolation: true, nodeIntegration: false } });
     win.setMenuBarVisibility(false); isolated(win, loginURL); win.webContents.once('did-finish-load', () => login.deliver()); void win.loadURL(loginURL); return win;
   }, onDismiss: () => service?.api('/api/native/cancel-login', { method: 'POST' }).then(observe).catch(() => {}) });
   uiSession.webRequest.onBeforeSendHeaders((details, callback) => callback({ requestHeaders: service?.mediaHeaders(details, ownerID) || details.requestHeaders }));
@@ -178,7 +191,7 @@ app.whenReady().then(async () => {
     onFinish: () => { void revealMain().catch(() => app.quit()); },
     onChange: value => { if (startupWindow && !startupWindow.isDestroyed()) startupWindow.webContents.send('native:startup-state', value); },
   });
-  startupWindow = new BrowserWindow({ show: false, width: 1100, height: 720, minWidth: 760, minHeight: 560, center: true, fullscreen: false, frame: true, title: 'Music 下载器', backgroundColor: '#1c1c1e', webPreferences: { preload: path.join(__dirname, '../preload/native-startup-preload.js'), session: uiSession, sandbox: true, contextIsolation: true, nodeIntegration: false } });
+  startupWindow = new BrowserWindow({ icon:appIcon, show: false, width: 1100, height: 720, minWidth: 760, minHeight: 560, center: true, fullscreen: false, frame: true, title: 'Music 下载器', backgroundColor: '#1c1c1e', webPreferences: { preload: path.join(__dirname, '../preload/native-startup-preload.js'), session: uiSession, sandbox: true, contextIsolation: true, nodeIntegration: false } });
   const boot = startupWindow;
   boot.setMenuBarVisibility(false); isolated(boot, startupURL);
   boot.once('closed', () => { if (startupWindow !== boot) return; startupWindow = null; if (!mainRevealed && !closing) app.quit(); });

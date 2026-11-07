@@ -200,6 +200,25 @@ func (n *nativeDesktop) routes(capability string) *mux.Router {
 		writeJSON(w, 200, map[string]any{"runtime": n.control.Snapshot(), "session": n.session(r.Context()), "downloadDirectory": n.downloadDirectory(r.Context()), "native": true})
 	}).Methods("GET")
 	router.HandleFunc("/api/native/download-directory", n.setDownloadDirectory).Methods(http.MethodPut)
+	router.HandleFunc("/api/native/interaction", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		q, err := n.control.Interaction(r.Context())
+		if err != nil {
+			writeAPIError(w, 503, "native_interaction_unavailable", "认证交互暂不可用", "检查服务后重试")
+			return
+		}
+		writeJSON(w, 200, map[string]any{"interaction": q})
+	}).Methods(http.MethodGet)
+	router.HandleFunc("/api/native/interaction", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		var input nativeauth.InteractionAnswer
+		r.Body = http.MaxBytesReader(w, r.Body, nativeauth.MaxInteractionBytes)
+		if decodeJSON(r, &input) != nil || n.control.SubmitInteraction(r.Context(), input) != nil {
+			writeAPIError(w, 409, "native_interaction_rejected", "此交互已失效或输入不符合要求", "检查当前提示")
+			return
+		}
+		writeJSON(w, 202, map[string]bool{"accepted": true})
+	}).Methods(http.MethodPost)
 	router.HandleFunc("/api/native/jobs/{id}/location", n.jobLocation).Methods(http.MethodGet)
 	for _, action := range []string{"login", "two-factor", "cancel-login", "recheck", "retry"} {
 		action := action

@@ -4,6 +4,7 @@ html,body,main{width:100%;height:100%;margin:0;overflow:hidden}
 body{background:#1c1c1e}
 main{display:grid;place-items:center}
 #startup-logo{width:48px;height:48px;animation:startup-breathe 1.8s ease-in-out infinite;transform-origin:center}
+#startup-logo{border-radius:10px}
 #startup-error{position:absolute;top:calc(50% + 64px);left:50%;transform:translateX(-50%);width:min(360px,calc(100% - 40px));text-align:center;color:#aaaab5;font-size:14px;line-height:1.6}
 #startup-error p{margin:0 0 18px}
 #startup-error div{display:flex;justify-content:center;gap:12px}

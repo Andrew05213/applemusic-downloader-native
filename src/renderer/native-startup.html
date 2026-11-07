@@ -3,17 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'self'; script-src 'self'">
   <title>Apple Music Downloader</title>
   <link rel="stylesheet" href="native-startup.css">
 </head>
 <body data-phase="loading">
   <main aria-label="正在启动 Apple Music Downloader">
-    <svg id="startup-logo" viewBox="0 0 48 48" aria-hidden="true">
-      <path d="M18 13v21M38 8v21M18 13l20-5" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-      <ellipse cx="13" cy="35" rx="7" ry="5" fill="currentColor" transform="rotate(-18 13 35)"/>
-      <ellipse cx="33" cy="30" rx="7" ry="5" fill="currentColor" transform="rotate(-18 33 30)"/>
-    </svg>
+    <img id="startup-logo" src="../assets/app-icon.png" width="48" height="48" alt="">
     <section id="startup-error" role="status" hidden>
       <p id="startup-message">启动暂未完成，可以进入应用查看状态。</p>
       <div><button id="startup-enter" type="button">进入应用</button><button id="startup-quit" type="button">退出</button></div>
