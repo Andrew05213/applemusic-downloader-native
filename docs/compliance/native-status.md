@@ -2,6 +2,8 @@
 
 本页描述 Native 项目的现有资料和未完成核查，不是完整许可确认、源码提供承诺或法律意见。公开仓库及构建开关不授予第三方权利。
 
+Native 1.0.1 的实际安装器身份、逐文件清单和 Source/Built-Using 核查见[冻结材料记录](releases/1.0.1/README.md)。该记录只针对发布提交，不将后续 main 或 CI 视为旧安装器证据。Android/Apple 材料按维护者要求暂缓继续核查，仍保持未完成状态。
+
 ## 已发布资料
 
 [Native 1.0.0 Release](https://github.com/Andrew05213/applemusic-downloader-native/releases/tag/v1.0.0) 附带：
@@ -46,9 +48,11 @@ QEMU 发行者[来源页面](https://qemu.weilnetz.de/?C=M%3BO%3DD)和[源码镜
 
 | 工具 | 输入和结果 |
 | --- | --- |
-| `native-runtime/collect-debian-sources.sh` | 在锁定构建镜像中运行，/out 指向新的空输出目录；收集固定快照源包并校验 .dsc 中 SHA-256 |
-| `node native-runtime/package-debian-sources.js <收集目录> <新zip>` | 复验归档并生成部分 Debian 资料包及校验和；输出位于仓库 .artifacts 下 |
+| `node native-runtime/release-materials.js debian-plan <冻结清单> <新计划JSON> <实际deb>...` | 校验实际包哈希与控制字段，从 Source/Built-Using 派生源码闭包；需 dpkg-deb |
+| `native-runtime/collect-debian-sources.sh <计划TSV>` | 在锁定构建镜像中运行，/out 指向新的空输出目录；按计划收集固定快照源包并校验 .dsc 中 SHA-256 |
+| `node native-runtime/package-debian-sources.js <收集目录> <新zip> <冻结清单> <发布提交源码目录>` | 校验来源计划与历史构建文件身份，复验归档并生成部分候选包；输出位于仓库 .artifacts 下 |
 | `node native-runtime/collect-go-licenses.js <新输出目录> <二进制>...` | 基于 go version -m 和模块校验和收集实际二进制依赖的许可证候选 |
 | `node native-runtime/inventory-qemu.js <runtime目录> <新输出文件>` | 校验 runtime 来源与 manifest，记录 QEMU 文件及哈希 |
+| `node native-runtime/release-materials.js inventory <冻结清单> <实际安装器> <解包负载目录> <新输出>` | 核对全部负载与嵌套 ASAR/guest；搁置材料保留未完成状态 |
 
 APT 快照索引验证不等于 .dsc 签名验证。候选清单中的 incomplete 状态不能在未经审核时移除；应使用与发布 runtime 一致的实际二进制，不以维护者本地目录作为公开资料地址。收集资料的审查与发布检查见[发布指南](../RELEASE.md)。

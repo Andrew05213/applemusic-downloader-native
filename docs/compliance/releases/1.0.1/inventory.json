@@ -1,0 +1,2697 @@
+{
+  "schemaVersion": 1,
+  "release": "v1.0.1",
+  "sourceCommit": "ad21b378334e32b15016107ca506ac8850471835",
+  "workflowRunID": 41439352929,
+  "installer": {
+    "name": "AppleMusicDownloader-1.0.1-Setup.exe",
+    "size": 252216880,
+    "sha256": "f6088bd70d3d482ef0a45552a19af5a332a6f2c72cc000ae06d817dc08c2ab12"
+  },
+  "assets": [
+    {
+      "id": 701592603,
+      "name": "AppleMusicDownloader-1.0.1-Setup.exe",
+      "size": 252216880,
+      "digest": "sha256:f6088bd70d3d482ef0a45552a19af5a332a6f2c72cc000ae06d817dc08c2ab12",
+      "browser_download_url": "https://github.com/Andrew05213/applemusic-downloader-native/releases/download/v1.0.1/AppleMusicDownloader-1.0.1-Setup.exe"
+    },
+    {
+      "id": 701592605,
+      "name": "AppleMusicDownloader-1.0.1-Setup.exe.sha256",
+      "size": 103,
+      "digest": "sha256:7386fd25758dc85db7e87db4d5faf5604f9ff44bea44d92bd6d8491e88fa45fc",
+      "browser_download_url": "https://github.com/Andrew05213/applemusic-downloader-native/releases/download/v1.0.1/AppleMusicDownloader-1.0.1-Setup.exe.sha256"
+    },
+    {
+      "id": 701599341,
+      "name": "debian-linux-busybox-source-partial-1.0.0.zip",
+      "size": 142668969,
+      "digest": "sha256:acb61042cae090736b2250d630bbf570dd782919e11766b3188c8581b7b56f89",
+      "browser_download_url": "https://github.com/Andrew05213/applemusic-downloader-native/releases/download/v1.0.1/debian-linux-busybox-source-partial-1.0.0.zip"
+    },
+    {
+      "id": 701599327,
+      "name": "debian-linux-busybox-source-partial-1.0.0.zip.sha256",
+      "size": 112,
+      "digest": "sha256:ca2f3b02be4eab68541d56a8aa0480019c1daba6d423c466fde82d0984daa5a4",
+      "browser_download_url": "https://github.com/Andrew05213/applemusic-downloader-native/releases/download/v1.0.1/debian-linux-busybox-source-partial-1.0.0.zip.sha256"
+    },
+    {
+      "id": 701600737,
+      "name": "verification-1.0.1.json",
+      "size": 1901,
+      "digest": "sha256:9618cb8d568b4e587dcbd2344c11deeff20bc54611aa7caf22af210c580b6611",
+      "browser_download_url": "https://github.com/Andrew05213/applemusic-downloader-native/releases/download/v1.0.1/verification-1.0.1.json"
+    }
+  ],
+  "files": {
+    "resources/elevate.exe": {
+      "size": 107520,
+      "sha256": "9b1fbf0c11c520ae714af8aa9af12cfd48503eedecd7398d8992ee94d1b4dc37"
+    },
+    "Apple Music Downloader Native.exe": {
+      "size": 249798144,
+      "sha256": "49f3dcc110ec7b9e4db8aedf82f2baccf54dc547d0972b92e67b4d208f8342f8"
+    },
+    "chrome_100_percent.pak": {
+      "size": 568418,
+      "sha256": "8e865e7cd40faabcbfb4cd2be16ee290023c3a28796c4f95451440d80174225d"
+    },
+    "chrome_200_percent.pak": {
+      "size": 927757,
+      "sha256": "352baed89a9051dc959dfa8e73024212ef98e173e37d0fc064887013748fcdca"
+    },
+    "d3dcompiler_47.dll": {
+      "size": 4753864,
+      "sha256": "f5c95e919b4ffa1ac71049cd45b9f986d2965e6888395ca2806337985334fa56"
+    },
+    "dxcompiler.dll": {
+      "size": 25779712,
+      "sha256": "6af17f483f97ca18b579da8475855469dde1b69b7e7872cae13bcbacc2d33200"
+    },
+    "electron_wer.dll": {
+      "size": 425472,
+      "sha256": "234b9aba3c2c5bb545dedb26783692ec90313a3e17a532ae7c514f8058adf117"
+    },
+    "ffmpeg.dll": {
+      "size": 3097600,
+      "sha256": "cdf2b70f0f0a97c9840af1466dd86a90e564c98f6892d783635cf9c3b303d613"
+    },
+    "icudtl.dat": {
+      "size": 10824432,
+      "sha256": "02a01b3188b6a41a756f7322fdb5e6b5ca6573b327b01dfc8ed662d571a6f769"
+    },
+    "LICENSE.electron.txt": {
+      "size": 1096,
+      "sha256": "5154e165bd6c2cc0cfbcd8916498c7abab0497923bafcd5cb07673fe8480087d"
+    },
+    "LICENSES.chromium.html": {
+      "size": 5705935,
+      "sha256": "7dac8267ac6da8d959cfe88f5f055b18a397f10230380b5329125e167bf5639b"
+    },
+    "locales/af.pak": {
+      "size": 641339,
+      "sha256": "10121e47f8fe41355dd8f4475907be7adea7f5b25459aa53c9f3ef07dafef05c"
+    },
+    "locales/am.pak": {
+      "size": 1037302,
+      "sha256": "5150bc6cfc63844816e305b9645cb8e15587ff826a2be1d8639f2087bfb0a5da"
+    },
+    "locales/ar.pak": {
+      "size": 1143075,
+      "sha256": "2e92d1b3098b03c88b5265a1ecdd1e303a936540c8fa9107a846b02df751aed8"
+    },
+    "locales/bg.pak": {
+      "size": 1189898,
+      "sha256": "3f9d18988748118895dc026e4f56a442f078d3a5d564000d177a52ce934346b7"
+    },
+    "locales/bn.pak": {
+      "size": 1526566,
+      "sha256": "e2d4d1c81b0218849880b01c896d1d92c2a28347860cb4d5f37d4c777e4aa7cb"
+    },
+    "locales/ca.pak": {
+      "size": 724869,
+      "sha256": "17c4e990fd021755b01cb96b0bce8c7c443d41397b56ad084f81761ca580e7ac"
+    },
+    "locales/cs.pak": {
+      "size": 753878,
+      "sha256": "cdd8eb041d9e2231e737c5cacae51034d3e3935e2c33d31d216caa17e5d941ff"
+    },
+    "locales/da.pak": {
+      "size": 674463,
+      "sha256": "cdf0ea6c9f400af2374c88e50e0cd0a33d9a1ee58db797ad15f7b1ad99890a96"
+    },
+    "locales/de.pak": {
+      "size": 728057,
+      "sha256": "e2616265df1c57101339cde08a704a5f212a5c7446b187227a26326dc939a2be"
+    },
+    "locales/el.pak": {
+      "size": 1309811,
+      "sha256": "f8e4cc68aed45935d7311bd98627fce5934ffcc151d109093de689696c890ec0"
+    },
+    "locales/en-GB.pak": {
+      "size": 585046,
+      "sha256": "e2cf3bd4d2ec7f900c710346362b03bdedf0a46285fd32d9cf6b8fab373b2f20"
+    },
+    "locales/en-US.pak": {
+      "size": 592299,
+      "sha256": "de43db43fe0072543ab225f6d762cce3656a1639bf9e25f371fe0e80d9eabba7"
+    },
+    "locales/es-419.pak": {
+      "size": 714496,
+      "sha256": "9abcee391a295fa79e389b16c6843e42884bfa548fbdd62a85a18a321e4b317f"
+    },
+    "locales/es.pak": {
+      "size": 710842,
+      "sha256": "a15d9687d249228faf9953f2da7dd946ab6caaec0e477a692a57ec2150fdfc86"
+    },
+    "locales/et.pak": {
+      "size": 649737,
+      "sha256": "9a8f5574c2a9931e6bd2eb2c021e2132d39a6f569e8fdc40a8475e5a8c0a776a"
+    },
+    "locales/fa.pak": {
+      "size": 1078263,
+      "sha256": "eda1e584f110cacb61fbe38ddecdb8247ed8a1e4cb7e5f5cfa39e4d8e84387f5"
+    },
+    "locales/fi.pak": {
+      "size": 663455,
+      "sha256": "a3e8bcb525568ba1e1908e8cc57b9e05b3ee3d9245cd74894d0fb485eb79a9a7"
+    },
+    "locales/fil.pak": {
+      "size": 748590,
+      "sha256": "808d6f4620a9c4fee771dfcf39f382db42e83f1e66fe206f93797b86c22dea24"
+    },
+    "locales/fr.pak": {
+      "size": 774154,
+      "sha256": "fd3963fe1811d3107d0ce8fe217211d67b201ecc24d0bf9e95d30071e16d6923"
+    },
+    "locales/gu.pak": {
+      "size": 1508809,
+      "sha256": "71d29958f321c014b0d36625c9e7d5af7e42e5ab2d753ecd6bceaf02b64d652d"
+    },
+    "locales/he.pak": {
+      "size": 941003,
+      "sha256": "7edfc0e9033ad6e451e175e14d2fba4a158129cbbf45c768314d86c6e1f1b207"
+    },
+    "locales/hi.pak": {
+      "size": 1601863,
+      "sha256": "e55d2c94104b5e4329c5f254cf670caa6414ca1137af260e86adeff986f4292f"
+    },
+    "locales/hr.pak": {
+      "size": 724777,
+      "sha256": "96506f22e560e838ae740bfd72e07ad7a484d4af2d52816a64b9b35742dbf5b3"
+    },
+    "locales/hu.pak": {
+      "size": 775366,
+      "sha256": "0d44b7669e37805786b3fe637f2291654c2698b8ec8b57ddec17c1cf4bea5857"
+    },
+    "locales/id.pak": {
+      "size": 642959,
+      "sha256": "7111a5623ece2362e16be5a785030a9a628937ab680db34c9dbab6ae7926d0e6"
+    },
+    "locales/it.pak": {
+      "size": 700983,
+      "sha256": "b78bca99c590f45b660ce446a0a094e3d7a101c987965ac4e697f79685c230c9"
+    },
+    "locales/ja.pak": {
+      "size": 853537,
+      "sha256": "239445223165dd02d8f1a048a7740e5b8cd845491965f17b92ccf57eea29ba66"
+    },
+    "locales/kn.pak": {
+      "size": 1738870,
+      "sha256": "cc9903cb7a98ac81c08b33d3f88e88f35b290eaf0f5eaa8fab67395b330d88f0"
+    },
+    "locales/ko.pak": {
+      "size": 730396,
+      "sha256": "d3d22df64bab98e36e5a5635e98b33323af0a4b7f1a649bc049e1a753cd70ccb"
+    },
+    "locales/lt.pak": {
+      "size": 785117,
+      "sha256": "2fe1400fc3e0010f30955171124c9c8bf0fbab6aaddfce967b997bdc31fa2977"
+    },
+    "locales/lv.pak": {
+      "size": 782864,
+      "sha256": "3ed091a6dbba7b8a5a4beff7191918f84ee0a7de23004d76f57826104094f02b"
+    },
+    "locales/ml.pak": {
+      "size": 1785503,
+      "sha256": "6e3480887885349cd3198c2f608da25bc7722dbad7c1fba695f95e0e6d564b36"
+    },
+    "locales/mr.pak": {
+      "size": 1481173,
+      "sha256": "7bb875ecd2f725eb037758e261dea1d53c2c6668ccbc6b10fedbb427d0947b8d"
+    },
+    "locales/ms.pak": {
+      "size": 677751,
+      "sha256": "e0a46e0f40cf0c197c2a1fcb2adca421a93d2ade3d1333b99489f8b7d4a335d3"
+    },
+    "locales/nb.pak": {
+      "size": 643919,
+      "sha256": "754820b5f3ec2a19f5a0177026541654bba2a9394a665cd3006e049edd71881d"
+    },
+    "locales/nl.pak": {
+      "size": 671754,
+      "sha256": "a319007b406469b5625f9e69ae4d29d9433540cd2c648e5b3b780249088e84a1"
+    },
+    "locales/pl.pak": {
+      "size": 751664,
+      "sha256": "364ac77a3f7f3aed3f42016b12a4c140dc7e89b0ff197cddfa968269a414cb62"
+    },
+    "locales/pt-BR.pak": {
+      "size": 705541,
+      "sha256": "03dc65858e45cebd064587e612d2fdcc1d4d2ead6a28aced2f6734e5c6862cb8"
+    },
+    "locales/pt-PT.pak": {
+      "size": 708355,
+      "sha256": "c850250976d474f43cd425d8a371c0a3c075490b21221a3e51797ab2cf9d950d"
+    },
+    "locales/ro.pak": {
+      "size": 733934,
+      "sha256": "c8bac592c3f94d10da90e072ef6940108916d18c3fd6782a182635707435393b"
+    },
+    "locales/ru.pak": {
+      "size": 1212098,
+      "sha256": "88d2779bbe1c8b8427ca9d78d23c53663e506910435dbdf88a949dc4ca91964b"
+    },
+    "locales/sk.pak": {
+      "size": 766425,
+      "sha256": "15e26d007f346410e90ef313c4d09b1c02b11808eeb018559c7ae7b3ef77812d"
+    },
+    "locales/sl.pak": {
+      "size": 729966,
+      "sha256": "4e9d2aa291c653c0b3a92c973e1d5d1ecd1b6c1cc64b569c0ae37a28b6d46bcd"
+    },
+    "locales/sr.pak": {
+      "size": 1124220,
+      "sha256": "fee1debf9c49f2beea7990258cb55483eb30841642c2e7c0ea540472682cf2f0"
+    },
+    "locales/sv.pak": {
+      "size": 654595,
+      "sha256": "5cd184cc67d1fa6d4f8c82f0809d803bb8f4c61d07d676e54808e6ced09e9b68"
+    },
+    "locales/sw.pak": {
+      "size": 692169,
+      "sha256": "813bd56c6c8e0b13b61f15efe8bc7d14d0e670c0dce93efdda3cc428cf989e63"
+    },
+    "locales/ta.pak": {
+      "size": 1773876,
+      "sha256": "6ef6497441c04f7dcc18caa552d961c5f22e8b369c97a6632bca6b57d6bd7876"
+    },
+    "locales/te.pak": {
+      "size": 1648207,
+      "sha256": "301a6b26e82540bc6079c1e210f575950b1dbd8c03437a7817d8446c06c755e7"
+    },
+    "locales/th.pak": {
+      "size": 1377527,
+      "sha256": "acf2778d5abda266d91a534d8ceb14cfe2fe34bc41a157c4b7a2058ba778ccbb"
+    },
+    "locales/tr.pak": {
+      "size": 706657,
+      "sha256": "e3b2168d566124c306d8ecff00b1ba0e54c282958ec8d5bcf9d94cbe638008f6"
+    },
+    "locales/uk.pak": {
+      "size": 1225347,
+      "sha256": "e9d26214e799ec895304952223dd3a5d13d3041e3984378c710fef5626d4d880"
+    },
+    "locales/ur.pak": {
+      "size": 1060438,
+      "sha256": "f4d5f15daf9f3dd422f52421b93f0b5f6791a9928facb0e1b6dfd894a3814281"
+    },
+    "locales/vi.pak": {
+      "size": 839397,
+      "sha256": "9836065474cd9f4e0f351f472361fda7de790a6e27f5e67f8dc564465b8df029"
+    },
+    "locales/zh-CN.pak": {
+      "size": 599993,
+      "sha256": "37abf1eacd32c638866147e9517b2a555d8a7dd2c0c79c05d09f877d9373b09a"
+    },
+    "locales/zh-TW.pak": {
+      "size": 592033,
+      "sha256": "56b39b119f9dc0e38e8c67a556a02cbe877d9e00833c8922f05d8faee80bcb13"
+    },
+    "resources/app.asar": {
+      "size": 182906,
+      "sha256": "0dcb68c8825a139b9716b82bb202f075e013e1780e5a1027d3adf3e731db71b7"
+    },
+    "resources/bin/amdl-desktop.exe": {
+      "size": 6402048,
+      "sha256": "f027c2bee6290f23021d8bc73ff72614ef80717fb7a54808e8b98fb0ce993c9f"
+    },
+    "resources/bin/amdl-service.exe": {
+      "size": 19523072,
+      "sha256": "e3bcb7e76da405d5adeb43bdf27e43b84b5ce5326e3b0dbab37f5657c5d0d12b"
+    },
+    "resources/default_app.asar": {
+      "size": 110835,
+      "sha256": "eac55d6cfcf4eab7e31a45356567f549ef7eb669e3699226b48a8492ad34f510"
+    },
+    "resources/LICENSE": {
+      "size": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    "resources/NATIVE-LOCAL-NOTICE.md": {
+      "size": 2482,
+      "sha256": "5e7c5627e65d1105bc8500c7fe35b9a47161abad3e9211bedaf692a10b68bd14"
+    },
+    "resources/native-package.json": {
+      "size": 34707,
+      "sha256": "9b7c3ff598d29fceb02e03d61691d326d6fe66fadaf284c4c9ca867724f721c7"
+    },
+    "resources/native-release-policy.json": {
+      "size": 214,
+      "sha256": "bebc2d72999d6b788b3ff31971ca29419c8d85da0edd8678b88418fb9241d96c"
+    },
+    "resources/native-runtime/bundle.json": {
+      "size": 27706,
+      "sha256": "d1e17f1fd3fbed45c3ea60468fa9685dc390280574a8a65cea0841fa73d2aef7"
+    },
+    "resources/native-runtime/evidence/build.json": {
+      "size": 2168,
+      "sha256": "e51f19a3e4d69394f5ba73427d3792fa533894e82b1d49adbfd2da1c4b2d5861"
+    },
+    "resources/native-runtime/evidence/configuration-derivation.json": {
+      "size": 427,
+      "sha256": "f720e0243dff7c2288a8bd347ad2992330c61e40ba63d3f766271c817e354425"
+    },
+    "resources/native-runtime/evidence/derive-release-runtime.cjs": {
+      "size": 2232,
+      "sha256": "d2162830341975f056aaaffac310d50f57781140ee5787e7070138eaf8503560"
+    },
+    "resources/native-runtime/evidence/guest-agent-source.json": {
+      "size": 1367,
+      "sha256": "846bde92aca0415b415dcb97195d917172816435420ae8428617de3522cfab5a"
+    },
+    "resources/native-runtime/evidence/guest-agent.lock.json": {
+      "size": 76,
+      "sha256": "6ef5f3457f59c525e245ddef4658bb4afec9276ab78d3d5d8dad62c1e15dca2b"
+    },
+    "resources/native-runtime/evidence/guest-components.sha256": {
+      "size": 225,
+      "sha256": "bd1c45bb761610ebd0a2cb6bf0629023cc0ec50923ca5776da3ef1eb1a1e6dbb"
+    },
+    "resources/native-runtime/evidence/inputs.lock.json": {
+      "size": 1193,
+      "sha256": "bcd41de61d06997201ee2d97229eedbf29e4dc8fe02a63520ee8a205c777067e"
+    },
+    "resources/native-runtime/evidence/original-build.json": {
+      "size": 2168,
+      "sha256": "2877e74c8858be012a87c691e177e991ac78af4a5519503a6b2ec4818ca427e8"
+    },
+    "resources/native-runtime/evidence/packages.resolved.lock": {
+      "size": 4914,
+      "sha256": "ec5f429eaf02df54e2fa2a7220975ac6986e6529566fe7c9bd81907af75c08de"
+    },
+    "resources/native-runtime/evidence/toolchain-build.json": {
+      "size": 734,
+      "sha256": "f85ceb0cca921da7df0685ec60637b5788d9547732b86ca55d270eb44b053aeb"
+    },
+    "resources/native-runtime/guest/data.img": {
+      "size": 67108864,
+      "sha256": "e38cee9849e35bd59dcabba4b0e66d433fd7dd495ecb6c7904a8d2e89da50bd9"
+    },
+    "resources/native-runtime/guest/initramfs.cpio.gz": {
+      "size": 53531242,
+      "sha256": "1fa407a01da89120750c82e32d38dc2c043a97da0cb5558126b75f4bb0bd41f3"
+    },
+    "resources/native-runtime/guest/vmlinuz": {
+      "size": 8222656,
+      "sha256": "6a25a32d27db1782ac2ca74d714115150aca1923e11485c60b3fadd59c3ece14"
+    },
+    "resources/native-runtime/notices/qemu-COPYING": {
+      "size": 17880,
+      "sha256": "dd3ce02338c3a48abb6ba59b48809f7108a8bd242cb0cc8be90daafa30707c28"
+    },
+    "resources/native-runtime/notices/qemu-COPYING.LIB": {
+      "size": 26415,
+      "sha256": "31c90ce76b6f5aab90a205851e71d5c27e31c0aa3d7017a4383b98a6fe3f1faa"
+    },
+    "resources/native-runtime/notices/wrapper-LICENSE": {
+      "size": 1076,
+      "sha256": "fa8f96a9f842f192167c6c2f4bbeccfbb165f5b4b87b47d1b70f1ce50793012a"
+    },
+    "resources/native-runtime/qemu/brlapi-0.8.dll": {
+      "size": 115200,
+      "sha256": "de4dcc2ed566e5f900eac322007a55a39cc51a5e157211df5e4f366e095b965a"
+    },
+    "resources/native-runtime/qemu/libaom.dll": {
+      "size": 9424346,
+      "sha256": "bc6feb90adf4a423f89b34ae975642024461c2f624019443ca3886309a69f3c3"
+    },
+    "resources/native-runtime/qemu/libatk-1.0-0.dll": {
+      "size": 159478,
+      "sha256": "e705edd64fc3ba7da51b942e0331d55ebaeebad467d782be6b218be349384ee2"
+    },
+    "resources/native-runtime/qemu/libavif-16.dll": {
+      "size": 335578,
+      "sha256": "47afa7f14e332e220325c8d6fc837064fbc0fdcbfc3901dfc340fbb93102300e"
+    },
+    "resources/native-runtime/qemu/libbrotlicommon.dll": {
+      "size": 143429,
+      "sha256": "ca7bc06ead80259971badf2cd0bfc688db9154dad65f139f49a38b4be9976f97"
+    },
+    "resources/native-runtime/qemu/libbrotlidec.dll": {
+      "size": 62461,
+      "sha256": "a142dc6cfa77cb907028aa9426f486f3d8de37855e8db2ae2894147908121881"
+    },
+    "resources/native-runtime/qemu/libbrotlienc.dll": {
+      "size": 788364,
+      "sha256": "50c3aca8abcf0d5576f0b62dbd608be285246f8fd1b48ef87d58fa6b8b744e5f"
+    },
+    "resources/native-runtime/qemu/libbz2-1.dll": {
+      "size": 100964,
+      "sha256": "b79cd3a7102e359ef6324e98966a67939e58ec2b651ae2847cae84a4dfa453f7"
+    },
+    "resources/native-runtime/qemu/libcacard-0.dll": {
+      "size": 109915,
+      "sha256": "16aadf1283fdcb0c74abb84faaec11dcfdb315e5e073d047273414b11b3d94d6"
+    },
+    "resources/native-runtime/qemu/libcairo-2.dll": {
+      "size": 1247164,
+      "sha256": "c474166543aed18b389b20122ca2741189504994dafd86cd5ed121e95bd82ce4"
+    },
+    "resources/native-runtime/qemu/libcairo-gobject-2.dll": {
+      "size": 35639,
+      "sha256": "faf68e5929b89461ad58c5d26c549cde07bc06b368fb89ace82923df645c9bd5"
+    },
+    "resources/native-runtime/qemu/libcapstone.dll": {
+      "size": 8022840,
+      "sha256": "191098a054c186ecc8e1063f109bef0b07450b48c0ca9bce5d89f23cf2df2f71"
+    },
+    "resources/native-runtime/qemu/libcrypto-3-x64.dll": {
+      "size": 5495118,
+      "sha256": "4d2e724eb852f78ec0adbd1b7265325f79f503c9572658a26434f27f0cedb051"
+    },
+    "resources/native-runtime/qemu/libcurl-4.dll": {
+      "size": 1226963,
+      "sha256": "3d302f9690e810fdfd950254e2f0663d0ff768737f350c602a4ed3a06e9b6b2b"
+    },
+    "resources/native-runtime/qemu/libdatrie-1.dll": {
+      "size": 35033,
+      "sha256": "2f784872e6404e57847201fe1e7e591bd5b5be4a319ef38ebcb36014ac7f385d"
+    },
+    "resources/native-runtime/qemu/libdav1d-7.dll": {
+      "size": 1931258,
+      "sha256": "29385f5f9b9f8c945eac3366403f529b3bd4bd59aa6eb492e043ffd2d82268c0"
+    },
+    "resources/native-runtime/qemu/libdb-6.2.dll": {
+      "size": 1534932,
+      "sha256": "4035b713d0b127c87a6f369950fe9fde052f042438e5a7cf53df0959a8349c90"
+    },
+    "resources/native-runtime/qemu/libdeflate.dll": {
+      "size": 99228,
+      "sha256": "3f3fc3a73bc3623dc93b37bb321c484d3731d93006fd01c0495d15711826eb44"
+    },
+    "resources/native-runtime/qemu/libEGL.dll": {
+      "size": 261632,
+      "sha256": "da93c851b7e2e1614787dcd59bcebb61126e3905fa8e196ba57de44811ce251b"
+    },
+    "resources/native-runtime/qemu/libEGL_vulkan_secondaries.dll": {
+      "size": 261632,
+      "sha256": "fb0fdf92968926680f068cfbdc14dec6547f4a36beee7f1ed93d67ab26d7a51a"
+    },
+    "resources/native-runtime/qemu/libepoxy-0.dll": {
+      "size": 1771389,
+      "sha256": "8e7d48294d79eb5b1f44cd7c2a637239d8ddcdabaedea12bf9fb7ca919d1a37a"
+    },
+    "resources/native-runtime/qemu/libexpat-1.dll": {
+      "size": 237567,
+      "sha256": "1ace13a4460a04cccb4b1e532af98a8e4610581f7ed55413a5ccb615e7d1e1ca"
+    },
+    "resources/native-runtime/qemu/libfdt-1.dll": {
+      "size": 42010,
+      "sha256": "bc6e57d01be355f7ede6576a86cddefab8e61160e4c123bbc1b2802df4a453ef"
+    },
+    "resources/native-runtime/qemu/libfeature_support.dll": {
+      "size": 326656,
+      "sha256": "f85e6c34d20760180c4e84f926b3321afddd58625b8170078b6853492fdf47fe"
+    },
+    "resources/native-runtime/qemu/libffi-8.dll": {
+      "size": 40945,
+      "sha256": "390e4bf8abd037abd0e1dd1f311606715e43f8efe812e5c5b8775acf2cb2f21e"
+    },
+    "resources/native-runtime/qemu/libfontconfig-1.dll": {
+      "size": 508462,
+      "sha256": "bed1827dbb226483026b2b33127866ce173aa2423d89ae7da6f88d6328792ec9"
+    },
+    "resources/native-runtime/qemu/libfreetype-6.dll": {
+      "size": 790651,
+      "sha256": "bbb3e6390ee229c867ef31f10e42a49a61a92e434a11d40c6139a2608ebc6194"
+    },
+    "resources/native-runtime/qemu/libfribidi-0.dll": {
+      "size": 156403,
+      "sha256": "84930fd86a3b46b62794a3bbaff21fbbaeaade5ff7cdc70be7f717ad29af87ed"
+    },
+    "resources/native-runtime/qemu/libgcc_s_seh-1.dll": {
+      "size": 150998,
+      "sha256": "b37c1770c8ca092700875845b34918803ee6311573eba1c32ff4b1166e4a0e1e"
+    },
+    "resources/native-runtime/qemu/libgdk-3-0.dll": {
+      "size": 1384574,
+      "sha256": "2deedc5411a5b452f1aa35347984fef6293ac87a17c54a7676a81547b19362fd"
+    },
+    "resources/native-runtime/qemu/libgdk_pixbuf-2.0-0.dll": {
+      "size": 362253,
+      "sha256": "de8c9155341167121f1890224a152da4d283753bac74a0325dee770d76ce30ab"
+    },
+    "resources/native-runtime/qemu/libgio-2.0-0.dll": {
+      "size": 1913623,
+      "sha256": "50a134823cd2f5849f3d43889077164a16f5fc79ec8a9f26e8af77ef3e9906ca"
+    },
+    "resources/native-runtime/qemu/libGLESv1_CM.dll": {
+      "size": 28672,
+      "sha256": "1fa5c6f2d7d6aaf8a48742a44ff2776f7fe388cd2688f1a20afc4e86e171c95e"
+    },
+    "resources/native-runtime/qemu/libGLESv2.dll": {
+      "size": 11627008,
+      "sha256": "50ec0a8e4b060fa3a965bf922dd244752122c794bff2b0a851a5f4780e254add"
+    },
+    "resources/native-runtime/qemu/libGLESv2_vulkan_secondaries.dll": {
+      "size": 11610112,
+      "sha256": "145deba3953b135e53ad224b4253f091ad1a28d1ecfc6f275449f245d27d8c92"
+    },
+    "resources/native-runtime/qemu/libGLESv2_with_capture.dll": {
+      "size": 13489664,
+      "sha256": "9682f155f14a51347bc34f865a537b4e7ef5fedcb6177222ec34f8d063de1e6c"
+    },
+    "resources/native-runtime/qemu/libglib-2.0-0.dll": {
+      "size": 1566649,
+      "sha256": "7b5c19f5540857ec2288323f3b1654cbe5655fc3ea21417a25da69bece489eec"
+    },
+    "resources/native-runtime/qemu/libgmodule-2.0-0.dll": {
+      "size": 26748,
+      "sha256": "8dbef9e9647d773433cddfdfba84fd34dd699955c78cceea6ff7d7fc45efc495"
+    },
+    "resources/native-runtime/qemu/libgmp-10.dll": {
+      "size": 679747,
+      "sha256": "37248cda33845e7c5c35a574e57da762dd0a8268f0270d179f30a33746809681"
+    },
+    "resources/native-runtime/qemu/libgnutls-30.dll": {
+      "size": 2316158,
+      "sha256": "aca67ef2c8429557e9ac3a02ad313e9fdad35a1416972a248f0a205f83d39fbd"
+    },
+    "resources/native-runtime/qemu/libgobject-2.0-0.dll": {
+      "size": 359475,
+      "sha256": "912936c8782605f29db0abfd528aeecbc550c45782ae14d7e2f0aa0c4809136f"
+    },
+    "resources/native-runtime/qemu/libgraphite2.dll": {
+      "size": 167155,
+      "sha256": "063a9ad34a5ec87d038b4646660957395224ecf2cf707917256b7d251a7c5f57"
+    },
+    "resources/native-runtime/qemu/libgstapp-1.0-0.dll": {
+      "size": 100140,
+      "sha256": "0ac57076a157071327736d483a97a8d7e81a0b2ccd0b187525787c8643f48b1d"
+    },
+    "resources/native-runtime/qemu/libgstbase-1.0-0.dll": {
+      "size": 546663,
+      "sha256": "000711b65a0c39c879f3d73be442754b9297a8092894a309b19eea04e78b8722"
+    },
+    "resources/native-runtime/qemu/libgstreamer-1.0-0.dll": {
+      "size": 1481894,
+      "sha256": "e20ce49a194f891022503b7bbcb0608ca0526ab6c909452b70ec50b11b61dfcd"
+    },
+    "resources/native-runtime/qemu/libgtk-3-0.dll": {
+      "size": 7165030,
+      "sha256": "e2cc2698e2e04214e04b18d685550b76558423ebdb2b0a0782171876fe13eb9c"
+    },
+    "resources/native-runtime/qemu/libharfbuzz-0.dll": {
+      "size": 1530181,
+      "sha256": "cbc66233d9291f499aa38f6991f6e74570950502d8913df852d35a90f6da861b"
+    },
+    "resources/native-runtime/qemu/libhogweed-7.dll": {
+      "size": 275389,
+      "sha256": "8a4785b98e5418c32035f570904f65360c89825358702954b53c77ee2df8c97d"
+    },
+    "resources/native-runtime/qemu/libhwy.dll": {
+      "size": 88615,
+      "sha256": "4cd65f4bb3c123471a23f3eed734adbb31522b012c2c1776640d9634fbeb623c"
+    },
+    "resources/native-runtime/qemu/libiconv-2.dll": {
+      "size": 1143148,
+      "sha256": "7a282a854e01be726c6cccfe46f548c716aa45b3014818468253aaa4efbcd067"
+    },
+    "resources/native-runtime/qemu/libidn2-0.dll": {
+      "size": 247081,
+      "sha256": "9880b52651a0247640a2531d777380f7c35fac7efa7e3979b265ddcb78db8642"
+    },
+    "resources/native-runtime/qemu/libintl-8.dll": {
+      "size": 298731,
+      "sha256": "0537c3dd2378218508ebe3cc416d72a99ee2d24ae1c5525e23458f32544ef861"
+    },
+    "resources/native-runtime/qemu/libjack64.dll": {
+      "size": 312511,
+      "sha256": "34065f120befc2ebf913754a0d8fdd54c4bb3fa09bea4a79ffa369fe5cf1cd28"
+    },
+    "resources/native-runtime/qemu/libjbig-0.dll": {
+      "size": 62083,
+      "sha256": "275a827ba6839d47cfdbe059db1b1b403a92ff26e2b76a29362915487868bef2"
+    },
+    "resources/native-runtime/qemu/libjpeg-8.dll": {
+      "size": 967968,
+      "sha256": "b564d34adaca83e73af0e2231719dd0198ea6cd074c64b2ba85bfd7182f27db7"
+    },
+    "resources/native-runtime/qemu/libjsoncpp-26.dll": {
+      "size": 281584,
+      "sha256": "bb0d8799fca2da9738b87397c0eae726cf5507d1d684db546b73003215365d08"
+    },
+    "resources/native-runtime/qemu/libjxl.dll": {
+      "size": 6218625,
+      "sha256": "d8d1ba0ba4c12ae74a15d44e06a798eafe18842dde71130653dd982dab5fe2a1"
+    },
+    "resources/native-runtime/qemu/libjxl_cms.dll": {
+      "size": 147921,
+      "sha256": "6d822a9ac8288fda334b460cbe008716c7b6e9b20e160b9b6ca23871506f0a00"
+    },
+    "resources/native-runtime/qemu/liblcms2-2.dll": {
+      "size": 456345,
+      "sha256": "dc241cbdf2d295846ec564c1eb3c01639d43c0d72415a8758e65d71df31cc0ba"
+    },
+    "resources/native-runtime/qemu/libLerc.dll": {
+      "size": 804265,
+      "sha256": "6887fb5aeabf382a835a4cb693025e8d48d9c90e82ca4eae5d2d8ffb70c6ca9a"
+    },
+    "resources/native-runtime/qemu/liblz4.dll": {
+      "size": 158649,
+      "sha256": "35f917274bca8f19677ba66f1b3cc3c83568c3249fc43215fc16e76439c8e856"
+    },
+    "resources/native-runtime/qemu/liblzma-5.dll": {
+      "size": 191836,
+      "sha256": "dc9edb9bd83b0371fe68d96cb3e70cd17b7a5aba958326a18f8210cb812432e9"
+    },
+    "resources/native-runtime/qemu/liblzo2-2.dll": {
+      "size": 155548,
+      "sha256": "7c34ad01e75c97c6636a2f609089a85abdb50b75e13c5fda731352ec8aa053e9"
+    },
+    "resources/native-runtime/qemu/libncursesw6.dll": {
+      "size": 548227,
+      "sha256": "946a84047652d337349d4880fdfe88e81d64dcd36d5b042b0a28d0b185be45c8"
+    },
+    "resources/native-runtime/qemu/libnettle-9.dll": {
+      "size": 360977,
+      "sha256": "208002d990684946c7923a87022bedea588fef8e31286598c08805e37be2a95a"
+    },
+    "resources/native-runtime/qemu/libnfs-16.dll": {
+      "size": 361411,
+      "sha256": "d6210876b2ecf7b6016c360bee32f4e16af3e808046e2e7a99c58a02a6984eed"
+    },
+    "resources/native-runtime/qemu/libnspr4.dll": {
+      "size": 335552,
+      "sha256": "bbdb3f57a653a6614e9fe6e9510179e478f66649c6526f76bb0cb6b43d49fba0"
+    },
+    "resources/native-runtime/qemu/libopus-0.dll": {
+      "size": 500112,
+      "sha256": "90aa25a0a6525d7da48a7ae8dd3306e45b0c28ce09a73d2a02b56cd95418d5be"
+    },
+    "resources/native-runtime/qemu/liborc-0.4-0.dll": {
+      "size": 479279,
+      "sha256": "6386359f54e38acc3517774d3f74b72f06f51ad4eb946b6085a7295820456992"
+    },
+    "resources/native-runtime/qemu/libp11-kit-0.dll": {
+      "size": 1594910,
+      "sha256": "ada3949f3763db47a754eec56388f3305c41c259eb3bbae188a820fd01c5445b"
+    },
+    "resources/native-runtime/qemu/libpango-1.0-0.dll": {
+      "size": 434535,
+      "sha256": "078881c139e7dd422c4cb5f9c43b939712eb7ad4f3d7d25c41639873e8aec6d6"
+    },
+    "resources/native-runtime/qemu/libpangocairo-1.0-0.dll": {
+      "size": 83118,
+      "sha256": "b9f800abeafd27c07dc9f9fa4a41bb614564038ce7ac5753ca6c60c1d7d555cc"
+    },
+    "resources/native-runtime/qemu/libpangoft2-1.0-0.dll": {
+      "size": 111841,
+      "sha256": "38602e75c85e149bf7294bccb8792f54299daed45509a8ac4b3a18e3921ec56e"
+    },
+    "resources/native-runtime/qemu/libpangowin32-1.0-0.dll": {
+      "size": 111376,
+      "sha256": "2fb6d21cce830182c9d4bf22015dec9abbb0846ebce828ca0a5d4cefc74e46c6"
+    },
+    "resources/native-runtime/qemu/libpcre2-8-0.dll": {
+      "size": 717955,
+      "sha256": "a499fb8a7eff453d6e4f0842576bc5171d40a1505d8f7f13fff6cee51b738a62"
+    },
+    "resources/native-runtime/qemu/libpixman-1-0.dll": {
+      "size": 740378,
+      "sha256": "55ce45825eb8e825c635416171be4736147a6b0b690469f545d8c4ae8e85b4a3"
+    },
+    "resources/native-runtime/qemu/libplc4.dll": {
+      "size": 22514,
+      "sha256": "014449ff3f1ba191f9879b2db9ec93915d198a65e159cfffdaa9d78d8c5560e9"
+    },
+    "resources/native-runtime/qemu/libplds4.dll": {
+      "size": 19281,
+      "sha256": "8ee6e210d94e9bfc95a30fb8bafa15be6b6b16c5b220db8816b7b5e056e97cdb"
+    },
+    "resources/native-runtime/qemu/libpng16-16.dll": {
+      "size": 264269,
+      "sha256": "3737838ee8d6b893df7bdabf7439775371a57dce7e17ee6b35586023c64bd9ab"
+    },
+    "resources/native-runtime/qemu/libpsl-5.dll": {
+      "size": 105304,
+      "sha256": "b31fc70eda598a39b65fe2736d815518db0652d641346f75eac40c2a0499b058"
+    },
+    "resources/native-runtime/qemu/librav1e.dll": {
+      "size": 3527680,
+      "sha256": "6fe18e4a040c471dc13bcea44ecd2c6a3c040971542c6b798627e4c787056acb"
+    },
+    "resources/native-runtime/qemu/libsasl2-3.dll": {
+      "size": 167600,
+      "sha256": "ea10d3aa40ccb6a385af666173b3364fc41f39dfbdc90aa8f2f1d8071cb63537"
+    },
+    "resources/native-runtime/qemu/libsharpyuv-0.dll": {
+      "size": 53757,
+      "sha256": "ab0c9f61dc69b6bcdff1011e215f8d5fd6e5096aba9be3386ab87f217fbbeffe"
+    },
+    "resources/native-runtime/qemu/libslirp-0.dll": {
+      "size": 217294,
+      "sha256": "098093db72095516c877c371942444a508aaa3c546de563bd2ea36ba2e88a646"
+    },
+    "resources/native-runtime/qemu/libsnappy.dll": {
+      "size": 55237,
+      "sha256": "a0692c93212898f29d072d611184828ccaf7add78137fbe977a8504fcc278c21"
+    },
+    "resources/native-runtime/qemu/libspice-server-1.dll": {
+      "size": 1198840,
+      "sha256": "23bc03b20fefe99123759c79c59a83b4402a55529c99f3d5dcd1fe1445cb2b33"
+    },
+    "resources/native-runtime/qemu/libssh.dll": {
+      "size": 626451,
+      "sha256": "4e872f2b9329edfb3112c433a2c4c98efc915d0bca2b1b935a58e45e37ce0a3b"
+    },
+    "resources/native-runtime/qemu/libssh2-1.dll": {
+      "size": 271318,
+      "sha256": "ee7fe3e749859334c99e9261689481dd879811122598d22585421f95d29fc7ae"
+    },
+    "resources/native-runtime/qemu/libssl-3-x64.dll": {
+      "size": 994446,
+      "sha256": "b0aaaab67558716ea8cb03516d0e83ab92d1c0e3ddfc774c466032053f8b2331"
+    },
+    "resources/native-runtime/qemu/libssp-0.dll": {
+      "size": 43432,
+      "sha256": "cf6037efa19fd9cbd59402741e201e325bb10f44aca16c56aeff8a7c188178d1"
+    },
+    "resources/native-runtime/qemu/libstdc++-6.dll": {
+      "size": 2661299,
+      "sha256": "887c21dbe2a211ac4d1a790e4f608b7dee27fae12352856963004e7a715d2e6c"
+    },
+    "resources/native-runtime/qemu/libSvtAv1Enc-4.dll": {
+      "size": 7573028,
+      "sha256": "c4d9e2ae03f80d43c0a16d1461503e1768b160cdba9f3fe9e95e339f69fc2b24"
+    },
+    "resources/native-runtime/qemu/libsystre-0.dll": {
+      "size": 14593,
+      "sha256": "2aa59d15365f676356a25c941744d1b75406b426b1fde24ad609b7002a3d85e1"
+    },
+    "resources/native-runtime/qemu/libtasn1-6.dll": {
+      "size": 113467,
+      "sha256": "95821132a7d4ea90f7c37540118ad1459809ff23162d6dc3d5600b15755a644b"
+    },
+    "resources/native-runtime/qemu/libthai-0.dll": {
+      "size": 72294,
+      "sha256": "5d741974fdec19e0f6cddbcdb539428af0c7392740a056634714c2884157fdb9"
+    },
+    "resources/native-runtime/qemu/libtiff-6.dll": {
+      "size": 625178,
+      "sha256": "47fe69165bf8e211aaa84224f51f145dc894e330fe7ca167f7c99419e0c8c894"
+    },
+    "resources/native-runtime/qemu/libtre-5.dll": {
+      "size": 100574,
+      "sha256": "5833b2b1f62b67d8b4b3881f1bc05f42b0dee1a9f10cef897cdf44d74d094fdf"
+    },
+    "resources/native-runtime/qemu/libu2f-emu-0.dll": {
+      "size": 103045,
+      "sha256": "09cec929ca4f74fb06250b80367a374c7c1b8000aeb8e71e00e7323ba053a759"
+    },
+    "resources/native-runtime/qemu/libunistring-5.dll": {
+      "size": 2251328,
+      "sha256": "b91e2850d3668d4931056a8f4d35783b8ec3eea3735485108a936a072cd16071"
+    },
+    "resources/native-runtime/qemu/libusb-1.0.dll": {
+      "size": 246863,
+      "sha256": "9858e2381221619e26a78a2824e5970c2a7ec48cdb75071c19eb7b61baa268e2"
+    },
+    "resources/native-runtime/qemu/libusbredirparser-1.dll": {
+      "size": 66480,
+      "sha256": "085806c137047cc195608509b1fa935dfcfa633877b4780e6e23fb5e3e0a86cf"
+    },
+    "resources/native-runtime/qemu/libvirglrenderer-1.dll": {
+      "size": 881380,
+      "sha256": "df0d6a26ca2328ac54ebc3efb5d03f3315c5bf39a999505d08bc76890e07be6c"
+    },
+    "resources/native-runtime/qemu/libVkICD_mock_icd.dll": {
+      "size": 210944,
+      "sha256": "94934ad4f273c2261cff08a2790094923098662f44e9f86c3e2788bbea8da636"
+    },
+    "resources/native-runtime/qemu/libvk_swiftshader.dll": {
+      "size": 8521728,
+      "sha256": "d4d9ac7d3215880a8ac24b5a57f4695f12aff7ef1c2e6f84a1211fad9560a058"
+    },
+    "resources/native-runtime/qemu/libwebp-7.dll": {
+      "size": 749724,
+      "sha256": "c6c21a10f8cfe13270832e64640b82709e1d87b956b5f15af435a6c25acd6bbf"
+    },
+    "resources/native-runtime/qemu/libwebpdemux-2.dll": {
+      "size": 25726,
+      "sha256": "10fd43e1820a03dea175e3c4a7c96ba0463d41971f4ec75dbd375d10b585446a"
+    },
+    "resources/native-runtime/qemu/libwinpthread-1.dll": {
+      "size": 64419,
+      "sha256": "d54ed5baa6d339e28fe18c0106caffd110ac42612908593e07211d7bb48f5e79"
+    },
+    "resources/native-runtime/qemu/libyuv.dll": {
+      "size": 1009713,
+      "sha256": "13ce09a22df9396cae847cb474614a5337c7b2e1a3c5c2d949c771c7297ccad0"
+    },
+    "resources/native-runtime/qemu/libzstd.dll": {
+      "size": 1218273,
+      "sha256": "b95c223a9548a9ecf51377c962e0bc8f0c51eb0c6f67a296dbc885996f0dd40d"
+    },
+    "resources/native-runtime/qemu/nss3.dll": {
+      "size": 1408181,
+      "sha256": "fff93a74e524ee09376f007373d16d2705fb21a0b3886404c9a7c27865cace73"
+    },
+    "resources/native-runtime/qemu/nssutil3.dll": {
+      "size": 172668,
+      "sha256": "31adbd22bb5df93334c8d013cc8814192e21f64500b4113f682fbe8ddfb2c79f"
+    },
+    "resources/native-runtime/qemu/qemu-system-x86_64.exe": {
+      "size": 25457048,
+      "sha256": "47d57a6072e0bb3bd98f87926eb129eb1736dfe818c67b3b81ef7ce4edd0b3cd"
+    },
+    "resources/native-runtime/qemu/SDL2.dll": {
+      "size": 2412441,
+      "sha256": "47a3b27654832d9f7e5719c88078210a3dbfd6407b559c5a3c4eb8ab7d0ebdb6"
+    },
+    "resources/native-runtime/qemu/SDL2_image.dll": {
+      "size": 136769,
+      "sha256": "af7bdfa2a2333291776297e85acdecf7801bde20b4025229de304a3d1555a2ef"
+    },
+    "resources/native-runtime/qemu/share/ast27x0_bootrom.bin": {
+      "size": 28564,
+      "sha256": "f46fbeb7adbc300d65aef4862fc4566208aae9b34be3eceecb5aa5ae4ea3c535"
+    },
+    "resources/native-runtime/qemu/share/bios-256k.bin": {
+      "size": 262144,
+      "sha256": "ae6f6aa973aaccc143f57aa960fb035fd9de4daee4ad0cd713322f8c259e7650"
+    },
+    "resources/native-runtime/qemu/share/bios-microvm.bin": {
+      "size": 131072,
+      "sha256": "d226177d125aaf1b91e507738f4e9a0ade9474169b211751f78be08008cb394c"
+    },
+    "resources/native-runtime/qemu/share/bios.bin": {
+      "size": 131072,
+      "sha256": "3dfd946d0c03ab0e022f84f10c3eb5f1dd507761f73e7d8067511ba35a10f776"
+    },
+    "resources/native-runtime/qemu/share/edk2-aarch64-code.fd": {
+      "size": 67108864,
+      "sha256": "47765fe344818cbc464b1c14ae658fb4b854f5c2ceffa982411731eb4865594d"
+    },
+    "resources/native-runtime/qemu/share/edk2-arm-code.fd": {
+      "size": 67108864,
+      "sha256": "c632a04ddd55dfa7136a0a36790c72f5c9b52542ecba979bbeeb5ddef99acd64"
+    },
+    "resources/native-runtime/qemu/share/edk2-arm-vars.fd": {
+      "size": 67108864,
+      "sha256": "b3b855c5a80310168051164986855692d1bdb06e67619856177965cd87c6774f"
+    },
+    "resources/native-runtime/qemu/share/edk2-i386-code.fd": {
+      "size": 3653632,
+      "sha256": "c8161f6e8464778e13795297e87f5e83cf97c8987480eea1d80742f6c98c18a9"
+    },
+    "resources/native-runtime/qemu/share/edk2-i386-secure-code.fd": {
+      "size": 3653632,
+      "sha256": "2c5e36fc70b391532ceff5bc9b410c6e0fb29b486906e91577f5818368b0ce78"
+    },
+    "resources/native-runtime/qemu/share/edk2-i386-vars.fd": {
+      "size": 540672,
+      "sha256": "5d2ac383371b408398accee7ec27c8c09ea5b74a0de0ceea6513388b15be5d1e"
+    },
+    "resources/native-runtime/qemu/share/edk2-licenses.txt": {
+      "size": 42903,
+      "sha256": "1ddeaed2e7d2e9ecb960bdfc1b8ee45387aff70d056d985d145949af3951657c"
+    },
+    "resources/native-runtime/qemu/share/edk2-loongarch64-code.fd": {
+      "size": 16777216,
+      "sha256": "edd5a67fe50f7597faecb2fe67c5733b9a31b0b345a2127c3c358a5737446ef7"
+    },
+    "resources/native-runtime/qemu/share/edk2-loongarch64-vars.fd": {
+      "size": 16777216,
+      "sha256": "adbfcb31d6470ef090220baeb53559e26323b6cfb5e7614f879e89608a3ed748"
+    },
+    "resources/native-runtime/qemu/share/edk2-riscv-code.fd": {
+      "size": 33554432,
+      "sha256": "c3b779f86671c0cadf9cbdb274917a20210aeceb6f58b42d68406cdddfa48869"
+    },
+    "resources/native-runtime/qemu/share/edk2-riscv-vars.fd": {
+      "size": 33554432,
+      "sha256": "ea8094e953b1215444bd001ee1cf22818f1f7f8abcb158e62180cbaa6c1f70af"
+    },
+    "resources/native-runtime/qemu/share/edk2-x86_64-code.fd": {
+      "size": 3653632,
+      "sha256": "33090cc07675baa5190d9f1e84bf5176b33bcbfa9bacac522961150cdb6dbb2a"
+    },
+    "resources/native-runtime/qemu/share/edk2-x86_64-secure-code.fd": {
+      "size": 3653632,
+      "sha256": "32807682a9e5c0e2d192ecb6077941d4be8bcfa6b9cd6e60830c3a9f48c0555a"
+    },
+    "resources/native-runtime/qemu/share/efi-e1000.rom": {
+      "size": 159232,
+      "sha256": "f37222fcdf0481bfbaf7a16d9aaf740aeb41d3d24c187801eb6e9a628cec0fc8"
+    },
+    "resources/native-runtime/qemu/share/efi-e1000e.rom": {
+      "size": 159232,
+      "sha256": "102c20348be2d0ebe45a77b076b31848182c2f7b4364775b6bc2ece6e97b4024"
+    },
+    "resources/native-runtime/qemu/share/efi-eepro100.rom": {
+      "size": 159232,
+      "sha256": "2b5b55ba8afae7b5ef7116606babf60e6ceaa531c345d54542857cc3fbe3912e"
+    },
+    "resources/native-runtime/qemu/share/efi-ne2k_pci.rom": {
+      "size": 157696,
+      "sha256": "9925e0a34547118110479d8fc4e01092a0a73e0a236416e9ff862655b46751f7"
+    },
+    "resources/native-runtime/qemu/share/efi-pcnet.rom": {
+      "size": 157696,
+      "sha256": "71c494fde94efa9871cf43868d7e3c8f4190e406d47a5102a2a21b36ded8a162"
+    },
+    "resources/native-runtime/qemu/share/efi-rtl8139.rom": {
+      "size": 160768,
+      "sha256": "4cdd69a7f5c6ce7aec3a3f20a034dc80e1d22aa37a739c364378952d997a32c7"
+    },
+    "resources/native-runtime/qemu/share/efi-virtio.rom": {
+      "size": 160768,
+      "sha256": "26be36901db7f8181c306cc62bd74891d8646528965a78e40cceadba5dd7c8e7"
+    },
+    "resources/native-runtime/qemu/share/efi-vmxnet3.rom": {
+      "size": 156672,
+      "sha256": "33e833123ad9831df94b2d623a17f91e4c779e3cb799baa97058f5972676a32a"
+    },
+    "resources/native-runtime/qemu/share/hppa-firmware.img": {
+      "size": 633992,
+      "sha256": "04f20553e93b723cdfc252ca098c50ed4d950920d0e26b4ae50fadee26b1a98d"
+    },
+    "resources/native-runtime/qemu/share/hppa-firmware64.img": {
+      "size": 666392,
+      "sha256": "ae9ddea11aad5c059625fd52e123f5d285b62b92ef7b810087bb467b3786e4a1"
+    },
+    "resources/native-runtime/qemu/share/kvmvapic.bin": {
+      "size": 9216,
+      "sha256": "cdf057a71b07e3b52b19cbe210bdefa59250d01a9810b960f7fe1f98eed95a27"
+    },
+    "resources/native-runtime/qemu/share/linuxboot_dma.bin": {
+      "size": 1536,
+      "sha256": "9c49e255340c78fc12e54ed043462bca02fb7fca29b7cfab62ff88a5344b6950"
+    },
+    "resources/native-runtime/qemu/share/multiboot_dma.bin": {
+      "size": 1024,
+      "sha256": "46def003b1c413cc4a5880d858ca54456ad6978d5fdb6e1b7d086b2905a66df0"
+    },
+    "resources/native-runtime/qemu/share/npcm7xx_bootrom.bin": {
+      "size": 736,
+      "sha256": "2b17c3531daba9c133cbaa53595052e799505b2b4b3005ebc7b229f5c5e64322"
+    },
+    "resources/native-runtime/qemu/share/npcm8xx_bootrom.bin": {
+      "size": 672,
+      "sha256": "30b1f5151076e789c33c886a3a87a909df89dd4226bdc4829ebbaf063152f9cd"
+    },
+    "resources/native-runtime/qemu/share/openbios-ppc": {
+      "size": 673104,
+      "sha256": "032884eab588cd8d45903ed7be718f7a23fecaa4fc45c2dbf18c1220f13218ef"
+    },
+    "resources/native-runtime/qemu/share/openbios-sparc32": {
+      "size": 382048,
+      "sha256": "bf6e231eeea72b17f97055a20de1195005cf79cbd6c118b7ca89287b4a77fd1f"
+    },
+    "resources/native-runtime/qemu/share/openbios-sparc64": {
+      "size": 1593408,
+      "sha256": "0f9a2ef7db57d9c4ece8e94fdc1a35c7e127288034001f149192c4c9a0cef23f"
+    },
+    "resources/native-runtime/qemu/share/opensbi-riscv32-generic-fw_dynamic.bin": {
+      "size": 270384,
+      "sha256": "ee4c0a2115960824e203c7f4ae8e55efb04dc6616727eb464a0954e6159c1ed7"
+    },
+    "resources/native-runtime/qemu/share/opensbi-riscv64-generic-fw_dynamic.bin": {
+      "size": 275928,
+      "sha256": "894e2aef99590fc07ec6c60ab00282b8bc5d5d5bb2a1d0c6ada0c52df24274c0"
+    },
+    "resources/native-runtime/qemu/share/palcode-clipper": {
+      "size": 153728,
+      "sha256": "9f8da7264c7438fe4a24a2215e81893586f5cfafcd6e5fd0059fccc31a4e8839"
+    },
+    "resources/native-runtime/qemu/share/pnv-pnor.bin": {
+      "size": 139264,
+      "sha256": "241ac7576721f565abd8b492b8acda036c72d233e03d1f78bddbd7b1599d863f"
+    },
+    "resources/native-runtime/qemu/share/pvh.bin": {
+      "size": 1536,
+      "sha256": "918ff03a118615c2f4611a5df2d9496aabe099b5cfaaf69e544ebf973305d59d"
+    },
+    "resources/native-runtime/qemu/share/pxe-e1000.rom": {
+      "size": 67072,
+      "sha256": "981a728f95b7a01645645e9b753cfb764c9eb59266fa888ac58d7008fbb48c10"
+    },
+    "resources/native-runtime/qemu/share/pxe-eepro100.rom": {
+      "size": 61440,
+      "sha256": "07b89a742e0f6d0e92dafe57b0f28c493436d0e1e07b7b77e728490c1f7b45dd"
+    },
+    "resources/native-runtime/qemu/share/pxe-ne2k_pci.rom": {
+      "size": 61440,
+      "sha256": "bb9c0eaad36b9b4ce26c5f348bd05a832c8bf83ef38391db0ce9b51de8523ac7"
+    },
+    "resources/native-runtime/qemu/share/pxe-pcnet.rom": {
+      "size": 61440,
+      "sha256": "92358396c05b3346c6bfd52bbf2a47978d0a8c6ddea932ee091a24faefbd489e"
+    },
+    "resources/native-runtime/qemu/share/pxe-rtl8139.rom": {
+      "size": 61440,
+      "sha256": "d491351e37a50eb5a40e98a9f6b4d85010ee60fb9e64129d65ea10839287f138"
+    },
+    "resources/native-runtime/qemu/share/pxe-virtio.rom": {
+      "size": 60416,
+      "sha256": "6994337fe07783a6233072e33771dc4f58260edc3269debe677a5227b264bfdc"
+    },
+    "resources/native-runtime/qemu/share/qboot.rom": {
+      "size": 65536,
+      "sha256": "9b9dfc6c25740d6225625570d71cab6805cc9216e68c8932e343266daaeb8c4b"
+    },
+    "resources/native-runtime/qemu/share/QEMU,cgthree.bin": {
+      "size": 850,
+      "sha256": "a99f3a06fdac5cf5d72bd0fd24647d897302c3ff8e918add65168185f8cbdf4d"
+    },
+    "resources/native-runtime/qemu/share/QEMU,tcx.bin": {
+      "size": 1402,
+      "sha256": "92da99a770ab24f96c33c78382940cac8b25e88cb110634c1b32aa2d8cb852e7"
+    },
+    "resources/native-runtime/qemu/share/qemu-nsis.bmp": {
+      "size": 154542,
+      "sha256": "93f79a2b6e0f97bc7b7c75ded89a3c4c7657af37c087cf067470771e0affda9c"
+    },
+    "resources/native-runtime/qemu/share/qemu_vga.ndrv": {
+      "size": 18752,
+      "sha256": "d8697354bde8a7ac9e6fe3a5fbca03698de623e95433a59c248e8e09b882c6b8"
+    },
+    "resources/native-runtime/qemu/share/s390-ccw.img": {
+      "size": 104136,
+      "sha256": "1591cbcbaaf07f1b3869b2f6fcaf7005d24dbe7dfc9e32b6ed7f1606d8085ef5"
+    },
+    "resources/native-runtime/qemu/share/skiboot.lid": {
+      "size": 2592960,
+      "sha256": "bad55219becfc1198a3dfc0cb33aa9e27eb97c0f447f499031044f920d708a7e"
+    },
+    "resources/native-runtime/qemu/share/slof.bin": {
+      "size": 997576,
+      "sha256": "c68816fe81f8eb1d7bc4413a8a15e09ecaaec7c0bea7cb084c9b8b1810abc501"
+    },
+    "resources/native-runtime/qemu/share/trace-events-all": {
+      "size": 577462,
+      "sha256": "b34f506579a9d20b050eb99564e869e17db4f1d73917133c073a456957c3687b"
+    },
+    "resources/native-runtime/qemu/share/u-boot-sam460.bin": {
+      "size": 524288,
+      "sha256": "2bc672480506885e658ccfb4486cb85214f331b4364c717ed7dff741d7d61623"
+    },
+    "resources/native-runtime/qemu/share/u-boot.e500": {
+      "size": 421720,
+      "sha256": "f0250e391566bca7b5e643c43b761ab9629a0b82427792a772e80c8b97836425"
+    },
+    "resources/native-runtime/qemu/share/vgabios-ati.bin": {
+      "size": 39424,
+      "sha256": "f033484968c31c066c0e9fbc77127e0d41211496c7559f57076c9344885665b0"
+    },
+    "resources/native-runtime/qemu/share/vgabios-bochs-display.bin": {
+      "size": 28672,
+      "sha256": "da07e26661279edb7935284a99f8ddfa77dbf04ddb939e4a8c7bc7e36e40cdc7"
+    },
+    "resources/native-runtime/qemu/share/vgabios-cirrus.bin": {
+      "size": 39424,
+      "sha256": "10ecbac600620eb589f0c6d98f3f32a073d745c8a7f390b1704155d46a6b59d7"
+    },
+    "resources/native-runtime/qemu/share/vgabios-qxl.bin": {
+      "size": 39424,
+      "sha256": "33f6e0775ff725026e6f7eba21c8a0ad816ecfe238c4923fa26e8eeaa2aa0b04"
+    },
+    "resources/native-runtime/qemu/share/vgabios-ramfb.bin": {
+      "size": 28672,
+      "sha256": "24f6b98b2c263f3f562b1180df23e949f7dd27f194fa26aeba27f36bbf6265c6"
+    },
+    "resources/native-runtime/qemu/share/vgabios-stdvga.bin": {
+      "size": 39424,
+      "sha256": "e8fc9e55790dbe3cb31f019a3deb57206ba6c54f5e581adb2ab2677a9d391472"
+    },
+    "resources/native-runtime/qemu/share/vgabios-virtio.bin": {
+      "size": 39424,
+      "sha256": "02853140c262001ecb7245b151ffe47a0f0c79767a6fb2a9eb60f5f1938c5cee"
+    },
+    "resources/native-runtime/qemu/share/vgabios-vmware.bin": {
+      "size": 39424,
+      "sha256": "00bfccc4e09b832a98a727c0fa5bceaaad0556e38b7718f5a6579189abbe627b"
+    },
+    "resources/native-runtime/qemu/share/vgabios.bin": {
+      "size": 38912,
+      "sha256": "a7ea86bb06a58ff969fd0942e73b8eae00cb58e4c90bccbd900f6a3a01f54fbb"
+    },
+    "resources/native-runtime/qemu/share/vof-nvram.bin": {
+      "size": 16384,
+      "sha256": "cf97201f9403212ab75287bf209bfb7710cb5f253e8fe80723cf43760a9e8a12"
+    },
+    "resources/native-runtime/qemu/share/vof.bin": {
+      "size": 3456,
+      "sha256": "8c88070f252075111468e7b2a8043209e7798c3fb136326227390ea50f168f13"
+    },
+    "resources/native-runtime/qemu/zlib1.dll": {
+      "size": 128488,
+      "sha256": "93e9243a44c29200eeacaf9658efe2558581770e4b11ca4b500e18e424a6e3b5"
+    },
+    "resources/NOTICE": {
+      "size": 2910,
+      "sha256": "24eea7529e3f06417a7c2b6860190903bca8a3ae549323d4f07c59745729f299"
+    },
+    "resources/release-policy.json": {
+      "size": 875,
+      "sha256": "1307a66646b7070012b82627d4b5c7a9285f42f0dfd3c8395a85642605d0825c"
+    },
+    "resources/third-party-licenses/cJSON-LICENSE": {
+      "size": 1083,
+      "sha256": "163766832b15cc9c90d593216360c67af579b8b36932b297fca2aeb61544de2f"
+    },
+    "resources/third-party-licenses/Dobby-LICENSE": {
+      "size": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    "resources/third-party-licenses/runv2-LICENSE": {
+      "size": 1073,
+      "sha256": "7bf18e3b84979e927182d076e0c23b7e0a84e4b367ee00a4d3a10ae9a93e3fc4"
+    },
+    "resources.pak": {
+      "size": 13371538,
+      "sha256": "a7b40d37892f0bb380b6735bdd9382ee69e9ca24dad1119bde5b53d55edb9b2b"
+    },
+    "snapshot_blob.bin": {
+      "size": 374096,
+      "sha256": "008725a9d014f3942dd22b0b7ddbf01347576a1f92217b4de03bcac178a83427"
+    },
+    "v8_context_snapshot.bin": {
+      "size": 753112,
+      "sha256": "2fc28f6396a571fb6490504aff0b0f767bce24105cad2489dcc3d53396df8a38"
+    },
+    "version": {
+      "size": 6,
+      "sha256": "281bb838d2512560c34bab2ceb5106a62f0fb0fe05f076896952a6153d007d94"
+    },
+    "vk_swiftshader.dll": {
+      "size": 5453312,
+      "sha256": "00d703c0557b54edf35c284b15cb0063de1653edef71d33c698a64d2e74073c9"
+    },
+    "vk_swiftshader_icd.json": {
+      "size": 106,
+      "sha256": "32d83ff113fef532a9f97e0d2831f8656628ab1c99e9060f0332b1532839afd9"
+    },
+    "vulkan-1.dll": {
+      "size": 957440,
+      "sha256": "0802c28ebf8226fccaef45fc44b528873eb4814f714a817b01cc2f6ab49c24da"
+    }
+  },
+  "guestFiles": {
+    "bin/amdl-guest": {
+      "size": 6574228,
+      "sha256": "794738a34a6d240c7741b4e9d490cf0dc5b3028cd75268a16ec00a1b3ba8ed51"
+    },
+    "bin/busybox": {
+      "size": 1982256,
+      "sha256": "3d9f2889d6782537624a4e1a10e68a2ddd53e0ee8bac02676f27308f42ec6bf6"
+    },
+    "etc/resolv.conf": {
+      "size": 20,
+      "sha256": "cc002ee0eb2e8702c97d16f4ce628841cd5fe10195875a075432e92248741424"
+    },
+    "init": {
+      "size": 1686,
+      "sha256": "cabed05e4bd9cf1091ab66096bb06ab29d5160d45ba8c4092af45d4e188533bc"
+    },
+    "lib/modules/6.1.0-51-amd64/kernel/arch/x86/crypto/crc32c-intel.ko": {
+      "size": 29217,
+      "sha256": "0cef1eaf1d6cc62c80be528ed9a9e111877c5f5d3be3d18c908bec84eaa27e34"
+    },
+    "lib/modules/6.1.0-51-amd64/kernel/crypto/crc32c_generic.ko": {
+      "size": 9985,
+      "sha256": "d3314754aab6be8eec01229f0ebab99f8efceb36615576e3638fb17d36cc8fca"
+    },
+    "lib/modules/6.1.0-51-amd64/kernel/drivers/block/virtio_blk.ko": {
+      "size": 58305,
+      "sha256": "3a84f68111def051376b857b7d67a86ead655d89481777fa2764ca8380e45d6f"
+    },
+    "lib/modules/6.1.0-51-amd64/kernel/drivers/firmware/qemu_fw_cfg.ko": {
+      "size": 33033,
+      "sha256": "3ed4cb8356c6d51ab08b95cbbe4b18331888fee08a09a7a4d2d05194b936c0eb"
+    },
+    "lib/modules/6.1.0-51-amd64/kernel/drivers/net/ethernet/intel/e1000/e1000.ko": {
+      "size": 330137,
+      "sha256": "ab1d8d22c18a6b8822109375a7901fb92b21436a8c8f3233b18217cc57bceea7"
+    },
+    "lib/modules/6.1.0-51-amd64/kernel/drivers/virtio/virtio.ko": {
+      "size": 32241,
+      "sha256": "ab996eec5c659d6761c80d5f369a61df586833e415adaa023a8d1f96cadfb69a"
+    },
+    "lib/modules/6.1.0-51-amd64/kernel/drivers/virtio/virtio_pci.ko": {
+      "size": 61945,
+      "sha256": "b3b64dde322ddce81e48330401f94a38a65d78cbbad27b2791688c8363e41cc9"
+    },
+    "lib/modules/6.1.0-51-amd64/kernel/drivers/virtio/virtio_pci_legacy_dev.ko": {
+      "size": 16329,
+      "sha256": "beee76604535f55bcbc35920f84aa075595ec12175663cd116226c95bd658969"
+    },
+    "lib/modules/6.1.0-51-amd64/kernel/drivers/virtio/virtio_pci_modern_dev.ko": {
+      "size": 31609,
+      "sha256": "16419c4df3da7257c665405cad89e058d52e157bdd6e6be5483efcb370e6c063"
+    },
+    "lib/modules/6.1.0-51-amd64/kernel/drivers/virtio/virtio_ring.ko": {
+      "size": 70321,
+      "sha256": "75393e00d7eba519473e654f3678467ab23ac9ec691943401e9fb836ea6edd56"
+    },
+    "lib/modules/6.1.0-51-amd64/kernel/fs/ext4/ext4.ko": {
+      "size": 2069545,
+      "sha256": "e79f34f6ee2de8d5eb0a7b8c00483c801ec779191d0b99a67f822928bc5eaa9b"
+    },
+    "lib/modules/6.1.0-51-amd64/kernel/fs/jbd2/jbd2.ko": {
+      "size": 365841,
+      "sha256": "f51e187f0a2844e0cc57c9cf0e9c6a1f90d9b2c35890073fefb046af2df3a2d0"
+    },
+    "lib/modules/6.1.0-51-amd64/kernel/fs/mbcache.ko": {
+      "size": 25721,
+      "sha256": "840a98433eb1c8f6aa93e6568e34070e84fcb8790238fa9d22af2478fb828a47"
+    },
+    "lib/modules/6.1.0-51-amd64/kernel/lib/crc16.ko": {
+      "size": 6025,
+      "sha256": "42a7175bbb94d04cbffd318c6cb9e71a1c59e2400054de1ca372472406a37343"
+    },
+    "lib/modules/6.1.0-51-amd64/modules.alias": {
+      "size": 2485,
+      "sha256": "c67c1ef6f5627c241c61fb341d5dc50483e48664feed0ac393fc839134225636"
+    },
+    "lib/modules/6.1.0-51-amd64/modules.alias.bin": {
+      "size": 2280,
+      "sha256": "86b7f7761e8404c264e84682bf3c0b70a530a07276fd97b3e5b022d97f981c42"
+    },
+    "lib/modules/6.1.0-51-amd64/modules.builtin": {
+      "size": 6483,
+      "sha256": "2bf1be32faa57dfacf29617746e34bf4f066c4a9f2f776e22beb2010805c6eef"
+    },
+    "lib/modules/6.1.0-51-amd64/modules.builtin.alias.bin": {
+      "size": 2437,
+      "sha256": "c947e4c2fc369d132d75ad948f2d7089ed556b29ada0a7bdfe1fa08d7ee950df"
+    },
+    "lib/modules/6.1.0-51-amd64/modules.builtin.bin": {
+      "size": 7962,
+      "sha256": "b6ab62791602dfdec63b215e3aefd0b9a858d41d168393d21550493be1516743"
+    },
+    "lib/modules/6.1.0-51-amd64/modules.builtin.modinfo": {
+      "size": 45762,
+      "sha256": "267e57c01d24ba22cf2cba25d097e510c86a7243be26010e8d9cd30dcdec4f97"
+    },
+    "lib/modules/6.1.0-51-amd64/modules.dep": {
+      "size": 790,
+      "sha256": "eb4906e1beffb8c183337a38147e423796d7e49c0bcfeab44b6f33955415b115"
+    },
+    "lib/modules/6.1.0-51-amd64/modules.dep.bin": {
+      "size": 1492,
+      "sha256": "98cf5deee2d0abdf898dbe1476be0a3e9bd12dd96c2cc773ce4e5263663cf2fa"
+    },
+    "lib/modules/6.1.0-51-amd64/modules.devname": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lib/modules/6.1.0-51-amd64/modules.order": {
+      "size": 159999,
+      "sha256": "a1941a897081d555287b95b7105dd68bc2584c64707124d967169de1e75e0557"
+    },
+    "lib/modules/6.1.0-51-amd64/modules.softdep": {
+      "size": 119,
+      "sha256": "aee91af6f3d3e1c40b684075f44b7493bbebe698e463428810b894c0598c6ba3"
+    },
+    "lib/modules/6.1.0-51-amd64/modules.symbols": {
+      "size": 6918,
+      "sha256": "9e6b5172b045c6e4e57d3c7287b146d21feba546023bce43a850d394d3e582e9"
+    },
+    "lib/modules/6.1.0-51-amd64/modules.symbols.bin": {
+      "size": 7382,
+      "sha256": "4f83c324a4e9c7c79addba1e908964323abc20c1fd055856eedeb39af7c3d978"
+    },
+    "usr/local/android/cert.pem": {
+      "size": 216591,
+      "sha256": "393fe993fdf310d9209c507ac4731c36459b0c92b52be299358f870e5b5b3e98"
+    }
+  },
+  "historicalBuildFiles": {
+    "native-runtime/lite-native.patch": "29957efc2be8e8d2e5d32c5288513806126a407b4c15fd61cac0756e5690e61a",
+    "native-runtime/Dockerfile": "442137dfce66e4e08757fdfc85656f3f4e5c86771c82f4ccf2e9c8a7e8d08a78",
+    "native-runtime/init": "cabed05e4bd9cf1091ab66096bb06ab29d5160d45ba8c4092af45d4e188533bc",
+    "native-runtime/build-guest.sh": "92e471ad661e8c700cce5c0fe83e404c719832065189f1e82e257d18d998fa7b",
+    "native-runtime/lite-session.patch": "3d6e0393634442e200598082541ca3beb9ccd930cb65aa516580850426a42e91",
+    "native-runtime/native_login.h": "2cdd58a4d80f361d9a3b5a3ae2830d053e83f2c1915d7e30027aaec336cfd880",
+    "native-runtime/native_service.h": "096a0f28ea9881a45f5c189cc57d4d62f135092816c2cfcb70d5d7866cd96ee0",
+    "native-runtime/native_store_bridge.h": "d0343af9ba0f31ca4d7512d480fb86d1d53e7d9954b3e20e981b3ca3ed855777",
+    "native-runtime/lite-store-bridge.patch": "b81aef226cebdc033ed352edb6bdf59f6b5ccb062927fdcfe1f177932d2ab1cf",
+    "native-runtime/build-tools.lock.json": "d0b10054fc79ad3824ea0a3ad152f0f29849ccca62a7599966dd9091b8c6f702",
+    "native-runtime/inputs.lock.json": "bcd41de61d06997201ee2d97229eedbf29e4dc8fe02a63520ee8a205c777067e",
+    "native-runtime/toolchain/inputs.lock.json": "4bb091f0b0aac926406fcaf87701043ecc4b256dcb10aacab0a33d30db987f6b",
+    "native-runtime/toolchain/Dockerfile": "cf7dcfe8b1cc464ba858fc3d8d2783f4c15a51f80ebfc3891ea71795033f5661",
+    "native-runtime/toolchain/install.py": "d36f1feeb83dc321901642dde4c2fb95d76a8440180c478a673fa3b98fe64867",
+    "native-runtime/toolchain/extract-ndk.py": "90d4d25cb44a4d505c69c902368bf1de3e7e63939f1567b21bf5c515630f9606"
+  },
+  "debian": {
+    "snapshot": "20260728T000000Z",
+    "binaries": [
+      {
+        "package": "busybox-static",
+        "version": "1:1.35.0-4+deb12u1+b1",
+        "architecture": "amd64",
+        "sha256": "3d3fdbe91d4660c873e14b092c213fe81c1da6362daa236eb25d0171eb108744",
+        "sources": [
+          {
+            "name": "busybox",
+            "version": "1:1.35.0-4+deb12u1",
+            "reason": "Source"
+          },
+          {
+            "name": "glibc",
+            "version": "2.36-9+deb12u14",
+            "reason": "Built-Using"
+          }
+        ]
+      },
+      {
+        "package": "linux-image-6.1.0-51-amd64",
+        "version": "6.1.177-1",
+        "architecture": "amd64",
+        "sha256": "061a5d1044e757eed9b87d315ccc31c2af5bfb5b27d5bc0f6a7f3444c23a3849",
+        "sources": [
+          {
+            "name": "linux-signed-amd64",
+            "version": "6.1.177+1",
+            "reason": "Source"
+          },
+          {
+            "name": "linux",
+            "version": "6.1.177-1",
+            "reason": "Built-Using"
+          }
+        ]
+      }
+    ]
+  },
+  "qemu": {
+    "installerURL": "https://qemu.weilnetz.de/w64/2026/qemu-w64-setup-20260811.exe",
+    "installerSHA512": "5bcf9eed634e8575a37b74f445af41a2fe4106da512d0c30c368301d4c105037fdfab40a5287367a28a957624cddebbc8c07e16c88ab6634f554cdf3d16bf543",
+    "files": [
+      {
+        "path": "SDL2.dll",
+        "sha256": "47a3b27654832d9f7e5719c88078210a3dbfd6407b559c5a3c4eb8ab7d0ebdb6",
+        "size": 2412441,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "SDL2_image.dll",
+        "sha256": "af7bdfa2a2333291776297e85acdecf7801bde20b4025229de304a3d1555a2ef",
+        "size": 136769,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "brlapi-0.8.dll",
+        "sha256": "de4dcc2ed566e5f900eac322007a55a39cc51a5e157211df5e4f366e095b965a",
+        "size": 115200,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libEGL.dll",
+        "sha256": "da93c851b7e2e1614787dcd59bcebb61126e3905fa8e196ba57de44811ce251b",
+        "size": 261632,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libEGL_vulkan_secondaries.dll",
+        "sha256": "fb0fdf92968926680f068cfbdc14dec6547f4a36beee7f1ed93d67ab26d7a51a",
+        "size": 261632,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libGLESv1_CM.dll",
+        "sha256": "1fa5c6f2d7d6aaf8a48742a44ff2776f7fe388cd2688f1a20afc4e86e171c95e",
+        "size": 28672,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libGLESv2.dll",
+        "sha256": "50ec0a8e4b060fa3a965bf922dd244752122c794bff2b0a851a5f4780e254add",
+        "size": 11627008,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libGLESv2_vulkan_secondaries.dll",
+        "sha256": "145deba3953b135e53ad224b4253f091ad1a28d1ecfc6f275449f245d27d8c92",
+        "size": 11610112,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libGLESv2_with_capture.dll",
+        "sha256": "9682f155f14a51347bc34f865a537b4e7ef5fedcb6177222ec34f8d063de1e6c",
+        "size": 13489664,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libLerc.dll",
+        "sha256": "6887fb5aeabf382a835a4cb693025e8d48d9c90e82ca4eae5d2d8ffb70c6ca9a",
+        "size": 804265,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libSvtAv1Enc-4.dll",
+        "sha256": "c4d9e2ae03f80d43c0a16d1461503e1768b160cdba9f3fe9e95e339f69fc2b24",
+        "size": 7573028,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libVkICD_mock_icd.dll",
+        "sha256": "94934ad4f273c2261cff08a2790094923098662f44e9f86c3e2788bbea8da636",
+        "size": 210944,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libaom.dll",
+        "sha256": "bc6feb90adf4a423f89b34ae975642024461c2f624019443ca3886309a69f3c3",
+        "size": 9424346,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libatk-1.0-0.dll",
+        "sha256": "e705edd64fc3ba7da51b942e0331d55ebaeebad467d782be6b218be349384ee2",
+        "size": 159478,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libavif-16.dll",
+        "sha256": "47afa7f14e332e220325c8d6fc837064fbc0fdcbfc3901dfc340fbb93102300e",
+        "size": 335578,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libbrotlicommon.dll",
+        "sha256": "ca7bc06ead80259971badf2cd0bfc688db9154dad65f139f49a38b4be9976f97",
+        "size": 143429,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libbrotlidec.dll",
+        "sha256": "a142dc6cfa77cb907028aa9426f486f3d8de37855e8db2ae2894147908121881",
+        "size": 62461,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libbrotlienc.dll",
+        "sha256": "50c3aca8abcf0d5576f0b62dbd608be285246f8fd1b48ef87d58fa6b8b744e5f",
+        "size": 788364,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libbz2-1.dll",
+        "sha256": "b79cd3a7102e359ef6324e98966a67939e58ec2b651ae2847cae84a4dfa453f7",
+        "size": 100964,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libcacard-0.dll",
+        "sha256": "16aadf1283fdcb0c74abb84faaec11dcfdb315e5e073d047273414b11b3d94d6",
+        "size": 109915,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libcairo-2.dll",
+        "sha256": "c474166543aed18b389b20122ca2741189504994dafd86cd5ed121e95bd82ce4",
+        "size": 1247164,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libcairo-gobject-2.dll",
+        "sha256": "faf68e5929b89461ad58c5d26c549cde07bc06b368fb89ace82923df645c9bd5",
+        "size": 35639,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libcapstone.dll",
+        "sha256": "191098a054c186ecc8e1063f109bef0b07450b48c0ca9bce5d89f23cf2df2f71",
+        "size": 8022840,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libcrypto-3-x64.dll",
+        "sha256": "4d2e724eb852f78ec0adbd1b7265325f79f503c9572658a26434f27f0cedb051",
+        "size": 5495118,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libcurl-4.dll",
+        "sha256": "3d302f9690e810fdfd950254e2f0663d0ff768737f350c602a4ed3a06e9b6b2b",
+        "size": 1226963,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libdatrie-1.dll",
+        "sha256": "2f784872e6404e57847201fe1e7e591bd5b5be4a319ef38ebcb36014ac7f385d",
+        "size": 35033,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libdav1d-7.dll",
+        "sha256": "29385f5f9b9f8c945eac3366403f529b3bd4bd59aa6eb492e043ffd2d82268c0",
+        "size": 1931258,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libdb-6.2.dll",
+        "sha256": "4035b713d0b127c87a6f369950fe9fde052f042438e5a7cf53df0959a8349c90",
+        "size": 1534932,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libdeflate.dll",
+        "sha256": "3f3fc3a73bc3623dc93b37bb321c484d3731d93006fd01c0495d15711826eb44",
+        "size": 99228,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libepoxy-0.dll",
+        "sha256": "8e7d48294d79eb5b1f44cd7c2a637239d8ddcdabaedea12bf9fb7ca919d1a37a",
+        "size": 1771389,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libexpat-1.dll",
+        "sha256": "1ace13a4460a04cccb4b1e532af98a8e4610581f7ed55413a5ccb615e7d1e1ca",
+        "size": 237567,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libfdt-1.dll",
+        "sha256": "bc6e57d01be355f7ede6576a86cddefab8e61160e4c123bbc1b2802df4a453ef",
+        "size": 42010,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libfeature_support.dll",
+        "sha256": "f85e6c34d20760180c4e84f926b3321afddd58625b8170078b6853492fdf47fe",
+        "size": 326656,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libffi-8.dll",
+        "sha256": "390e4bf8abd037abd0e1dd1f311606715e43f8efe812e5c5b8775acf2cb2f21e",
+        "size": 40945,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libfontconfig-1.dll",
+        "sha256": "bed1827dbb226483026b2b33127866ce173aa2423d89ae7da6f88d6328792ec9",
+        "size": 508462,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libfreetype-6.dll",
+        "sha256": "bbb3e6390ee229c867ef31f10e42a49a61a92e434a11d40c6139a2608ebc6194",
+        "size": 790651,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libfribidi-0.dll",
+        "sha256": "84930fd86a3b46b62794a3bbaff21fbbaeaade5ff7cdc70be7f717ad29af87ed",
+        "size": 156403,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libgcc_s_seh-1.dll",
+        "sha256": "b37c1770c8ca092700875845b34918803ee6311573eba1c32ff4b1166e4a0e1e",
+        "size": 150998,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libgdk-3-0.dll",
+        "sha256": "2deedc5411a5b452f1aa35347984fef6293ac87a17c54a7676a81547b19362fd",
+        "size": 1384574,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libgdk_pixbuf-2.0-0.dll",
+        "sha256": "de8c9155341167121f1890224a152da4d283753bac74a0325dee770d76ce30ab",
+        "size": 362253,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libgio-2.0-0.dll",
+        "sha256": "50a134823cd2f5849f3d43889077164a16f5fc79ec8a9f26e8af77ef3e9906ca",
+        "size": 1913623,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libglib-2.0-0.dll",
+        "sha256": "7b5c19f5540857ec2288323f3b1654cbe5655fc3ea21417a25da69bece489eec",
+        "size": 1566649,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libgmodule-2.0-0.dll",
+        "sha256": "8dbef9e9647d773433cddfdfba84fd34dd699955c78cceea6ff7d7fc45efc495",
+        "size": 26748,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libgmp-10.dll",
+        "sha256": "37248cda33845e7c5c35a574e57da762dd0a8268f0270d179f30a33746809681",
+        "size": 679747,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libgnutls-30.dll",
+        "sha256": "aca67ef2c8429557e9ac3a02ad313e9fdad35a1416972a248f0a205f83d39fbd",
+        "size": 2316158,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libgobject-2.0-0.dll",
+        "sha256": "912936c8782605f29db0abfd528aeecbc550c45782ae14d7e2f0aa0c4809136f",
+        "size": 359475,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libgraphite2.dll",
+        "sha256": "063a9ad34a5ec87d038b4646660957395224ecf2cf707917256b7d251a7c5f57",
+        "size": 167155,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libgstapp-1.0-0.dll",
+        "sha256": "0ac57076a157071327736d483a97a8d7e81a0b2ccd0b187525787c8643f48b1d",
+        "size": 100140,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libgstbase-1.0-0.dll",
+        "sha256": "000711b65a0c39c879f3d73be442754b9297a8092894a309b19eea04e78b8722",
+        "size": 546663,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libgstreamer-1.0-0.dll",
+        "sha256": "e20ce49a194f891022503b7bbcb0608ca0526ab6c909452b70ec50b11b61dfcd",
+        "size": 1481894,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libgtk-3-0.dll",
+        "sha256": "e2cc2698e2e04214e04b18d685550b76558423ebdb2b0a0782171876fe13eb9c",
+        "size": 7165030,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libharfbuzz-0.dll",
+        "sha256": "cbc66233d9291f499aa38f6991f6e74570950502d8913df852d35a90f6da861b",
+        "size": 1530181,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libhogweed-7.dll",
+        "sha256": "8a4785b98e5418c32035f570904f65360c89825358702954b53c77ee2df8c97d",
+        "size": 275389,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libhwy.dll",
+        "sha256": "4cd65f4bb3c123471a23f3eed734adbb31522b012c2c1776640d9634fbeb623c",
+        "size": 88615,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libiconv-2.dll",
+        "sha256": "7a282a854e01be726c6cccfe46f548c716aa45b3014818468253aaa4efbcd067",
+        "size": 1143148,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libidn2-0.dll",
+        "sha256": "9880b52651a0247640a2531d777380f7c35fac7efa7e3979b265ddcb78db8642",
+        "size": 247081,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libintl-8.dll",
+        "sha256": "0537c3dd2378218508ebe3cc416d72a99ee2d24ae1c5525e23458f32544ef861",
+        "size": 298731,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libjack64.dll",
+        "sha256": "34065f120befc2ebf913754a0d8fdd54c4bb3fa09bea4a79ffa369fe5cf1cd28",
+        "size": 312511,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libjbig-0.dll",
+        "sha256": "275a827ba6839d47cfdbe059db1b1b403a92ff26e2b76a29362915487868bef2",
+        "size": 62083,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libjpeg-8.dll",
+        "sha256": "b564d34adaca83e73af0e2231719dd0198ea6cd074c64b2ba85bfd7182f27db7",
+        "size": 967968,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libjsoncpp-26.dll",
+        "sha256": "bb0d8799fca2da9738b87397c0eae726cf5507d1d684db546b73003215365d08",
+        "size": 281584,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libjxl.dll",
+        "sha256": "d8d1ba0ba4c12ae74a15d44e06a798eafe18842dde71130653dd982dab5fe2a1",
+        "size": 6218625,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libjxl_cms.dll",
+        "sha256": "6d822a9ac8288fda334b460cbe008716c7b6e9b20e160b9b6ca23871506f0a00",
+        "size": 147921,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "liblcms2-2.dll",
+        "sha256": "dc241cbdf2d295846ec564c1eb3c01639d43c0d72415a8758e65d71df31cc0ba",
+        "size": 456345,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "liblz4.dll",
+        "sha256": "35f917274bca8f19677ba66f1b3cc3c83568c3249fc43215fc16e76439c8e856",
+        "size": 158649,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "liblzma-5.dll",
+        "sha256": "dc9edb9bd83b0371fe68d96cb3e70cd17b7a5aba958326a18f8210cb812432e9",
+        "size": 191836,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "liblzo2-2.dll",
+        "sha256": "7c34ad01e75c97c6636a2f609089a85abdb50b75e13c5fda731352ec8aa053e9",
+        "size": 155548,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libncursesw6.dll",
+        "sha256": "946a84047652d337349d4880fdfe88e81d64dcd36d5b042b0a28d0b185be45c8",
+        "size": 548227,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libnettle-9.dll",
+        "sha256": "208002d990684946c7923a87022bedea588fef8e31286598c08805e37be2a95a",
+        "size": 360977,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libnfs-16.dll",
+        "sha256": "d6210876b2ecf7b6016c360bee32f4e16af3e808046e2e7a99c58a02a6984eed",
+        "size": 361411,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libnspr4.dll",
+        "sha256": "bbdb3f57a653a6614e9fe6e9510179e478f66649c6526f76bb0cb6b43d49fba0",
+        "size": 335552,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libopus-0.dll",
+        "sha256": "90aa25a0a6525d7da48a7ae8dd3306e45b0c28ce09a73d2a02b56cd95418d5be",
+        "size": 500112,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "liborc-0.4-0.dll",
+        "sha256": "6386359f54e38acc3517774d3f74b72f06f51ad4eb946b6085a7295820456992",
+        "size": 479279,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libp11-kit-0.dll",
+        "sha256": "ada3949f3763db47a754eec56388f3305c41c259eb3bbae188a820fd01c5445b",
+        "size": 1594910,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libpango-1.0-0.dll",
+        "sha256": "078881c139e7dd422c4cb5f9c43b939712eb7ad4f3d7d25c41639873e8aec6d6",
+        "size": 434535,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libpangocairo-1.0-0.dll",
+        "sha256": "b9f800abeafd27c07dc9f9fa4a41bb614564038ce7ac5753ca6c60c1d7d555cc",
+        "size": 83118,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libpangoft2-1.0-0.dll",
+        "sha256": "38602e75c85e149bf7294bccb8792f54299daed45509a8ac4b3a18e3921ec56e",
+        "size": 111841,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libpangowin32-1.0-0.dll",
+        "sha256": "2fb6d21cce830182c9d4bf22015dec9abbb0846ebce828ca0a5d4cefc74e46c6",
+        "size": 111376,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libpcre2-8-0.dll",
+        "sha256": "a499fb8a7eff453d6e4f0842576bc5171d40a1505d8f7f13fff6cee51b738a62",
+        "size": 717955,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libpixman-1-0.dll",
+        "sha256": "55ce45825eb8e825c635416171be4736147a6b0b690469f545d8c4ae8e85b4a3",
+        "size": 740378,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libplc4.dll",
+        "sha256": "014449ff3f1ba191f9879b2db9ec93915d198a65e159cfffdaa9d78d8c5560e9",
+        "size": 22514,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libplds4.dll",
+        "sha256": "8ee6e210d94e9bfc95a30fb8bafa15be6b6b16c5b220db8816b7b5e056e97cdb",
+        "size": 19281,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libpng16-16.dll",
+        "sha256": "3737838ee8d6b893df7bdabf7439775371a57dce7e17ee6b35586023c64bd9ab",
+        "size": 264269,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libpsl-5.dll",
+        "sha256": "b31fc70eda598a39b65fe2736d815518db0652d641346f75eac40c2a0499b058",
+        "size": 105304,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "librav1e.dll",
+        "sha256": "6fe18e4a040c471dc13bcea44ecd2c6a3c040971542c6b798627e4c787056acb",
+        "size": 3527680,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libsasl2-3.dll",
+        "sha256": "ea10d3aa40ccb6a385af666173b3364fc41f39dfbdc90aa8f2f1d8071cb63537",
+        "size": 167600,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libsharpyuv-0.dll",
+        "sha256": "ab0c9f61dc69b6bcdff1011e215f8d5fd6e5096aba9be3386ab87f217fbbeffe",
+        "size": 53757,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libslirp-0.dll",
+        "sha256": "098093db72095516c877c371942444a508aaa3c546de563bd2ea36ba2e88a646",
+        "size": 217294,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libsnappy.dll",
+        "sha256": "a0692c93212898f29d072d611184828ccaf7add78137fbe977a8504fcc278c21",
+        "size": 55237,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libspice-server-1.dll",
+        "sha256": "23bc03b20fefe99123759c79c59a83b4402a55529c99f3d5dcd1fe1445cb2b33",
+        "size": 1198840,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libssh.dll",
+        "sha256": "4e872f2b9329edfb3112c433a2c4c98efc915d0bca2b1b935a58e45e37ce0a3b",
+        "size": 626451,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libssh2-1.dll",
+        "sha256": "ee7fe3e749859334c99e9261689481dd879811122598d22585421f95d29fc7ae",
+        "size": 271318,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libssl-3-x64.dll",
+        "sha256": "b0aaaab67558716ea8cb03516d0e83ab92d1c0e3ddfc774c466032053f8b2331",
+        "size": 994446,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libssp-0.dll",
+        "sha256": "cf6037efa19fd9cbd59402741e201e325bb10f44aca16c56aeff8a7c188178d1",
+        "size": 43432,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libstdc++-6.dll",
+        "sha256": "887c21dbe2a211ac4d1a790e4f608b7dee27fae12352856963004e7a715d2e6c",
+        "size": 2661299,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libsystre-0.dll",
+        "sha256": "2aa59d15365f676356a25c941744d1b75406b426b1fde24ad609b7002a3d85e1",
+        "size": 14593,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libtasn1-6.dll",
+        "sha256": "95821132a7d4ea90f7c37540118ad1459809ff23162d6dc3d5600b15755a644b",
+        "size": 113467,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libthai-0.dll",
+        "sha256": "5d741974fdec19e0f6cddbcdb539428af0c7392740a056634714c2884157fdb9",
+        "size": 72294,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libtiff-6.dll",
+        "sha256": "47fe69165bf8e211aaa84224f51f145dc894e330fe7ca167f7c99419e0c8c894",
+        "size": 625178,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libtre-5.dll",
+        "sha256": "5833b2b1f62b67d8b4b3881f1bc05f42b0dee1a9f10cef897cdf44d74d094fdf",
+        "size": 100574,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libu2f-emu-0.dll",
+        "sha256": "09cec929ca4f74fb06250b80367a374c7c1b8000aeb8e71e00e7323ba053a759",
+        "size": 103045,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libunistring-5.dll",
+        "sha256": "b91e2850d3668d4931056a8f4d35783b8ec3eea3735485108a936a072cd16071",
+        "size": 2251328,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libusb-1.0.dll",
+        "sha256": "9858e2381221619e26a78a2824e5970c2a7ec48cdb75071c19eb7b61baa268e2",
+        "size": 246863,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libusbredirparser-1.dll",
+        "sha256": "085806c137047cc195608509b1fa935dfcfa633877b4780e6e23fb5e3e0a86cf",
+        "size": 66480,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libvirglrenderer-1.dll",
+        "sha256": "df0d6a26ca2328ac54ebc3efb5d03f3315c5bf39a999505d08bc76890e07be6c",
+        "size": 881380,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libvk_swiftshader.dll",
+        "sha256": "d4d9ac7d3215880a8ac24b5a57f4695f12aff7ef1c2e6f84a1211fad9560a058",
+        "size": 8521728,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libwebp-7.dll",
+        "sha256": "c6c21a10f8cfe13270832e64640b82709e1d87b956b5f15af435a6c25acd6bbf",
+        "size": 749724,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libwebpdemux-2.dll",
+        "sha256": "10fd43e1820a03dea175e3c4a7c96ba0463d41971f4ec75dbd375d10b585446a",
+        "size": 25726,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libwinpthread-1.dll",
+        "sha256": "d54ed5baa6d339e28fe18c0106caffd110ac42612908593e07211d7bb48f5e79",
+        "size": 64419,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libyuv.dll",
+        "sha256": "13ce09a22df9396cae847cb474614a5337c7b2e1a3c5c2d949c771c7297ccad0",
+        "size": 1009713,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "libzstd.dll",
+        "sha256": "b95c223a9548a9ecf51377c962e0bc8f0c51eb0c6f67a296dbc885996f0dd40d",
+        "size": 1218273,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "nss3.dll",
+        "sha256": "fff93a74e524ee09376f007373d16d2705fb21a0b3886404c9a7c27865cace73",
+        "size": 1408181,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "nssutil3.dll",
+        "sha256": "31adbd22bb5df93334c8d013cc8814192e21f64500b4113f682fbe8ddfb2c79f",
+        "size": 172668,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "qemu-system-x86_64.exe",
+        "sha256": "47d57a6072e0bb3bd98f87926eb129eb1736dfe818c67b3b81ef7ce4edd0b3cd",
+        "size": 25457048,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true,
+        "note": "Upstream extraction streamed to stdout to avoid NSIS placeholder overwrite"
+      },
+      {
+        "path": "share/QEMU,cgthree.bin",
+        "sha256": "a99f3a06fdac5cf5d72bd0fd24647d897302c3ff8e918add65168185f8cbdf4d",
+        "size": 850,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/QEMU,tcx.bin",
+        "sha256": "92da99a770ab24f96c33c78382940cac8b25e88cb110634c1b32aa2d8cb852e7",
+        "size": 1402,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/ast27x0_bootrom.bin",
+        "sha256": "f46fbeb7adbc300d65aef4862fc4566208aae9b34be3eceecb5aa5ae4ea3c535",
+        "size": 28564,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/bios-256k.bin",
+        "sha256": "ae6f6aa973aaccc143f57aa960fb035fd9de4daee4ad0cd713322f8c259e7650",
+        "size": 262144,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/bios-microvm.bin",
+        "sha256": "d226177d125aaf1b91e507738f4e9a0ade9474169b211751f78be08008cb394c",
+        "size": 131072,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/bios.bin",
+        "sha256": "3dfd946d0c03ab0e022f84f10c3eb5f1dd507761f73e7d8067511ba35a10f776",
+        "size": 131072,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/edk2-aarch64-code.fd",
+        "sha256": "47765fe344818cbc464b1c14ae658fb4b854f5c2ceffa982411731eb4865594d",
+        "size": 67108864,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/edk2-arm-code.fd",
+        "sha256": "c632a04ddd55dfa7136a0a36790c72f5c9b52542ecba979bbeeb5ddef99acd64",
+        "size": 67108864,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/edk2-arm-vars.fd",
+        "sha256": "b3b855c5a80310168051164986855692d1bdb06e67619856177965cd87c6774f",
+        "size": 67108864,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/edk2-i386-code.fd",
+        "sha256": "c8161f6e8464778e13795297e87f5e83cf97c8987480eea1d80742f6c98c18a9",
+        "size": 3653632,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/edk2-i386-secure-code.fd",
+        "sha256": "2c5e36fc70b391532ceff5bc9b410c6e0fb29b486906e91577f5818368b0ce78",
+        "size": 3653632,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/edk2-i386-vars.fd",
+        "sha256": "5d2ac383371b408398accee7ec27c8c09ea5b74a0de0ceea6513388b15be5d1e",
+        "size": 540672,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/edk2-licenses.txt",
+        "sha256": "1ddeaed2e7d2e9ecb960bdfc1b8ee45387aff70d056d985d145949af3951657c",
+        "size": 42903,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/edk2-loongarch64-code.fd",
+        "sha256": "edd5a67fe50f7597faecb2fe67c5733b9a31b0b345a2127c3c358a5737446ef7",
+        "size": 16777216,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/edk2-loongarch64-vars.fd",
+        "sha256": "adbfcb31d6470ef090220baeb53559e26323b6cfb5e7614f879e89608a3ed748",
+        "size": 16777216,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/edk2-riscv-code.fd",
+        "sha256": "c3b779f86671c0cadf9cbdb274917a20210aeceb6f58b42d68406cdddfa48869",
+        "size": 33554432,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/edk2-riscv-vars.fd",
+        "sha256": "ea8094e953b1215444bd001ee1cf22818f1f7f8abcb158e62180cbaa6c1f70af",
+        "size": 33554432,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/edk2-x86_64-code.fd",
+        "sha256": "33090cc07675baa5190d9f1e84bf5176b33bcbfa9bacac522961150cdb6dbb2a",
+        "size": 3653632,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/edk2-x86_64-secure-code.fd",
+        "sha256": "32807682a9e5c0e2d192ecb6077941d4be8bcfa6b9cd6e60830c3a9f48c0555a",
+        "size": 3653632,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/efi-e1000.rom",
+        "sha256": "f37222fcdf0481bfbaf7a16d9aaf740aeb41d3d24c187801eb6e9a628cec0fc8",
+        "size": 159232,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/efi-e1000e.rom",
+        "sha256": "102c20348be2d0ebe45a77b076b31848182c2f7b4364775b6bc2ece6e97b4024",
+        "size": 159232,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/efi-eepro100.rom",
+        "sha256": "2b5b55ba8afae7b5ef7116606babf60e6ceaa531c345d54542857cc3fbe3912e",
+        "size": 159232,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/efi-ne2k_pci.rom",
+        "sha256": "9925e0a34547118110479d8fc4e01092a0a73e0a236416e9ff862655b46751f7",
+        "size": 157696,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/efi-pcnet.rom",
+        "sha256": "71c494fde94efa9871cf43868d7e3c8f4190e406d47a5102a2a21b36ded8a162",
+        "size": 157696,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/efi-rtl8139.rom",
+        "sha256": "4cdd69a7f5c6ce7aec3a3f20a034dc80e1d22aa37a739c364378952d997a32c7",
+        "size": 160768,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/efi-virtio.rom",
+        "sha256": "26be36901db7f8181c306cc62bd74891d8646528965a78e40cceadba5dd7c8e7",
+        "size": 160768,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/efi-vmxnet3.rom",
+        "sha256": "33e833123ad9831df94b2d623a17f91e4c779e3cb799baa97058f5972676a32a",
+        "size": 156672,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/hppa-firmware.img",
+        "sha256": "04f20553e93b723cdfc252ca098c50ed4d950920d0e26b4ae50fadee26b1a98d",
+        "size": 633992,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/hppa-firmware64.img",
+        "sha256": "ae9ddea11aad5c059625fd52e123f5d285b62b92ef7b810087bb467b3786e4a1",
+        "size": 666392,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/kvmvapic.bin",
+        "sha256": "cdf057a71b07e3b52b19cbe210bdefa59250d01a9810b960f7fe1f98eed95a27",
+        "size": 9216,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/linuxboot_dma.bin",
+        "sha256": "9c49e255340c78fc12e54ed043462bca02fb7fca29b7cfab62ff88a5344b6950",
+        "size": 1536,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/multiboot_dma.bin",
+        "sha256": "46def003b1c413cc4a5880d858ca54456ad6978d5fdb6e1b7d086b2905a66df0",
+        "size": 1024,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/npcm7xx_bootrom.bin",
+        "sha256": "2b17c3531daba9c133cbaa53595052e799505b2b4b3005ebc7b229f5c5e64322",
+        "size": 736,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/npcm8xx_bootrom.bin",
+        "sha256": "30b1f5151076e789c33c886a3a87a909df89dd4226bdc4829ebbaf063152f9cd",
+        "size": 672,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/openbios-ppc",
+        "sha256": "032884eab588cd8d45903ed7be718f7a23fecaa4fc45c2dbf18c1220f13218ef",
+        "size": 673104,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/openbios-sparc32",
+        "sha256": "bf6e231eeea72b17f97055a20de1195005cf79cbd6c118b7ca89287b4a77fd1f",
+        "size": 382048,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/openbios-sparc64",
+        "sha256": "0f9a2ef7db57d9c4ece8e94fdc1a35c7e127288034001f149192c4c9a0cef23f",
+        "size": 1593408,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/opensbi-riscv32-generic-fw_dynamic.bin",
+        "sha256": "ee4c0a2115960824e203c7f4ae8e55efb04dc6616727eb464a0954e6159c1ed7",
+        "size": 270384,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/opensbi-riscv64-generic-fw_dynamic.bin",
+        "sha256": "894e2aef99590fc07ec6c60ab00282b8bc5d5d5bb2a1d0c6ada0c52df24274c0",
+        "size": 275928,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/palcode-clipper",
+        "sha256": "9f8da7264c7438fe4a24a2215e81893586f5cfafcd6e5fd0059fccc31a4e8839",
+        "size": 153728,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/pnv-pnor.bin",
+        "sha256": "241ac7576721f565abd8b492b8acda036c72d233e03d1f78bddbd7b1599d863f",
+        "size": 139264,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/pvh.bin",
+        "sha256": "918ff03a118615c2f4611a5df2d9496aabe099b5cfaaf69e544ebf973305d59d",
+        "size": 1536,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/pxe-e1000.rom",
+        "sha256": "981a728f95b7a01645645e9b753cfb764c9eb59266fa888ac58d7008fbb48c10",
+        "size": 67072,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/pxe-eepro100.rom",
+        "sha256": "07b89a742e0f6d0e92dafe57b0f28c493436d0e1e07b7b77e728490c1f7b45dd",
+        "size": 61440,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/pxe-ne2k_pci.rom",
+        "sha256": "bb9c0eaad36b9b4ce26c5f348bd05a832c8bf83ef38391db0ce9b51de8523ac7",
+        "size": 61440,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/pxe-pcnet.rom",
+        "sha256": "92358396c05b3346c6bfd52bbf2a47978d0a8c6ddea932ee091a24faefbd489e",
+        "size": 61440,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/pxe-rtl8139.rom",
+        "sha256": "d491351e37a50eb5a40e98a9f6b4d85010ee60fb9e64129d65ea10839287f138",
+        "size": 61440,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/pxe-virtio.rom",
+        "sha256": "6994337fe07783a6233072e33771dc4f58260edc3269debe677a5227b264bfdc",
+        "size": 60416,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/qboot.rom",
+        "sha256": "9b9dfc6c25740d6225625570d71cab6805cc9216e68c8932e343266daaeb8c4b",
+        "size": 65536,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/qemu-nsis.bmp",
+        "sha256": "93f79a2b6e0f97bc7b7c75ded89a3c4c7657af37c087cf067470771e0affda9c",
+        "size": 154542,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/qemu_vga.ndrv",
+        "sha256": "d8697354bde8a7ac9e6fe3a5fbca03698de623e95433a59c248e8e09b882c6b8",
+        "size": 18752,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/s390-ccw.img",
+        "sha256": "1591cbcbaaf07f1b3869b2f6fcaf7005d24dbe7dfc9e32b6ed7f1606d8085ef5",
+        "size": 104136,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/skiboot.lid",
+        "sha256": "bad55219becfc1198a3dfc0cb33aa9e27eb97c0f447f499031044f920d708a7e",
+        "size": 2592960,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/slof.bin",
+        "sha256": "c68816fe81f8eb1d7bc4413a8a15e09ecaaec7c0bea7cb084c9b8b1810abc501",
+        "size": 997576,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/trace-events-all",
+        "sha256": "b34f506579a9d20b050eb99564e869e17db4f1d73917133c073a456957c3687b",
+        "size": 577462,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/u-boot-sam460.bin",
+        "sha256": "2bc672480506885e658ccfb4486cb85214f331b4364c717ed7dff741d7d61623",
+        "size": 524288,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/u-boot.e500",
+        "sha256": "f0250e391566bca7b5e643c43b761ab9629a0b82427792a772e80c8b97836425",
+        "size": 421720,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/vgabios-ati.bin",
+        "sha256": "f033484968c31c066c0e9fbc77127e0d41211496c7559f57076c9344885665b0",
+        "size": 39424,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/vgabios-bochs-display.bin",
+        "sha256": "da07e26661279edb7935284a99f8ddfa77dbf04ddb939e4a8c7bc7e36e40cdc7",
+        "size": 28672,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/vgabios-cirrus.bin",
+        "sha256": "10ecbac600620eb589f0c6d98f3f32a073d745c8a7f390b1704155d46a6b59d7",
+        "size": 39424,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/vgabios-qxl.bin",
+        "sha256": "33f6e0775ff725026e6f7eba21c8a0ad816ecfe238c4923fa26e8eeaa2aa0b04",
+        "size": 39424,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/vgabios-ramfb.bin",
+        "sha256": "24f6b98b2c263f3f562b1180df23e949f7dd27f194fa26aeba27f36bbf6265c6",
+        "size": 28672,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/vgabios-stdvga.bin",
+        "sha256": "e8fc9e55790dbe3cb31f019a3deb57206ba6c54f5e581adb2ab2677a9d391472",
+        "size": 39424,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/vgabios-virtio.bin",
+        "sha256": "02853140c262001ecb7245b151ffe47a0f0c79767a6fb2a9eb60f5f1938c5cee",
+        "size": 39424,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/vgabios-vmware.bin",
+        "sha256": "00bfccc4e09b832a98a727c0fa5bceaaad0556e38b7718f5a6579189abbe627b",
+        "size": 39424,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/vgabios.bin",
+        "sha256": "a7ea86bb06a58ff969fd0942e73b8eae00cb58e4c90bccbd900f6a3a01f54fbb",
+        "size": 38912,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/vof-nvram.bin",
+        "sha256": "cf97201f9403212ab75287bf209bfb7710cb5f253e8fe80723cf43760a9e8a12",
+        "size": 16384,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "share/vof.bin",
+        "sha256": "8c88070f252075111468e7b2a8043209e7798c3fb136326227390ea50f168f13",
+        "size": 3456,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      },
+      {
+        "path": "zlib1.dll",
+        "sha256": "93e9243a44c29200eeacaf9658efe2558581770e4b11ca4b500e18e424a6e3b5",
+        "size": 128488,
+        "upstreamFileExists": true,
+        "upstreamHashMatches": true
+      }
+    ],
+    "correspondingSourceStatus": "unresolved",
+    "licenseMappingStatus": "unreviewed"
+  },
+  "goBinaries": [
+    {
+      "binary": "resources/bin/amdl-service.exe",
+      "sha256": "e3bcb7e76da405d5adeb43bdf27e43b84b5ce5326e3b0dbab37f5657c5d0d12b",
+      "goVersion": "go1.25.0",
+      "buildInfo": "path\tgithub.com/Andrew05213/applemusic_downloader\nmod\tgithub.com/Andrew05213/applemusic_downloader\t(devel)\t\ndep\tgithub.com/AlecAivazis/survey/v2\tv2.3.7\th1:6I/u8FvytdGsgonrYsVn2t8t4QiRnh6QSTqkkhIiSjQ=\ndep\tgithub.com/Eyevinn/mp4ff\tv0.46.0\th1:A8oJA4A3C9fDbX38jEw/26utjNdvmRmrO37tVI5pDk0=\ndep\tgithub.com/aead/cmac\tv0.0.0-20160719120800-7af84192f0b1\th1:+JkXLHME8vLJafGhOH4aoV2Iu8bR55nU6iKMVfYVLjY=\ndep\tgithub.com/beevik/etree\tv1.3.0\th1:hQTc+pylzIKDb23yYprodCWWTt+ojFfUZyzU09a/hmU=\ndep\tgithub.com/dustin/go-humanize\tv1.0.1\th1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=\ndep\tgithub.com/fatih/color\tv1.18.0\th1:S8gINlzdQ840/4pfAwic/ZE0djQEH3wM94VfqLTZcOM=\ndep\tgithub.com/gorilla/mux\tv1.8.1\th1:TuBL49tXwgrFYWhqrNgrUNEY92u81SPhu7sTdzQEiWY=\ndep\tgithub.com/grafov/m3u8\tv0.11.1\th1:igZ7EBIB2IAsPPazKwRKdbhxcoBKO3lO1UY57PZDeNA=\ndep\tgithub.com/kballard/go-shellquote\tv0.0.0-20180428030007-95032a82bc51\th1:Z9n2FFNUXsshfwJMBgNA0RU6/i7WVaAegv3PtuIHPMs=\ndep\tgithub.com/mattn/go-colorable\tv0.1.13\th1:fFA4WZxdEF4tXPZVKMLwD8oUnCTTo08duU7wxecdEvA=\ndep\tgithub.com/mattn/go-isatty\tv0.0.20\th1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=\ndep\tgithub.com/mattn/go-runewidth\tv0.0.9\th1:Lm995f3rfxdpd6TSmuVCHVb/QhupuXlYr8sCI/QdE+0=\ndep\tgithub.com/mgutz/ansi\tv0.0.0-20200706080929-d51e80ef957d\th1:5PJl274Y63IEHC+7izoQE9x6ikvDFZS2mDVS3drnohI=\ndep\tgithub.com/mitchellh/colorstring\tv0.0.0-20190213212951-d06e56a500db\th1:62I3jR2EmQ4l5rM/4FEfDWcRD+abF5XlKShorW5LRoQ=\ndep\tgithub.com/ncruces/go-strftime\tv0.1.9\th1:bY0MQC28UADQmHmaF5dgpLmImcShSi2kHU9XLdhx/f4=\ndep\tgithub.com/olekukonko/tablewriter\tv0.0.5\th1:P2Ga83D34wi1o9J6Wh1mRuqd4mF/x/lgBS7N7AbDhec=\ndep\tgithub.com/remyoudompheng/bigfft\tv0.0.0-20230129092748-24d4a6f8daec\th1:W09IVJc94icq4NjY3clb7Lk8O1qJ8BdBEF8z0ibU0rE=\ndep\tgithub.com/rivo/uniseg\tv0.4.7\th1:WUdvkW8uEhrYfLC4ZzdpI2ztxP1I582+49Oc5Mq64VQ=\ndep\tgithub.com/schollz/progressbar/v3\tv3.14.6\th1:GyjwcWBAf+GFDMLziwerKvpuS7ZF+mNTAXIB2aspiZs=\ndep\tgithub.com/spf13/pflag\tv1.0.5\th1:iy+VFUOCP1a+8yFto/drg2CJ5u0yRoB7fZw3DKv/JXA=\ndep\tgithub.com/zhaarey/go-mp4tag\tv0.0.0-20250210094042-22578afc09bf\th1:WzZoh9wvukQu2We8dw/bFmLfb5XsC5bGGU/Izhd/UOo=\ndep\tgolang.org/x/exp\tv0.0.0-20250106191152-7588d65b2ba8\th1:yqrTHse8TCMW1M1ZCP+VAR/l0kKxwaAIqN/il7x4voA=\ndep\tgolang.org/x/sys\tv0.31.0\th1:ioabZlmFYtWhL+TRYpcnNlLwhyxaM9kWTDEmfnprqik=\ndep\tgolang.org/x/term\tv0.28.0\th1:/Ts8HFuMR2E6IP/jlo7QVLZHggjKQbhu/7H0LJFr3Gg=\ndep\tgolang.org/x/text\tv0.21.0\th1:zyQAAkrwaneQ066sspRyJaG9VNi/YJ1NfzcGB3hZ/qo=\ndep\tgoogle.golang.org/protobuf\tv1.36.2\th1:R8FeyR1/eLmkutZOM5CWghmo5itiG9z0ktFlTVLuTmU=\ndep\tgopkg.in/yaml.v2\tv2.2.8\th1:obN1ZagJSUGI0Ek/LBmuj4SNLPfIny3KsKFopxRdj10=\ndep\tlukechampine.com/frand\tv1.5.1\th1:fg0eRtdmGFIxhP5zQJzM1lFDbD6CUfu/f+7WgAZd5/w=\ndep\tmodernc.org/libc\tv1.61.13\th1:3LRd6ZO1ezsFiX1y+bHd1ipyEHIJKvuprv0sLTBwLW8=\ndep\tmodernc.org/mathutil\tv1.7.1\th1:GCZVGXdaN8gTqB1Mf/usp1Y/hSqgI2vAGGP4jZMCxOU=\ndep\tmodernc.org/memory\tv1.8.2\th1:cL9L4bcoAObu4NkxOlKWBWtNHIsnnACGF/TbqQ6sbcI=\ndep\tmodernc.org/sqlite\tv1.36.3\th1:qYMYlFR+rtLDUzuXoST1SDIdEPbX8xzuhdF90WsX1ss=\nbuild\t-buildmode=exe\nbuild\t-compiler=gc\nbuild\t-trimpath=true\nbuild\tDefaultGODEBUG=containermaxprocs=0,decoratemappings=0,gotestjsonbuildtext=1,multipathtcp=0,randseednop=0,rsa1024min=0,tlsmlkem=0,tlssha1=1,updatemaxprocs=0,x509rsacrt=0,x509sha256skid=0,x509usepolicies=0\nbuild\tCGO_ENABLED=0\nbuild\tGOARCH=amd64\nbuild\tGOOS=windows\nbuild\tGOAMD64=v1\n"
+    },
+    {
+      "binary": "resources/bin/amdl-desktop.exe",
+      "sha256": "f027c2bee6290f23021d8bc73ff72614ef80717fb7a54808e8b98fb0ce993c9f",
+      "goVersion": "go1.25.0",
+      "buildInfo": "path\tgithub.com/Andrew05213/applemusic_downloader/cmd/amdl-desktop\nmod\tgithub.com/Andrew05213/applemusic_downloader\t(devel)\t\ndep\tgolang.org/x/sys\tv0.31.0\th1:ioabZlmFYtWhL+TRYpcnNlLwhyxaM9kWTDEmfnprqik=\nbuild\t-buildmode=exe\nbuild\t-compiler=gc\nbuild\t-trimpath=true\nbuild\tDefaultGODEBUG=containermaxprocs=0,decoratemappings=0,gotestjsonbuildtext=1,multipathtcp=0,randseednop=0,rsa1024min=0,tlsmlkem=0,tlssha1=1,updatemaxprocs=0,x509rsacrt=0,x509sha256skid=0,x509usepolicies=0\nbuild\tCGO_ENABLED=0\nbuild\tGOARCH=amd64\nbuild\tGOOS=windows\nbuild\tGOAMD64=v1\n"
+    },
+    {
+      "binary": "guest/bin/amdl-guest",
+      "sha256": "794738a34a6d240c7741b4e9d490cf0dc5b3028cd75268a16ec00a1b3ba8ed51",
+      "goVersion": "go1.25.0",
+      "buildInfo": "path\tgithub.com/Andrew05213/applemusic_downloader/cmd/amdl-guest\nmod\tgithub.com/Andrew05213/applemusic_downloader\t(devel)\t\nbuild\t-buildmode=exe\nbuild\t-compiler=gc\nbuild\t-trimpath=true\nbuild\tDefaultGODEBUG=containermaxprocs=0,decoratemappings=0,gotestjsonbuildtext=1,multipathtcp=0,randseednop=0,rsa1024min=0,tlsmlkem=0,tlssha1=1,updatemaxprocs=0,x509rsacrt=0,x509sha256skid=0,x509usepolicies=0\nbuild\tCGO_ENABLED=0\nbuild\tGOARCH=amd64\nbuild\tGOOS=linux\nbuild\tGOAMD64=v1\n"
+    }
+  ],
+  "reviewComplete": false,
+  "deferred": [
+    "android-apple-rootfs"
+  ],
+  "note": "Observed released bytes, not proof of complete corresponding source or redistribution authorization. Deferred items remain unresolved."
+}
