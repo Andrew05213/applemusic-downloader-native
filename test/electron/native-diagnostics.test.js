@@ -70,3 +70,43 @@ test('Go and desktop Music diagnostic vocabularies stay aligned',()=>{
  const expected=[...source.matchAll(/"(native_music_[a-z_]+)"/g)].map(m=>m[1]);assert.equal(expected.length,6);for(const code of expected)assert.equal(CODES.has(code),true,code);
  assert.deepEqual([...APPLE_CODES].sort(),[...source.matchAll(/"([0-9]{5})"/g)].map(m=>m[1]).sort());
 });
+
+test('device login preserves only bounded failure metadata through preload and the journal',t=>{
+ const vm=require('node:vm');const {DiagnosticJournal,CODES,sanitizeDiagnostics}=require('../../electron/native-diagnostics');
+ const directory=fs.mkdtempSync(path.join(os.tmpdir(),'native-device-login-'));t.after(()=>fs.rmSync(directory,{recursive:true,force:true}));const file=path.join(directory,'auth-diagnostics.json');let bridge,listener,copied;
+ vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,'../../src/preload/native-preload.js'),'utf8'),{require(){return {contextBridge:{exposeInMainWorld(_name,api){bridge=api}},ipcRenderer:{invoke:async()=>{},on(_name,fn){listener=fn},removeListener(){}}}}});
+ bridge.onSession(value=>{copied=value});
+ const source=fs.readFileSync(path.resolve(__dirname,'../../apple-music-downloader/internal/nativeauth/diagnostics.go'),'utf8');
+ const expected=[...new Set([...source.matchAll(/"(native_login_(?:process|protocol|store|input)_[a-z_]+)"/g)].map(m=>m[1]))];assert.equal(expected.length,9);for(const code of expected)assert.ok(CODES.has(code),code);
+ const leaf={...event(),stage:'device_login',code:'native_login_store_response_failed',exitCode:1,storeResponseType:0,storeErrorCode:10,storeExternalErrorCode:-20101};delete leaf.httpStatus;
+ listener(null,{state:'needs_login',stage:'device_login',diagnostics:{events:[{...leaf,message:'SENTINEL'}],lastFailure:leaf}});
+ assert.equal(copied.diagnostics.events[0].message,undefined);
+ const journal=new DiagnosticJournal(file);journal.observe(copied);assert.deepEqual(new DiagnosticJournal(file).snapshot().lastFailure,leaf);
+ for(const patch of [{exitCode:256},{exitSignal:9},{exitCode:undefined,exitSignal:65},{storeErrorCode:'-7'},{storeResponseType:-1},{storeExternalErrorCode:9007199254740992},{storeExternalErrorCode:'secret'},{stage:'music_storefront'},{code:'native_login_store_no_response'}]){
+  const invalid={...leaf,...patch};assert.equal(sanitizeDiagnostics({events:[invalid]}).events.length,0);
+ }
+ const vocabulary=source.match(/var DeviceLoginEvents = \[\]string\{([\s\S]*?)\}/)[1];const events=[...vocabulary.matchAll(/"([a-z_]+)"/g)].map(m=>m[1]);assert.equal(events.length,16);
+ for(const [index,loginEvent] of events.entries()){
+  const notice={traceId:leaf.traceId,seq:index+2,attempt:2,at:Date.now(),stage:'device_login',outcome:'waiting',loginEvent};
+  listener(null,{state:'needs_login',diagnostics:{events:[{...notice,title:'SENTINEL',message:'SENTINEL'}]}});
+  assert.deepEqual(JSON.parse(JSON.stringify(copied.diagnostics.events[0])),notice);journal.observe(copied);
+  assert.ok(new DiagnosticJournal(file).snapshot().events.some(e=>e.loginEvent===loginEvent));
+ }
+ for(const patch of [{loginEvent:'SENTINEL'},{stage:'device_code'},{outcome:'failed'},{code:'native_login_failed'},{exitCode:1}])assert.equal(sanitizeDiagnostics({events:[{traceId:leaf.traceId,seq:30,attempt:2,at:Date.now(),stage:'device_login',outcome:'waiting',loginEvent:'dialog_other',...patch}]}).events.length,0);
+ assert.doesNotMatch(fs.readFileSync(file,'utf8'),/SENTINEL/);
+});
+
+test('intermediate Store rejection survives preload and export before Retry without becoming lastFailure',t=>{
+ const vm=require('node:vm');const {DiagnosticJournal,sanitizeDiagnostics}=require('../../electron/native-diagnostics');
+ const directory=fs.mkdtempSync(path.join(os.tmpdir(),'native-waiting-response-'));t.after(()=>fs.rmSync(directory,{recursive:true,force:true}));
+ let bridge,listener,copied;
+ vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,'../../src/preload/native-preload.js'),'utf8'),{require(){return {contextBridge:{exposeInMainWorld(_name,api){bridge=api}},ipcRenderer:{invoke:async()=>{},on(_name,fn){listener=fn},removeListener(){}}}}});
+ bridge.onSession(value=>{copied=value});
+ const response={...event(1),stage:'device_login',outcome:'waiting',code:undefined,loginEvent:'store_response_received',storeResponseType:0,storeErrorCode:10,storeExternalErrorCode:-5000,storeProtocolErrorCode:-22947,storeAuthStatus:-1,httpStatus:200};
+ listener(null,{state:'needs_interaction',diagnostics:{events:[{...response,title:'PRIVATE_MESSAGE',password:'PRIVATE_PASSWORD'}]}});
+ assert.equal(copied.state,'needs_interaction');assert.equal(copied.diagnostics.events[0].storeExternalErrorCode,-5000);
+ const journal=new DiagnosticJournal(path.join(directory,'auth.json'));journal.observe(copied);
+ assert.equal(journal.snapshot().events[0].storeResponseType,0);assert.equal(journal.snapshot().lastFailure,undefined);
+ assert.doesNotMatch(fs.readFileSync(path.join(directory,'auth.json'),'utf8'),/PRIVATE/);
+ for(const patch of [{loginEvent:'dialog_other'},{exitCode:1},{outcome:'ok'},{storeExternalErrorCode:'PRIVATE'},{storeProtocolErrorCode:9007199254740992}])assert.equal(sanitizeDiagnostics({events:[{...response,...patch}]}).events.length,0);
+});

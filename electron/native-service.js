@@ -7,8 +7,8 @@ const { VERSION } = require('./native-version');
 function allowedAPI(method, target) {
   if (typeof target !== 'string' || target.length > 4096 || !target.startsWith('/api/') || /[\r\n\\#]/.test(target)) return false;
   const path = target.split('?')[0];
-  if (method === 'GET') return /^\/api\/(?:native\/(?:state|jobs\/[a-f0-9-]+\/location)|v1\/(?:catalog\/(?:session|search|discover|home|detail|library|library-detail|recommendation|artist-albums)|capabilities|settings\/download(?:-concurrency)?|jobs(?:\/[a-f0-9-]+(?:\/files)?)?|files))$/.test(path);
-  if (method === 'POST') return /^\/api\/(?:native\/(?:login|two-factor|cancel-login|recheck|retry|playback)|v1\/(?:jobs(?:\/[a-f0-9-]+\/(?:retry|cancel))?|browser-download\/resolve))$/.test(path);
+  if (method === 'GET') return /^\/api\/(?:native\/(?:state|interaction|jobs\/[a-f0-9-]+\/location)|v1\/(?:catalog\/(?:session|search|discover|home|detail|library|library-detail|recommendation|artist-albums)|capabilities|settings\/download(?:-concurrency)?|jobs(?:\/[a-f0-9-]+(?:\/files)?)?|files))$/.test(path);
+  if (method === 'POST') return /^\/api\/(?:native\/(?:login|interaction|two-factor|cancel-login|recheck|retry|playback)|v1\/(?:jobs(?:\/[a-f0-9-]+\/(?:retry|cancel))?|browser-download\/resolve))$/.test(path);
   if (method === 'PUT') return path==='/api/native/download-directory'||/^\/api\/v1\/settings\/download(?:-concurrency)?$/.test(path);
   if (method === 'DELETE') return path === '/api/native/playback' || /^\/api\/v1\/(?:jobs\/[a-f0-9-]+(?:\/record)?|settings\/download(?:-concurrency)?)$/.test(path);
   return false;

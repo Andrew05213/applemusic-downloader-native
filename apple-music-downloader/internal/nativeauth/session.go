@@ -45,26 +45,28 @@ type Runner interface {
 }
 type Verifier func(context.Context, Tokens) (string, error)
 type Manager struct {
-	mu            sync.Mutex
-	runner        Runner
-	verify        Verifier
-	state         Snapshot
-	tokens        Tokens
-	verifiedUntil time.Time
-	now           func() time.Time
-	retryAfter    time.Time
-	retryFailures uint8
-	generation    uint64
-	busy          bool
-	cancel        context.CancelFunc
-	codes         chan string
-	done          chan struct{}
-	workers       sync.WaitGroup
-	closed        bool
-	traceID       string
-	eventSeq      uint64
-	currentStage  string
-	history       Diagnostics
+	mu                 sync.Mutex
+	runner             Runner
+	verify             Verifier
+	state              Snapshot
+	tokens             Tokens
+	verifiedUntil      time.Time
+	now                func() time.Time
+	retryAfter         time.Time
+	retryFailures      uint8
+	generation         uint64
+	busy               bool
+	cancel             context.CancelFunc
+	codes              chan string
+	done               chan struct{}
+	workers            sync.WaitGroup
+	closed             bool
+	traceID            string
+	eventSeq           uint64
+	currentStage       string
+	history            Diagnostics
+	pendingInteraction *pendingInteraction
+	interactionScope   string
 }
 
 func New(runner Runner, verify Verifier) *Manager {
@@ -117,6 +119,8 @@ func (m *Manager) operationLocked(parent context.Context, state string, timeout 
 	m.busy = true
 	m.cancel = cancel
 	m.codes = make(chan string, 1)
+	m.interactionScope = newTraceID()
+	m.pendingInteraction = nil
 	m.done = make(chan struct{})
 	m.tokens = Tokens{}
 	m.state = Snapshot{State: state}
@@ -134,6 +138,8 @@ func (m *Manager) finish(generation uint64) {
 	m.busy = false
 	m.cancel = nil
 	m.codes = nil
+	m.pendingInteraction = nil
+	m.interactionScope = ""
 	close(m.done)
 	m.done = nil
 	m.workers.Done()
@@ -270,7 +276,7 @@ func (m *Manager) Ensure(ctx context.Context) (Tokens, error) {
 			m.mu.Unlock()
 			return tokens, nil
 		}
-		if state.State == "needs_login" || state.State == "needs_2fa" || state.State == "authenticating" {
+		if state.State == "needs_login" || state.State == "needs_2fa" || state.State == "needs_interaction" || state.State == "authenticating" {
 			m.mu.Unlock()
 			return Tokens{}, ErrAuthRequired
 		}
@@ -315,7 +321,7 @@ func (m *Manager) Ensure(ctx context.Context) (Tokens, error) {
 			if state.State == "authenticated" {
 				return m.tokens, nil
 			}
-			if state.State == "needs_login" || state.State == "needs_2fa" || state.State == "authenticating" {
+			if state.State == "needs_login" || state.State == "needs_2fa" || state.State == "needs_interaction" || state.State == "authenticating" {
 				return Tokens{}, ErrAuthRequired
 			}
 			return Tokens{}, ErrUnverified
@@ -326,7 +332,7 @@ func (m *Manager) Begin(parent context.Context, credentials Credentials) error {
 	if !valid(credentials) {
 		return ErrInvalidInput
 	}
-	ctx, generation, err := m.operation(parent, "authenticating")
+	ctx, generation, err := m.operation(parent, "authenticating", 15*time.Minute)
 	if err != nil {
 		return err
 	}
@@ -335,6 +341,9 @@ func (m *Manager) Begin(parent context.Context, credentials Credentials) error {
 	m.mu.Unlock()
 	ctx = WithReporter(ctx, func(e StageEvent) { m.record(generation, e) })
 	Report(ctx, "login_start", "begin", "", 0)
+	ctx = WithInteractionHandler(ctx, func(c context.Context, q *Interaction) (InteractionAnswer, error) {
+		return m.awaitInteraction(c, generation, q)
+	})
 	go func() {
 		defer m.finish(generation)
 		Report(ctx, "stop_lite", "begin", "", 0)

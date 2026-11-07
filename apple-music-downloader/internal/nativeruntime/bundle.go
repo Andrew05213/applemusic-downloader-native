@@ -19,7 +19,7 @@ import (
 	"strings"
 )
 
-const WrapperCommit = "15fe0cb75b866e7460bf8d28d155e813a870e076"
+const WrapperCommit = "b2bebc318ae9e7aa208a27642c193d3a79418d95"
 
 var (
 	ErrBundleMissing  = errors.New("native_bundle_missing")

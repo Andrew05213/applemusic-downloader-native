@@ -1,80 +1,33 @@
-diff --git a/lite/auth.cpp b/lite/auth.cpp
-index 722fd18..8e52422 100644
---- a/lite/auth.cpp
-+++ b/lite/auth.cpp
-@@ -1,5 +1,6 @@
- #include "internal.h"
- #include "cJSON.h"
-+#include "native_login.h"
- #include <cstdio>
- #include <cstdlib>
- #include <cstring>
-@@ -57,10 +58,17 @@ void credentialHandler(struct shared_ptr* credReqPtr,
-              std_string_data(_ZNK17storeservicescore18CredentialsRequest7messageEv(credReqPtr->obj)),
-              need2FA ? "true" : "false");
- 
-+    if (need2FA && g_native_login && !amPassword) _exit(1);
-     if (need2FA && amPassword) {
-         char code[8] = {};
-         bool got_code = false;
--        if (!g_code_from_file && isatty(STDIN_FILENO)) {
-+        if (g_native_login) {
-+            std::string entered;
-+            if (!native_code(entered)) _exit(1);
-+            memcpy(code, entered.data(), entered.size());
-+            native_wipe(entered);
-+            got_code = true;
-+        } else if (!g_code_from_file && isatty(STDIN_FILENO)) {
-             printf("2FA code: ");
-             fflush(stdout);
-             got_code = scanf("%7s", code) == 1;
-@@ -83,12 +91,13 @@ void credentialHandler(struct shared_ptr* credReqPtr,
-             memset(amPassword, 0, strlen(amPassword));
-             free(amPassword);
-             amPassword = strdup(combined.c_str());
--            std::fill(combined.begin(), combined.end(), '\0');
-+            native_wipe(combined);
-         } else {
-             // A failed callback must not terminate a running service.
-             LOG_WARN("2FA code missing or invalid");
-         }
-         memset(code, 0, sizeof(code));
-+        if (g_native_login && (!got_code || !amPassword)) _exit(1);
-     }
- 
-     uint8_t* ptr = (uint8_t*)malloc(80);
-@@ -101,9 +110,6 @@ void credentialHandler(struct shared_ptr* credReqPtr,
-     _ZN17storeservicescore19CredentialsResponse11setUserNameERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE(credResp.obj, &username);
-     union std_string password = new_std_string(amPassword ? amPassword : "");
-     _ZN17storeservicescore19CredentialsResponse11setPasswordERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE(credResp.obj, &password);
--    LOG_DEBUG("cred submit: user=%.32s len=%zu pass_len=%zu",
--              amUsername ? amUsername : "(null)", username.size,
--              amPassword ? strlen(amPassword) : 0);
- 
-     _ZN17storeservicescore19CredentialsResponse15setResponseTypeENS0_12ResponseTypeE(credResp.obj, 2);
-     _ZN20androidstoreservices28AndroidPresentationInterface25handleCredentialsResponseERKNSt6__ndk110shared_ptrIN17storeservicescore19CredentialsResponseEEE(apInf.obj, &credResp);
 diff --git a/lite/lite_main.cpp b/lite/lite_main.cpp
-index 7579b0d..be52ab5 100644
 --- a/lite/lite_main.cpp
 +++ b/lite/lite_main.cpp
-@@ -19,6 +19,7 @@
- #include <pthread.h>
+@@ -20,6 +20,8 @@
  #include "cJSON.h"
  #include "logger.h"
+ #include "auth_input.h"
++#define AMDL_STORE_BRIDGE_IMPLEMENTATION
 +#include "native_login.h"
  
  /* ---- httplib.h (header-only HTTP server) ---- */
  /* NDK API 22 does not declare getifaddrs in headers, but it is available at runtime */
-@@ -35,6 +36,8 @@ extern "C" void freeifaddrs(struct ifaddrs* __ptr) { }
+@@ -36,6 +38,8 @@ extern "C" void freeifaddrs(struct ifaddrs* __ptr) { }
  static std::string g_host = "127.0.0.1";
  static int g_port = 12340;
  static bool g_login_only = false;
 +bool g_native_login = false;
 +static bool g_native_service = false;
+ static bool g_login_stdin = false;
  static std::string g_login_credentials;
  static std::string g_proxy;
- /* Device info: <client>/<version>/<platform>/<osver>/<model>/<build>/<locale>/<lang>/<android-id>.
-@@ -233,6 +236,7 @@ static std::string b64_encode(const uint8_t* data, size_t len) {
+@@ -188,6 +192,7 @@ static WebTokens get_web_tokens() {
+     if (g_tokens.music_token.empty()) g_tokens.music_token = get_music_token();
+     if (g_tokens.storefront_id.empty()) g_tokens.storefront_id = get_storefront();
+     g_tokens.storefront_id = normalize_storefront_id(g_tokens.storefront_id);
++    if (g_tokens.music_token.empty()) return WebTokens{};
+     /* leave storefront empty when not logged in; do not invent "us" */
+ 
+     auto now = std::chrono::steady_clock::now();
+@@ -234,6 +239,7 @@ static std::string b64_encode(const uint8_t* data, size_t len) {
  /*     HTTP Handlers              */
  /* ============================== */
  
@@ -82,38 +35,62 @@ index 7579b0d..be52ab5 100644
  static void handle_m3u8(const httplib::Request& req, httplib::Response& res) {
      auto adamId = req.get_param_value("adamId");
      if (adamId.empty()) {
-@@ -516,6 +520,12 @@ int main(int argc, char* argv[]) {
+@@ -431,6 +437,11 @@ static void token_refresh_worker() {
+         }
+         if (g_refresh_stop.load()) break;
+ 
++        {
++            std::lock_guard<std::mutex> lock(g_tokens_mutex);
++            if (g_tokens.music_token.empty()) continue;
++        }
++
+         LOG_INFO("background token refresh starting");
+         std::string sf, dev, music;
+         bool refreshed = false;
+@@ -506,6 +517,11 @@ int main(int argc, char* argv[]) {
          else if (arg == "--port" && i + 1 < cmdline_args.size()) g_port = atoi(cmdline_args[++i].c_str());
          else if (arg == "--debug") { g_log_level = "debug"; }
          else if (arg == "--code-from-file") g_code_from_file = true;
 +        else if (arg == "--native-login-stdin") {
-+            g_native_login = true;
-+            g_login_only = true;
++            g_native_login = true; g_login_only = true;
 +            if (!native_credentials(g_login_credentials)) return 1;
 +        }
 +        else if (arg == "--native-service") g_native_service = true;
          else if (arg == "--log-level" && i + 1 < cmdline_args.size()) g_log_level = cmdline_args[++i];
          else if (arg == "--log-file" && i + 1 < cmdline_args.size()) g_log_file = cmdline_args[++i];
          else if (arg == "--token-refresh-interval" && i + 1 < cmdline_args.size()) g_token_refresh_interval = atoi(cmdline_args[++i].c_str());
-@@ -546,6 +556,7 @@ int main(int argc, char* argv[]) {
+@@ -537,6 +553,7 @@ int main(int argc, char* argv[]) {
      set_base_dir(g_base_dir.c_str());
      g_tokens.base_dir = g_base_dir;
  
 +    if (g_native_service && (g_host != "127.0.0.1" || g_cors_enabled)) return 1;
      if (g_login_only) {
-         auto colon = g_login_credentials.find(':');
-         if (colon == std::string::npos) {
-@@ -556,6 +567,9 @@ int main(int argc, char* argv[]) {
-         std::string password = g_login_credentials.substr(colon + 1);
-         set_credentials(username.c_str(), password.c_str());
-         g_resolved_device_info = resolve_device_info(username);
-+        native_wipe(g_login_credentials);
-+        native_wipe(password);
-+        native_wipe(username);
- 
-         LOG_INFO("wrapper-lite login mode");
- 
-@@ -669,6 +683,7 @@ int main(int argc, char* argv[]) {
+         std::string username, password;
+         if (g_login_stdin) {
+@@ -583,6 +600,7 @@ int main(int argc, char* argv[]) {
+                 _exit(1);
+             }
+             if (!cache_login_tokens()) {
++                if (g_native_login) native_login_failure("token_cache_failed");
+                 LOG_ERROR("login_token_cache_failed");
+                 _exit(1);
+             }
+@@ -608,12 +626,14 @@ int main(int argc, char* argv[]) {
+         g_tokens.dev_token = readFile(std::string(g_base_dir) + "/DEV_TOKEN");
+         g_tokens.music_token = readFile(std::string(g_base_dir) + "/MUSIC_TOKEN");
+         if (g_tokens.dev_token.empty() || g_tokens.music_token.empty() || g_tokens.storefront_id.empty()) {
++            if (g_native_login) native_login_failure("token_cache_failed");
+             LOG_ERROR("login_token_cache_failed");
+             return 1;
+         }
+         {
+             std::lock_guard<std::mutex> lock(g_tokens_mutex);
+             if (!save_token_cache()) {
++                if (g_native_login) native_login_failure("token_cache_failed");
+                 LOG_ERROR("login_token_cache_failed");
+                 return 1;
+             }
+@@ -676,6 +696,7 @@ int main(int argc, char* argv[]) {
      });
  
      svr.Get("/m3u8", handle_m3u8);
@@ -121,20 +98,3 @@ index 7579b0d..be52ab5 100644
      svr.Get("/key", handle_key);
      svr.Get("/lyrics", handle_lyrics);
      svr.Get("/webplayback", handle_webplayback);
-@@ -696,14 +711,8 @@ int main(int argc, char* argv[]) {
-         if (res.status == 404)
-             res.set_content(json_error(404, "not found"), "application/json");
-     });
--    svr.set_exception_handler([](const httplib::Request&, httplib::Response& res, std::exception_ptr ep) {
--        try {
--            if (ep) std::rethrow_exception(ep);
--        } catch (const std::exception& e) {
--            LOG_ERROR("handler exception: %s", e.what());
--        } catch (...) {
--            LOG_ERROR("handler exception: unknown");
--        }
-+    svr.set_exception_handler([](const httplib::Request&, httplib::Response& res, std::exception_ptr) {
-+        LOG_ERROR("handler exception");
-         res.status = 500;
-         res.set_content(json_error(500, "internal error"), "application/json");
-     });

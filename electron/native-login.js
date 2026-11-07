@@ -1,7 +1,7 @@
 'use strict';
 const {CODES,STAGES,sanitizeDiagnostics}=require('./native-diagnostics');
 
-const STATES = new Set(['checking', 'needs_login', 'authenticating', 'needs_2fa', 'authenticated', 'unverified', 'runtime_unavailable']);
+const STATES = new Set(['checking', 'needs_login', 'authenticating', 'needs_2fa', 'needs_interaction', 'authenticated', 'unverified', 'runtime_unavailable']);
 function safeSession(input) {
   const legacyFactor=input?.factor!=null;
   const state = legacyFactor?'needs_login':STATES.has(input?.state) ? input.state : 'runtime_unavailable';

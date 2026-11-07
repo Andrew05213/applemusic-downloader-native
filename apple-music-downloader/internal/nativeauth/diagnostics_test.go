@@ -88,3 +88,48 @@ func TestDiagnosticsNewMusicFailureReplacesEarlierWrongCode(t *testing.T) {
 		t.Fatal("old wrong-code obscured later Music failure")
 	}
 }
+
+func TestDeviceLoginDialogsAndStoreSubcodeSurviveGenericFailure(t *testing.T) {
+	external := int64(-20101)
+	store := int32(10)
+	response := uint8(0)
+	r := &fakeRunner{login: func(ctx context.Context, _ Credentials, _ <-chan string, _ func()) error {
+		ReportEvent(ctx, StageEvent{Stage: "device_login", Outcome: "waiting", LoginEvent: "dialog_other"})
+		ReportEvent(ctx, StageEvent{Stage: "device_login", Outcome: "waiting", LoginEvent: "dialog_unhandled"})
+		ReportEvent(ctx, StageEvent{Stage: "device_login", Outcome: "failed", Code: "native_login_store_response_failed", StoreErrorCode: &store, StoreResponseType: &response, StoreExternalErrorCode: &external})
+		return ErrLoginFailed
+	}}
+	m := New(r, verified)
+	defer m.Close()
+	if err := m.Begin(context.Background(), Credentials{Email: "fixture", Password: "fixture"}); err != nil {
+		t.Fatal(err)
+	}
+	waitState(t, m, "needs_login")
+	d := m.Snapshot().Diagnostics
+	if !ValidDiagnostics(d) || d.LastFailure == nil || d.LastFailure.Code != "native_login_store_response_failed" || d.LastFailure.StoreExternalErrorCode == nil || *d.LastFailure.StoreExternalErrorCode != external {
+		t.Fatalf("subcode was lost: %+v", d)
+	}
+	found := 0
+	for _, e := range d.Events {
+		if e.LoginEvent != "" {
+			found++
+		}
+	}
+	if found != 2 {
+		t.Fatal("dialog events missing")
+	}
+	e := StageEvent{Stage: "device_login", Outcome: "waiting", LoginEvent: "dialog_other"}
+	e.LoginEvent = "SENTINEL"
+	if validEventFields(e) {
+		t.Fatal("arbitrary event accepted")
+	}
+	e = StageEvent{Stage: "music_storefront", Outcome: "failed", Code: "native_login_store_response_failed", StoreExternalErrorCode: &external}
+	if validEventFields(e) {
+		t.Fatal("subcode accepted at wrong stage")
+	}
+	external = 9007199254740992
+	e.Stage = "device_login"
+	if validEventFields(e) {
+		t.Fatal("unsafe integer accepted")
+	}
+}

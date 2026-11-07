@@ -122,7 +122,7 @@ func snapshot(raw []byte) (nativeauth.Snapshot, error) {
 		return state, ErrProtocol
 	}
 	switch state.State {
-	case "checking", "needs_login", "authenticating", "needs_2fa", "authenticated", "unverified":
+	case "checking", "needs_login", "authenticating", "needs_2fa", "needs_interaction", "authenticated", "unverified":
 	default:
 		return nativeauth.Snapshot{}, ErrProtocol
 	}
@@ -182,6 +182,49 @@ func (c *Client) Code(ctx context.Context, code string) (nativeauth.Snapshot, er
 }
 func (c *Client) Cancel(ctx context.Context) (nativeauth.Snapshot, error) {
 	return c.sessionAction(ctx, "/session/cancel", struct{}{})
+}
+func (c *Client) Interaction(ctx context.Context) (*nativeauth.Interaction, error) {
+	raw, err := c.request(ctx, "GET", "/session/interaction", nil, "", nativeauth.MaxInteractionBytes)
+	if err != nil {
+		return nil, err
+	}
+	var value struct {
+		Interaction *nativeauth.Interaction `json:"interaction"`
+	}
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if decoder.Decode(&value) != nil || decoder.Decode(new(any)) != io.EOF || !nativeauth.ValidInteraction(value.Interaction) {
+		return nil, ErrProtocol
+	}
+	if value.Interaction != nil && len(value.Interaction.Scope) != 32 {
+		return nil, ErrProtocol
+	}
+	if value.Interaction != nil && strings.Trim(value.Interaction.Scope, "0123456789abcdef") != "" {
+		return nil, ErrProtocol
+	}
+	return value.Interaction, nil
+}
+func (c *Client) SubmitInteraction(ctx context.Context, input nativeauth.InteractionAnswer) error {
+	raw, err := json.Marshal(input)
+	if err != nil || len(raw) > nativeauth.MaxInteractionBytes {
+		return ErrProtocol
+	}
+	defer func() {
+		for i := range raw {
+			raw[i] = 0
+		}
+	}()
+	data, err := c.request(ctx, "POST", "/session/interaction", raw, "", 4096)
+	if err != nil {
+		return err
+	}
+	var result struct {
+		Accepted bool `json:"accepted"`
+	}
+	if json.Unmarshal(data, &result) != nil || !result.Accepted {
+		return ErrProtocol
+	}
+	return nil
 }
 func (c *Client) Recheck(ctx context.Context) (nativeauth.Snapshot, error) {
 	return c.sessionAction(ctx, "/session/recheck", struct{}{})

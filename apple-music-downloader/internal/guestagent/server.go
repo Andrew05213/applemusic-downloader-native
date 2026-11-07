@@ -77,6 +77,16 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		respond(w, 200, map[string]any{"code": 0, "data": map[string]any{"regions": regions, "controlProtocol": 1, "sessionState": state.State}})
 	case r.URL.Path == "/session" && r.Method == http.MethodGet:
 		respond(w, 200, s.session.Refresh(s.ctx))
+	case r.URL.Path == "/session/interaction" && r.Method == http.MethodGet:
+		w.Header().Set("Cache-Control", "no-store")
+		respond(w, 200, map[string]any{"interaction": s.session.Interaction()})
+	case r.URL.Path == "/session/interaction" && r.Method == http.MethodPost:
+		var input nativeauth.InteractionAnswer
+		if !decode(w, r, &input, nativeauth.MaxInteractionBytes) || s.session.SubmitInteraction(input) != nil {
+			failure(w, 400, nativeauth.ErrInvalidInput.Error())
+			return
+		}
+		respond(w, 202, map[string]bool{"accepted": true})
 	case r.URL.Path == "/session" && r.Method == http.MethodPost:
 		var credentials nativeauth.Credentials
 		if !decode(w, r, &credentials, 32768) {

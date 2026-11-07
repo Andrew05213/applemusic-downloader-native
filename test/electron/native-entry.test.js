@@ -64,6 +64,21 @@ test('device login and six-digit code reach the real NativeService transport',as
  assert.equal(f.handlers.has('native:sms-send'),false);
 });
 
+test('private auth interaction IPC enforces login owner and validates scoped answers',async()=>{
+ const vm=require('node:vm');
+ const q={protocolVersion:1,scope:'a'.repeat(32),attemptId:'18446744073709551615',requestId:'9007199254740993',expiresAfterMs:1000,kind:4,unsupported:0,textTruncated:false,title:'PRIVATE_TITLE',message:'PRIVATE_MESSAGE',buttons:[{id:'2',label:'Submit',role:2,enabled:true,unsupported:0}],fields:[{id:'3',label:'Code',type:5,required:true,minBytes:6,maxBytes:6,digitsOnly:true}]};
+ const accepted=[];
+ const f=ipcFixture(async(target,options)=>{assert.equal(target,'/api/native/interaction');if(options?.method==='POST'){accepted.push(structuredClone(options.body));return {accepted:true};}return {interaction:q};});
+ const got=await f.handlers.get('native:get-auth-interaction')(f.event);assert.equal(got.attemptId,q.attemptId);
+ const a={protocolVersion:1,scope:q.scope,attemptId:q.attemptId,requestId:q.requestId,buttonId:'2',disposition:1,values:[{fieldId:'3',value:'123456'}]};
+ for(const change of [{scope:'b'.repeat(32)},{requestId:'1'},{values:[{fieldId:'3',value:'12345x'}]}])await assert.rejects(f.handlers.get('native:answer-auth-interaction')(f.event,{...a,...change}),/native_interaction_rejected/);
+ await f.handlers.get('native:answer-auth-interaction')(f.event,a);assert.equal(accepted[0].values[0].value,'123456');
+ await assert.rejects(f.handlers.get('native:get-auth-interaction')({...f.event,senderFrame:{url:f.event.senderFrame.url}}),/native_sender_rejected/);
+ vm.runInContext('owner=fixtureWindow;fixtureWindow.webContents.mainFrame.url=nativeURL;',f.context);
+ await assert.rejects(f.handlers.get('native:get-auth-interaction')(f.event),/native_sender_rejected/);
+ await assert.rejects(f.handlers.get('native:answer-auth-interaction')(f.event,a),/native_sender_rejected/);
+ await assert.rejects(f.handlers.get('native:api')(f.event,'/api/native/interaction'),/native_api_rejected/);
+});
 test('default development entry selects only native app-owned UI and protocol-1 runtime',t=>{
  const directory=fs.mkdtempSync(path.join(os.tmpdir(),'native-entry-'));t.after(()=>fs.rmSync(directory,{recursive:true,force:true}));const manifest=path.join(directory,'bundle.json');fs.writeFileSync(manifest,JSON.stringify({controlProtocol:1}));
  const launch=nativeLaunch(root,['--native-manifest',manifest],'electron.exe');assert.equal(launch.args[0],path.join(root,'src/main/native-main.js'));assert.equal(require('../../package.json').scripts.start,'node electron/start-native.js');

@@ -15,8 +15,8 @@ test('native guest inputs pin sources, package snapshot and QEMU publisher diges
   const lock = require('../../native-runtime/inputs.lock.json');
   assert.equal(lock.wrapper.repository, 'https://github.com/Andrew05213/wrapper');
   assert.equal(lock.wrapper.branch, 'work');
-  assert.equal(lock.wrapper.commit, '15fe0cb75b866e7460bf8d28d155e813a870e076');
-  assert.equal(lock.wrapper.sha256, '6c4a846c2664077c983d252b16e65114cac2d01bc6a632c67f14ea04a1a25041');
+  assert.equal(lock.wrapper.commit, 'b2bebc318ae9e7aa208a27642c193d3a79418d95');
+  assert.equal(lock.wrapper.sha256, 'c61e1b921d6a298bb3c1cf01e67f523b951d94de2d9ebdcd2dc53957bbb3cd3f');
   assert.equal(lock.wrapper.url, 'https://codeload.github.com/Andrew05213/wrapper/tar.gz/'+lock.wrapper.commit);
   assert.equal(lock.wrapper.cacheName, 'wrapper-andrew05213-'+lock.wrapper.commit.slice(0,8)+'.tar.gz');
   assert.match(fs.readFileSync(path.join(root,'native-runtime/Dockerfile'),'utf8'),new RegExp(lock.wrapper.sha256+'  wrapper\\.tar\\.gz'));
@@ -81,7 +81,7 @@ test('native guest recipe preserves strict TLS, source pins and a fail-closed da
   assert.doesNotMatch(init, /--login|--debug|config\.yaml|cookie/i);
   const session=fs.readFileSync(path.join(root,'native-runtime/lite-session.patch'),'utf8');
   assert.doesNotMatch(session,/^diff --git .*playback\.cpp|^\+.*getKdContext\(/m);
-  assert.match(session,/native_code\(entered\)/);
+  assert.match(fs.readFileSync(path.join(root,'native-runtime/native_login.h'),'utf8'),/set_auth_interaction_handler\(native_display_interaction\)/);
   assert.match(session,/g_native_service && \(g_host != "127\.0\.0\.1" \|\| g_cors_enabled\)/);
   const service=fs.readFileSync(path.join(root,'native-runtime/native_service.h'),'utf8');
   assert.match(service,/native_decrypt\(stream, adam, uri, req\.body, output\)/);

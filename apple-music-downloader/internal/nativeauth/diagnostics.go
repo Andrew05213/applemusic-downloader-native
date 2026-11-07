@@ -15,16 +15,47 @@ import (
 var DiagnosticStages = []string{"restore_session", "login_start", "stop_lite", "device_login", "device_code", "gsa_provider", "gsa_prepare", "adi_helper_start", "adi_initialize", "adi_status", "adi_lookup", "adi_provision_start", "adi_provision_sdk_start", "adi_provision_finish", "adi_provision_sdk_finish", "adi_state_save", "adi_otp", "gsa_authenticate", "phone_list", "sms_wait_phone", "sms_send", "sms_wait_code", "sms_verify", "gsa_resume", "store_credentials", "lite_bind", "music_service_start", "music_tokens", "music_storefront", "login_complete", "login_cancel", "desktop_login_submit", "desktop_sms_send", "desktop_sms_code", "desktop_service", "desktop_recheck", "desktop_code", "diagnostics"}
 var DiagnosticExtraCodes = []string{"native_auth_required", "native_session_unverified", "native_login_failed", "native_auth_busy", "native_auth_input_invalid", "native_auth_cancelled", "native_adi_provider_unavailable", "native_adi_provisioning_failed", "native_adi_state_invalid", "native_adi_cancelled", "native_adi_not_provisioned", "native_network_dns_failed", "native_network_timeout", "native_tls_certificate_invalid", "native_network_connection_failed", "native_adi_http_failed", "native_adi_response_invalid", "native_agent_unavailable", "native_agent_protocol_invalid", "native_service_unavailable", "native_service_timeout", "native_service_closed", "native_api_unavailable", "native_api_failed", "native_api_response_invalid", "native_login_rejected", "native_code_rejected", "native_sms_rejected", "native_operation_failed", "native_runtime_unavailable", "native_diagnostics_read_failed", "native_diagnostics_write_failed"}
 
+var DeviceLoginDiagnosticCodes = []string{
+	"native_login_process_start_failed", "native_login_process_exited", "native_login_process_signalled",
+	"native_login_protocol_failed", "native_login_process_timeout", "native_login_store_no_response",
+	"native_login_store_response_failed", "native_login_store_bridge_failed", "native_login_input_invalid",
+	"native_login_interaction_timeout", "native_login_interaction_unavailable", "native_login_interaction_unsupported", "native_login_internal_error", "native_login_token_cache_failed",
+}
+
+var DeviceLoginEvents = []string{
+	"dialog_sign_in", "dialog_other", "dialog_existing_account_selected", "dialog_unhandled",
+	"credentials_requested", "verification_requested",
+	"store_response_received", "credentials_submitted", "verification_submitted", "retry_selected", "interaction_answer_rejected",
+	"interaction_unsupported_field", "interaction_unsupported_action", "interaction_unsupported_metadata", "interaction_unsupported_limits", "interaction_unsupported_credentials",
+}
+
+func KnownDeviceLoginEvent(event string) bool {
+	for _, value := range DeviceLoginEvents {
+		if event == value {
+			return true
+		}
+	}
+	return false
+}
+
 type StageEvent struct {
-	TraceID        string `json:"traceId"`
-	Seq            uint64 `json:"seq"`
-	Attempt        uint64 `json:"attempt"`
-	At             int64  `json:"at"`
-	Stage          string `json:"stage"`
-	Outcome        string `json:"outcome"`
-	Code           string `json:"code,omitempty"`
-	HTTPStatus     int    `json:"httpStatus,omitempty"`
-	AppleErrorCode string `json:"appleErrorCode,omitempty"`
+	TraceID                string `json:"traceId"`
+	Seq                    uint64 `json:"seq"`
+	Attempt                uint64 `json:"attempt"`
+	At                     int64  `json:"at"`
+	Stage                  string `json:"stage"`
+	Outcome                string `json:"outcome"`
+	Code                   string `json:"code,omitempty"`
+	HTTPStatus             int    `json:"httpStatus,omitempty"`
+	AppleErrorCode         string `json:"appleErrorCode,omitempty"`
+	ExitCode               *uint8 `json:"exitCode,omitempty"`
+	ExitSignal             uint8  `json:"exitSignal,omitempty"`
+	StoreResponseType      *uint8 `json:"storeResponseType,omitempty"`
+	StoreErrorCode         *int32 `json:"storeErrorCode,omitempty"`
+	StoreExternalErrorCode *int64 `json:"storeExternalErrorCode,omitempty"`
+	StoreProtocolErrorCode *int64 `json:"storeProtocolErrorCode,omitempty"`
+	StoreAuthStatus        *int32 `json:"storeAuthStatus,omitempty"`
+	LoginEvent             string `json:"loginEvent,omitempty"`
 }
 type Diagnostics struct {
 	Events      []StageEvent `json:"events"`
@@ -68,6 +99,11 @@ func KnownCode(code string) bool {
 			return true
 		}
 	}
+	for _, s := range DeviceLoginDiagnosticCodes {
+		if code == s {
+			return true
+		}
+	}
 	for _, s := range ADIResponseCodes {
 		if code == s {
 			return true
@@ -78,6 +114,24 @@ func KnownCode(code string) bool {
 func validEventFields(e StageEvent) bool {
 	if !KnownStage(e.Stage) || (e.Code != "" && !KnownCode(e.Code)) || (e.HTTPStatus != 0 && (e.HTTPStatus < 100 || e.HTTPStatus > 599)) || (e.AppleErrorCode != "" && !KnownAppleErrorCode(e.AppleErrorCode)) {
 		return false
+	}
+	if e.LoginEvent != "" && (e.Stage != "device_login" || e.Outcome != "waiting" || e.Code != "" || !KnownDeviceLoginEvent(e.LoginEvent)) {
+		return false
+	}
+	if (e.StoreExternalErrorCode != nil && (*e.StoreExternalErrorCode < -9007199254740991 || *e.StoreExternalErrorCode > 9007199254740991)) || (e.StoreProtocolErrorCode != nil && (*e.StoreProtocolErrorCode < -9007199254740991 || *e.StoreProtocolErrorCode > 9007199254740991)) {
+		return false
+	}
+	if e.ExitCode != nil || e.ExitSignal != 0 {
+		if e.Stage != "device_login" || e.Outcome != "failed" || e.ExitSignal > 64 || (e.ExitSignal != 0 && e.ExitCode != nil) {
+			return false
+		}
+	}
+	if e.StoreResponseType != nil || e.StoreErrorCode != nil || e.StoreExternalErrorCode != nil || e.StoreProtocolErrorCode != nil || e.StoreAuthStatus != nil {
+		responseWaiting := e.Outcome == "waiting" && e.LoginEvent == "store_response_received" && e.Code == "" && e.ExitCode == nil && e.ExitSignal == 0
+		responseFailed := e.Outcome == "failed" && e.Code == "native_login_store_response_failed"
+		if e.Stage != "device_login" || !responseWaiting && !responseFailed {
+			return false
+		}
 	}
 	switch e.Outcome {
 	case "begin", "ok", "waiting", "cancelled":
