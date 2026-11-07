@@ -32,6 +32,7 @@ func (c *Client) GetStationResp(ctx context.Context, storefront, id, language, t
 	query := url.Values{}
 	query.Set("omit[resource]", "autos")
 	query.Set("extend", "editorialVideo")
+	query.Set("platform", "web")
 	query.Set("l", language)
 	req.URL.RawQuery = query.Encode()
 	obj := new(StationResp)
@@ -154,24 +155,11 @@ type StationRespData struct {
 			TextColor3 string `json:"textColor3"`
 			TextColor4 string `json:"textColor4"`
 		} `json:"artwork"`
-		IsLive         bool   `json:"isLive"`
-		URL            string `json:"url"`
-		Name           string `json:"name"`
-		EditorialVideo struct {
-			MotionTall struct {
-				Video string `json:"video"`
-			} `json:"motionTallVideo3x4"`
-			MotionSquare struct {
-				Video string `json:"video"`
-			} `json:"motionSquareVideo1x1"`
-			MotionDetailTall struct {
-				Video string `json:"video"`
-			} `json:"motionDetailTall"`
-			MotionDetailSquare struct {
-				Video string `json:"video"`
-			} `json:"motionDetailSquare"`
-		} `json:"editorialVideo"`
-		PlayParams struct {
+		IsLive         bool           `json:"isLive"`
+		URL            string         `json:"url"`
+		Name           string         `json:"name"`
+		EditorialVideo EditorialVideo `json:"editorialVideo"`
+		PlayParams     struct {
 			ID          string `json:"id"`
 			Kind        string `json:"kind"`
 			Format      string `json:"format"`
