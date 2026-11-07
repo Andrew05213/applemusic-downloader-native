@@ -69,6 +69,17 @@ async function main(){
   assert.equal(await login.locator('#login-password').count(),1);
   assert.equal(await login.locator('iframe,webview').count(),0);
   evidence.deviceOnlyEntryVerified=true;
+  const phoneCountry=login.locator('#account-fields [aria-label="国家/地区区号"]');
+  await expect(phoneCountry).toHaveValue('+86');
+  await login.locator('#login-email').fill('10000000000');
+  await expect(login.locator('#account-fields .account-phone-hint')).toContainText('+8610000000000');
+  await login.locator('#login-email').fill('+8610000000000');
+  await expect(phoneCountry).toBeDisabled();
+  await expect(login.locator('#account-fields .account-phone-hint')).toHaveText('号码已带国际区号，不会重复添加。');
+  await login.locator('#login-email').fill('fixture@example.invalid');
+  await expect(login.locator('#account-fields .account-phone-options')).toBeHidden();
+  await login.locator('#login-email').fill('');
+  evidence.packagedPhoneCountryControlVerified=true;
   // Only the private UI transport is substituted. Packaged preload, owner
   // checks, validators and rendering remain production code.
   await app.evaluate(({app})=>{
@@ -109,7 +120,9 @@ async function main(){
   await setPrompt({...baseInteraction,requestId:'9007199254740996',kind:2,title:'Check the account information you entered and try again.',buttons:[{...baseInteraction.buttons[0],label:'Retry',role:4},{id:'9007199254740999',label:'Cancel',role:3,enabled:true,unsupported:0}]});
   assert.equal(await login.getByRole('button',{name:'取消登录',exact:true}).count(),1);
   await expect(login.locator('.login-actions')).toBeHidden();
-  await expect(login.locator('#interaction-message')).toHaveText('请检查输入的 Apple 账户信息，然后重新输入。');
+  await expect(login.locator('#interaction-message')).toContainText('请检查输入的 Apple 账户信息，然后重新输入。');
+  await expect(login.locator('#interaction-message')).toContainText(baseInteraction.message);
+  assert.equal(await login.locator('#interaction-message img').count(),0);
   await login.screenshot({path:path.join(profile,'auth-failure-chinese.png')});
   await login.getByRole('button',{name:'重新输入',exact:true}).click();
   await setPrompt({...baseInteraction,requestId:'9007199254740997',kind:6,unsupported:2,title:'暂不支持的步骤'});
