@@ -1,10 +1,10 @@
 'use strict';
-// Format conversion only: preserve the imagegen artwork, let the existing
-// packaging tool generate Windows sizes, and extract its 256px PNG preview.
+// Format conversion only, from the committed PNG. No local AI master, API key,
+// or developer-only image tools are needed to regenerate the Windows icon.
 const fs=require('node:fs'),path=require('node:path'),{spawnSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),out=path.join(root,'.artifacts','app-icon-converted');
 fs.mkdirSync(out,{recursive:true});
-const result=spawnSync(require('app-builder-bin').appBuilderPath,['icon','--format','ico','--input','src/assets/app-icon-master.png','--out',out,'--root',root],{cwd:root,encoding:'utf8',windowsHide:true});
+const result=spawnSync(require('app-builder-bin').appBuilderPath,['icon','--format','ico','--input','src/assets/app-icon.png','--out',out,'--root',root],{cwd:root,encoding:'utf8',windowsHide:true});
 if(result.status!==0)throw Error('app_icon_conversion_failed');
 const data=fs.readFileSync(path.join(out,'icon.ico')),count=data.readUInt16LE(4);
 let png;

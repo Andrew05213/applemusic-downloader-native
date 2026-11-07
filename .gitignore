@@ -32,3 +32,5 @@ wrapper-linux/rootfs/data/data/
 /legacy/v1/wrapper-linux/rootfs/data/data/com.apple.android.music/*
 !/legacy/v1/wrapper-linux/rootfs/data/data/com.apple.android.music/.gitkeep
 apple-music-downloader/config.yaml
+# Keep the original AI export local; audited runtime icons are below 1 MiB.
+/src/assets/app-icon-master.png
