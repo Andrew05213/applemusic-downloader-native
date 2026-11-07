@@ -47,6 +47,17 @@ node electron/native-build-environment.js test/native/native-stream-live.cjs
 
 CI 的 Linux 示例见 `.github/workflows/verify.yml`，不依赖旧 Docker/WSL 构建镜像。
 
+## 原生动态封面
+
+动态封面回归位于 `internal/motionartwork/` 与 `animated_artwork_test.go`，覆盖 HLS 清晰度选择、相对地址和重定向、显式及隐式字节范围、非零时间戳归零、B 帧时间戳、样本完整性、取消和损坏响应，以及临时文件、覆盖策略和文件回执。应用的下载路径使用 Go HTTP 和现有 MP4 库；测试会清空工具搜索路径，确认无需安装 FFmpeg。
+
+```powershell
+go -C apple-music-downloader test -count=1 -run 'TestAnimatedArtwork' .
+go -C apple-music-downloader test -race ./internal/motionartwork
+```
+
+CI 还用开发工具生成 4 秒、120 帧的合成 H.264/fMP4 HLS 输入，经原生下载器导出后完整解码；这项测试不使用账号或商业视频。`TestDownloadGeneratedArtworkFixture` 通过 `AMDL_ARTWORK_FIXTURE` 指定输入目录（内含 `index.m3u8`），可通过 `AMDL_ARTWORK_OUTPUT` 指定导出文件。未提供夹具时该项跳过，常规回归不受影响。生成和验证命令见 `.github/workflows/verify.yml`。
+
 ## 打包应用验收
 
 构建后使用以下工具和参数：

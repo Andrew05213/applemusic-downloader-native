@@ -57,6 +57,12 @@ jobs:
           ffmpeg -hide_banner -v error -nostdin -f lavfi -i sine=frequency=440:sample_rate=48000 -t 42 -c:a aac -b:a 128k -f hls -hls_time 2 -hls_playlist_type vod -hls_segment_type fmp4 -hls_fmp4_init_filename init.mp4 .artifacts/ci/aac-input/index.m3u8
           AMDL_STREAM_FIXTURE="$PWD/.artifacts/ci/aac-input" AMDL_STREAM_OUTPUT="$PWD/.artifacts/ci/aac-output" go -C apple-music-downloader test -count=1 -run '^TestStreamGeneratedAACFixture$' ./utils/runv2
           ffmpeg -hide_banner -v error -xerror -nostdin -i .artifacts/ci/aac-output/complete.m4a -map 0:a:0 -f null -
+      - name: Verify native animated artwork with generated video
+        run: |
+          mkdir -p .artifacts/ci/artwork-input
+          ffmpeg -hide_banner -v error -nostdin -f lavfi -i testsrc2=size=64x64:rate=30 -t 4 -c:v libx264 -bf 2 -g 30 -f hls -hls_time 1 -hls_list_size 0 -hls_playlist_type vod -hls_segment_type fmp4 -hls_fmp4_init_filename init.mp4 .artifacts/ci/artwork-input/index.m3u8
+          AMDL_ARTWORK_FIXTURE="$PWD/.artifacts/ci/artwork-input" AMDL_ARTWORK_OUTPUT="$PWD/.artifacts/ci/artwork.mp4" go -C apple-music-downloader test -count=1 -run '^TestDownloadGeneratedArtworkFixture$' ./internal/motionartwork
+          ffmpeg -hide_banner -v error -xerror -nostdin -i .artifacts/ci/artwork.mp4 -map 0:v:0 -f null -
       - name: Native and shared UI regression with real AAC
         env:
           AMDL_STREAM_BROWSER: chrome
