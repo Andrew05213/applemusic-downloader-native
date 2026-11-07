@@ -245,7 +245,7 @@ func TestClientFetchPlaylistKeepsOnlySafePaginationQuery(t *testing.T) {
 	if query.Has("include[library-songs]") || query.Has("include[library-music-videos]") {
 		t.Fatal("library expansions changed public catalog request")
 	}
-	if len(query) != 7 {
+	if len(query) != 8 || query.Get("platform") != "web" {
 		t.Fatalf("unexpected query keys = %v", query)
 	}
 }

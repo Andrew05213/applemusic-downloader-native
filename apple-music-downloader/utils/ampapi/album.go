@@ -38,6 +38,7 @@ func (c *Client) GetAlbumResp(ctx context.Context, storefront, id, language, tok
 	//query.Set("fields[albums:albums]", "artistName,artwork,name,releaseDate,url")
 	//query.Set("fields[record-labels]", "name")
 	query.Set("extend", "editorialVideo,extendedAssetUrls")
+	query.Set("platform", "web")
 	query.Set("l", language)
 	req.URL.RawQuery = query.Encode()
 	obj := new(AlbumResp)
@@ -88,6 +89,7 @@ func (c *Client) GetAlbumRespByHref(ctx context.Context, href, language, token s
 	//query.Set("fields[albums:albums]", "artistName,artwork,name,releaseDate,url")
 	//query.Set("fields[record-labels]", "name")
 	query.Set("extend", "editorialVideo,extendedAssetUrls")
+	query.Set("platform", "web")
 	query.Set("l", language)
 	req.URL.RawQuery = query.Encode()
 	obj := new(AlbumResp)
@@ -148,21 +150,8 @@ type AlbumRespData struct {
 			ID   string `json:"id"`
 			Kind string `json:"kind"`
 		} `json:"playParams"`
-		IsCompilation  bool `json:"isCompilation"`
-		EditorialVideo struct {
-			MotionTall struct {
-				Video string `json:"video"`
-			} `json:"motionTallVideo3x4"`
-			MotionSquare struct {
-				Video string `json:"video"`
-			} `json:"motionSquareVideo1x1"`
-			MotionDetailTall struct {
-				Video string `json:"video"`
-			} `json:"motionDetailTall"`
-			MotionDetailSquare struct {
-				Video string `json:"video"`
-			} `json:"motionDetailSquare"`
-		} `json:"editorialVideo"`
+		IsCompilation  bool           `json:"isCompilation"`
+		EditorialVideo EditorialVideo `json:"editorialVideo"`
 	} `json:"attributes"`
 	Relationships struct {
 		RecordLabels struct {

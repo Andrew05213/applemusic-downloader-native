@@ -333,6 +333,7 @@ func setPlaylistQuery(req *http.Request, language string, library bool) {
 		query.Set("include", "tracks,artists,record-labels")
 		query.Set("include[songs]", "artists")
 		query.Set("extend", "editorialVideo,extendedAssetUrls")
+		query.Set("platform", "web")
 	}
 	if language != "" {
 		query.Set("l", language)
@@ -360,6 +361,7 @@ func setPlaylistQueryIfMissing(req *http.Request, language string, library bool)
 		safe.Set("include", "tracks,artists,record-labels")
 		safe.Set("include[songs]", "artists")
 		safe.Set("extend", "editorialVideo,extendedAssetUrls")
+		safe.Set("platform", "web")
 	}
 	if language != "" {
 		safe.Set("l", language)
@@ -528,7 +530,7 @@ func validatePlaylistPaginationQuery(raw string) error {
 			if !isPlaylistLanguage(items[0]) {
 				return ErrPlaylistNextUnsafe
 			}
-		case "omit[resource]", "include", "include[songs]", "extend":
+		case "omit[resource]", "include", "include[songs]", "extend", "platform":
 			// These are accepted for compatibility but overwritten by the
 			// fixed query contract in setPlaylistQueryIfMissing.
 		default:
@@ -624,21 +626,8 @@ type PlaylistRespData struct {
 			ID   string `json:"id"`
 			Kind string `json:"kind"`
 		} `json:"playParams"`
-		IsCompilation  bool `json:"isCompilation"`
-		EditorialVideo struct {
-			MotionTall struct {
-				Video string `json:"video"`
-			} `json:"motionTallVideo3x4"`
-			MotionSquare struct {
-				Video string `json:"video"`
-			} `json:"motionSquareVideo1x1"`
-			MotionDetailTall struct {
-				Video string `json:"video"`
-			} `json:"motionDetailTall"`
-			MotionDetailSquare struct {
-				Video string `json:"video"`
-			} `json:"motionDetailSquare"`
-		} `json:"editorialVideo"`
+		IsCompilation  bool           `json:"isCompilation"`
+		EditorialVideo EditorialVideo `json:"editorialVideo"`
 	} `json:"attributes"`
 	Relationships struct {
 		RecordLabels struct {

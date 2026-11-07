@@ -23,7 +23,6 @@ import (
 	"time"
 
 	runtimeconfig "github.com/Andrew05213/applemusic_downloader/internal/config"
-	"github.com/Andrew05213/applemusic_downloader/internal/outbound"
 	"github.com/Andrew05213/applemusic_downloader/internal/transfer"
 	"github.com/Andrew05213/applemusic_downloader/utils/ampapi"
 	"github.com/Andrew05213/applemusic_downloader/utils/runv2"
@@ -177,121 +176,6 @@ func copyNetworkResponse(ctx context.Context, rawURL string, maximum int64, head
 		return networkContextError(ctx, err)
 	}
 	return nil
-}
-
-type motionArtworkCommandRunner func(context.Context, []string) error
-
-// runMotionArtworkFFmpeg ensures ffmpeg's HLS subrequests use the same
-// supervisor-delivered bridge as the Go clients. Downloading only the first
-// playlist into a local file would leave its segment and key URLs able to
-// bypass that bridge.
-func runMotionArtworkFFmpeg(ctx context.Context, sourceURL, destinationPath string) error {
-	bridgeURL, bridgeAvailable := outbound.BridgeURL()
-	return runMotionArtworkFFmpegWithRunner(
-		ctx,
-		sourceURL,
-		destinationPath,
-		strings.TrimSpace(os.Getenv("AMDL_RUNTIME")) == "wsl-appliance",
-		bridgeURL,
-		bridgeAvailable,
-		runMotionArtworkFFmpegCommand,
-	)
-}
-
-func runMotionArtworkFFmpegWithRunner(
-	ctx context.Context,
-	sourceURL, destinationPath string,
-	applianceRuntime bool,
-	bridgeURL string,
-	bridgeAvailable bool,
-	runner motionArtworkCommandRunner,
-) error {
-	arguments, err := motionArtworkFFmpegArguments(sourceURL, destinationPath, applianceRuntime, bridgeURL, bridgeAvailable)
-	if err != nil {
-		return err
-	}
-	if runner == nil {
-		return errors.New("animated artwork command runner is unavailable")
-	}
-	return runner(ctx, arguments)
-}
-
-func runMotionArtworkFFmpegCommand(ctx context.Context, arguments []string) error {
-	return exec.CommandContext(ctx, "ffmpeg", arguments...).Run()
-}
-
-func motionArtworkFFmpegArguments(sourceURL, destinationPath string, applianceRuntime bool, bridgeURL string, bridgeAvailable bool) ([]string, error) {
-	arguments := []string{"-loglevel", "quiet", "-y"}
-	if applianceRuntime {
-		if !bridgeAvailable {
-			return nil, errors.New("appliance animated artwork requires a validated outbound bridge")
-		}
-		if err := validateApplianceMotionArtworkURL(sourceURL); err != nil {
-			return nil, err
-		}
-		canonicalBridgeURL, err := canonicalMotionArtworkBridgeURL(bridgeURL)
-		if err != nil {
-			return nil, err
-		}
-		// HLS can recursively request playlists, keys, and media segments. Keep
-		// the protocol set minimal and attach the validated bridge before -i so
-		// every HTTPS request made by this ffmpeg input goes through CONNECT.
-		arguments = append(arguments,
-			"-protocol_whitelist", "https,http,tls,tcp,crypto,httpproxy",
-			"-http_proxy", canonicalBridgeURL,
-		)
-	}
-	arguments = append(arguments, "-i", sourceURL, "-c", "copy", destinationPath)
-	return arguments, nil
-}
-
-func canonicalMotionArtworkBridgeURL(rawURL string) (string, error) {
-	parsed, err := url.Parse(rawURL)
-	if err != nil || parsed.Scheme != "http" || parsed.User != nil || parsed.Hostname() != "127.0.0.1" ||
-		parsed.Port() == "" || parsed.Path != "" || parsed.RawPath != "" || parsed.RawQuery != "" || parsed.Fragment != "" || parsed.Opaque != "" {
-		return "", errors.New("appliance animated artwork bridge is invalid")
-	}
-	port, err := strconv.Atoi(parsed.Port())
-	if err != nil || port < 1 || port > 65535 {
-		return "", errors.New("appliance animated artwork bridge is invalid")
-	}
-	canonical := "http://" + net.JoinHostPort("127.0.0.1", strconv.Itoa(port))
-	if parsed.Host != net.JoinHostPort("127.0.0.1", parsed.Port()) || rawURL != canonical {
-		return "", errors.New("appliance animated artwork bridge is invalid")
-	}
-	return canonical, nil
-}
-
-func validateApplianceMotionArtworkURL(rawURL string) error {
-	parsed, err := url.ParseRequestURI(rawURL)
-	if err != nil || parsed.Scheme != "https" || parsed.User != nil || parsed.Hostname() == "" || parsed.Port() != "" && parsed.Port() != "443" ||
-		!validApplianceMotionArtworkHostname(parsed.Hostname()) {
-		return errors.New("appliance animated artwork URL is invalid")
-	}
-	return nil
-}
-
-func validApplianceMotionArtworkHostname(host string) bool {
-	host = strings.ToLower(host)
-	if len(host) > 253 || !strings.Contains(host, ".") || strings.HasSuffix(host, ".") || net.ParseIP(host) != nil {
-		return false
-	}
-	for _, suffix := range []string{".local", ".localhost", ".localdomain", ".lan", ".home", ".internal", ".invalid", ".test", ".example"} {
-		if strings.HasSuffix(host, suffix) {
-			return false
-		}
-	}
-	for _, label := range strings.Split(host, ".") {
-		if len(label) == 0 || len(label) > 63 || label[0] == '-' || label[len(label)-1] == '-' {
-			return false
-		}
-		for _, character := range label {
-			if (character < 'a' || character > 'z') && (character < '0' || character > '9') && character != '-' {
-				return false
-			}
-		}
-	}
-	return true
 }
 
 func loadConfigWithOptions(path string, overrides runtimeconfig.Overrides) (runtimeconfig.Source, error) {
@@ -1520,47 +1404,8 @@ func ripStationContext(ctx context.Context, albumId string, token string, storef
 	}
 	station.CoverPath = covPath
 
-	if Config.SaveAnimatedArtwork && meta.Data[0].Attributes.EditorialVideo.MotionSquare.Video != "" {
-		fmt.Println("Found Animation Artwork.")
-
-		motionvideoUrlSquare, err := extractVideoContext(ctx, meta.Data[0].Attributes.EditorialVideo.MotionSquare.Video)
-		if err != nil {
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-			fmt.Println("no motion video square.\n", err)
-		} else {
-			exists, err := fileExists(filepath.Join(playlistFolderPath, "square_animated_artwork.mp4"))
-			if err != nil {
-				fmt.Println("Failed to check if animated artwork square exists.")
-			}
-			if exists {
-				fmt.Println("Animated artwork square already exists locally.")
-			} else {
-				fmt.Println("Animation Artwork Square Downloading...")
-				if err := runMotionArtworkFFmpeg(ctx, motionvideoUrlSquare, filepath.Join(playlistFolderPath, "square_animated_artwork.mp4")); err != nil {
-					if ctx.Err() != nil {
-						return ctx.Err()
-					}
-					fmt.Printf("animated artwork square dl err: %v\n", err)
-				} else {
-					fmt.Println("Animation Artwork Square Downloaded")
-					emitLegacyJobOutputPath(filepath.Join(playlistFolderPath, "square_animated_artwork.mp4"))
-				}
-			}
-		}
-
-		if Config.EmbyAnimatedArtwork {
-			cmd3 := exec.CommandContext(ctx, "ffmpeg", "-i", filepath.Join(playlistFolderPath, "square_animated_artwork.mp4"), "-vf", "scale=440:-1", "-r", "24", "-f", "gif", filepath.Join(playlistFolderPath, "folder.jpg"))
-			if err := cmd3.Run(); err != nil {
-				if ctx.Err() != nil {
-					return ctx.Err()
-				}
-				fmt.Printf("animated artwork square to gif err: %v\n", err)
-			} else {
-				emitLegacyJobOutputPath(filepath.Join(playlistFolderPath, "folder.jpg"))
-			}
-		}
+	if err := saveAnimatedArtworkContext(ctx, playlistFolderPath, meta.Data[0].Attributes.EditorialVideo); err != nil {
+		return err
 	}
 	if station.Type == "stream" {
 		counter.Total++
@@ -1905,74 +1750,8 @@ func ripAlbumContext(ctx context.Context, albumId string, token string, storefro
 		}
 		fmt.Println("Failed to write cover.")
 	}
-	if Config.SaveAnimatedArtwork && meta.Data[0].Attributes.EditorialVideo.MotionDetailSquare.Video != "" {
-		fmt.Println("Found Animation Artwork.")
-
-		motionvideoUrlSquare, err := extractVideoContext(ctx, meta.Data[0].Attributes.EditorialVideo.MotionDetailSquare.Video)
-		if err != nil {
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-			fmt.Println("no motion video square.\n", err)
-		} else {
-			exists, err := fileExists(filepath.Join(albumFolderPath, "square_animated_artwork.mp4"))
-			if err != nil {
-				fmt.Println("Failed to check if animated artwork square exists.")
-			}
-			if exists {
-				fmt.Println("Animated artwork square already exists locally.")
-			} else {
-				fmt.Println("Animation Artwork Square Downloading...")
-				if err := runMotionArtworkFFmpeg(ctx, motionvideoUrlSquare, filepath.Join(albumFolderPath, "square_animated_artwork.mp4")); err != nil {
-					if ctx.Err() != nil {
-						return ctx.Err()
-					}
-					fmt.Printf("animated artwork square dl err: %v\n", err)
-				} else {
-					fmt.Println("Animation Artwork Square Downloaded")
-					emitLegacyJobOutputPath(filepath.Join(albumFolderPath, "square_animated_artwork.mp4"))
-				}
-			}
-		}
-
-		if Config.EmbyAnimatedArtwork {
-			cmd3 := exec.CommandContext(ctx, "ffmpeg", "-i", filepath.Join(albumFolderPath, "square_animated_artwork.mp4"), "-vf", "scale=440:-1", "-r", "24", "-f", "gif", filepath.Join(albumFolderPath, "folder.jpg"))
-			if err := cmd3.Run(); err != nil {
-				if ctx.Err() != nil {
-					return ctx.Err()
-				}
-				fmt.Printf("animated artwork square to gif err: %v\n", err)
-			} else {
-				emitLegacyJobOutputPath(filepath.Join(albumFolderPath, "folder.jpg"))
-			}
-		}
-
-		motionvideoUrlTall, err := extractVideoContext(ctx, meta.Data[0].Attributes.EditorialVideo.MotionDetailTall.Video)
-		if err != nil {
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-			fmt.Println("no motion video tall.\n", err)
-		} else {
-			exists, err := fileExists(filepath.Join(albumFolderPath, "tall_animated_artwork.mp4"))
-			if err != nil {
-				fmt.Println("Failed to check if animated artwork tall exists.")
-			}
-			if exists {
-				fmt.Println("Animated artwork tall already exists locally.")
-			} else {
-				fmt.Println("Animation Artwork Tall Downloading...")
-				if err := runMotionArtworkFFmpeg(ctx, motionvideoUrlTall, filepath.Join(albumFolderPath, "tall_animated_artwork.mp4")); err != nil {
-					if ctx.Err() != nil {
-						return ctx.Err()
-					}
-					fmt.Printf("animated artwork tall dl err: %v\n", err)
-				} else {
-					fmt.Println("Animation Artwork Tall Downloaded")
-					emitLegacyJobOutputPath(filepath.Join(albumFolderPath, "tall_animated_artwork.mp4"))
-				}
-			}
-		}
+	if err := saveAnimatedArtworkContext(ctx, albumFolderPath, meta.Data[0].Attributes.EditorialVideo); err != nil {
+		return err
 	}
 	for i := range album.Tracks {
 		album.Tracks[i].CoverPath = covPath
@@ -2282,74 +2061,8 @@ func ripPlaylistSourceContext(ctx context.Context, source PlaylistSource, token,
 		playlist.Tracks[i].Codec = Codec
 	}
 
-	if Config.SaveAnimatedArtwork && meta.Data[0].Attributes.EditorialVideo.MotionDetailSquare.Video != "" {
-		fmt.Println("Found Animation Artwork.")
-
-		motionvideoUrlSquare, err := extractVideoContext(ctx, meta.Data[0].Attributes.EditorialVideo.MotionDetailSquare.Video)
-		if err != nil {
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-			fmt.Println("no motion video square.\n", err)
-		} else {
-			exists, err := fileExists(filepath.Join(playlistFolderPath, "square_animated_artwork.mp4"))
-			if err != nil {
-				fmt.Println("Failed to check if animated artwork square exists.")
-			}
-			if exists {
-				fmt.Println("Animated artwork square already exists locally.")
-			} else {
-				fmt.Println("Animation Artwork Square Downloading...")
-				if err := runMotionArtworkFFmpeg(ctx, motionvideoUrlSquare, filepath.Join(playlistFolderPath, "square_animated_artwork.mp4")); err != nil {
-					if ctx.Err() != nil {
-						return ctx.Err()
-					}
-					fmt.Printf("animated artwork square dl err: %v\n", err)
-				} else {
-					fmt.Println("Animation Artwork Square Downloaded")
-					emitLegacyJobOutputPath(filepath.Join(playlistFolderPath, "square_animated_artwork.mp4"))
-				}
-			}
-		}
-
-		if Config.EmbyAnimatedArtwork {
-			cmd3 := exec.CommandContext(ctx, "ffmpeg", "-i", filepath.Join(playlistFolderPath, "square_animated_artwork.mp4"), "-vf", "scale=440:-1", "-r", "24", "-f", "gif", filepath.Join(playlistFolderPath, "folder.jpg"))
-			if err := cmd3.Run(); err != nil {
-				if ctx.Err() != nil {
-					return ctx.Err()
-				}
-				fmt.Printf("animated artwork square to gif err: %v\n", err)
-			} else {
-				emitLegacyJobOutputPath(filepath.Join(playlistFolderPath, "folder.jpg"))
-			}
-		}
-
-		motionvideoUrlTall, err := extractVideoContext(ctx, meta.Data[0].Attributes.EditorialVideo.MotionDetailTall.Video)
-		if err != nil {
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-			fmt.Println("no motion video tall.\n", err)
-		} else {
-			exists, err := fileExists(filepath.Join(playlistFolderPath, "tall_animated_artwork.mp4"))
-			if err != nil {
-				fmt.Println("Failed to check if animated artwork tall exists.")
-			}
-			if exists {
-				fmt.Println("Animated artwork tall already exists locally.")
-			} else {
-				fmt.Println("Animation Artwork Tall Downloading...")
-				if err := runMotionArtworkFFmpeg(ctx, motionvideoUrlTall, filepath.Join(playlistFolderPath, "tall_animated_artwork.mp4")); err != nil {
-					if ctx.Err() != nil {
-						return ctx.Err()
-					}
-					fmt.Printf("animated artwork tall dl err: %v\n", err)
-				} else {
-					fmt.Println("Animation Artwork Tall Downloaded")
-					emitLegacyJobOutputPath(filepath.Join(playlistFolderPath, "tall_animated_artwork.mp4"))
-				}
-			}
-		}
+	if err := saveAnimatedArtworkContext(ctx, playlistFolderPath, meta.Data[0].Attributes.EditorialVideo); err != nil {
+		return err
 	}
 	trackTotal := len(meta.Data[0].Relationships.Tracks.Data)
 	arr := make([]int, trackTotal)
