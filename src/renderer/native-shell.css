@@ -5,7 +5,7 @@
 .ui-icon{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;display:block;flex:none}
 #app-header{position:fixed;inset:0 0 auto;height:var(--header-height);display:grid;grid-template-columns:var(--sidebar-width) minmax(0,1fr);z-index:5;background:#29292bbf;border-bottom:1px solid #ffffff12;backdrop-filter:blur(24px) saturate(1.2);-webkit-app-region:drag}
 #app-header button,#app-header select{-webkit-app-region:no-drag}
-.window-brand{display:flex;align-items:center;gap:8px;min-width:0;padding:0 8px;background:#1e222ab3}
+.window-brand{display:flex;align-items:center;gap:4px;min-width:0;padding:0 4px;background:#1e222ab3}
 .window-brand .brand-mark{display:none;width:21px;height:21px;place-items:center;border-radius:5px;background:#fa3658;color:#fff;flex:none}
 .brand-mark .ui-icon{width:16px;height:16px;stroke-width:2}
 .app-name{display:none;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:12px}
@@ -30,6 +30,8 @@
 .nav-open #sidebar #search-form{display:flex}.native-shell #search-input{width:100%;padding:7px 32px 7px 10px;font-size:12px;background:#ffffff08;border:1px solid #ffffff09;border-bottom-color:#9999a5;border-radius:5px;outline-offset:1px}
 #sidebar #search-form button{position:absolute;right:2px;top:1px;min-width:28px;padding:6px;color:#bbbcc5;background:transparent}
 #sidebar #search-form .ui-icon{width:15px;height:15px}
+#compact-search{margin:0 0 22px}#compact-search #search-form{display:flex;gap:8px;max-width:680px}
+#compact-search #search-input{flex:1}#compact-search #search-form button{display:grid;place-items:center;padding:8px 12px}
 #sidebar-search-toggle{display:grid;place-items:center;height:34px;padding:6px!important;min-width:0!important}.nav-open #sidebar-search-toggle{display:none}
 .sidebar-scroll{min-height:0;overflow:auto;scrollbar-width:thin;flex:1;padding:2px 0 12px}
 #sidebar nav{display:grid;gap:3px;width:100%}#sidebar nav button{position:relative;display:flex;align-items:center;gap:12px;padding:9px 10px;min-height:36px;width:100%;min-width:0;border-radius:4px;font-size:13px;color:#d3d4db;background:transparent;text-align:left}
@@ -207,7 +209,7 @@
 .native-shell .catalog-card .artwork{transition:filter .15s ease,transform .2s ease}.native-shell .catalog-artwork-action:hover .artwork{filter:brightness(1.06)}
 @media(min-width:760px){.app-header-right{padding-right:150px}}
 @media(max-width:1050px){.app-header-right{gap:10px}.native-shell .native-content{padding:28px 24px 110px}.native-shell .detail-hero>.artwork{width:220px;height:220px}.native-shell .detail-hero{min-height:220px}.native-shell .detail-hero h1{font-size:24px}.native-shell .detail-hero .detail-artist{font-size:20px}}
-@media(max-width:900px){.native-shell.nav-open{--sidebar-width:64px}.nav-open #sidebar{width:244px;box-shadow:16px 0 30px #0005}.nav-open .window-brand .brand-mark,.nav-open .app-name{display:none}.native-shell .native-content{padding:24px 20px 110px}.monitor-icon{display:none}}
+@media(max-width:900px){.native-shell .native-content{padding:24px 20px 110px}.monitor-icon{display:none}}
 @media(max-width:700px){.app-header-right{gap:6px;padding:8px}.monitor-copy strong,#monitor-speed{font-size:11px}#monitor-detail{font-size:10px}#download-monitor{gap:8px;padding:4px 8px 7px}#region{width:70px;font-size:11px;padding:5px}#refresh-catalog{display:none}.native-toolbar h1{font-size:28px}.native-shell .detail-hero{gap:20px}.native-shell .detail-hero>.artwork{width:180px;height:180px}.native-shell .detail-hero .detail-artist{font-size:19px}.detail-info{padding-top:0}.native-shell .catalog-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.native-shell .personal-mixes,.native-shell .related-grid{grid-template-columns:none}}
 @media(max-width:500px){.native-shell .detail-hero{flex-direction:column;align-items:flex-start}.detail-info{width:100%}.native-shell .detail-hero h1{font-size:24px}.detail-info .card-actions{padding-top:16px}.native-shell .native-content{padding:22px 16px 110px}.setting-row{align-items:flex-end}#monitor-speed{font-size:10px}.native-shell .personal-mix-title{font-size:26px}.monitor-copy{gap:4px}.native-shell .detail-metadata{margin-bottom:28px}}
 @media(max-width:1050px){.search-song-row{grid-template-columns:44px minmax(0,1fr) 40px 32px 32px;gap:10px}.search-song-artist{display:none}.search-song-mobile-artist{display:block}}

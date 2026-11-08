@@ -657,10 +657,37 @@
   for (const token of ['{tracknum:02d}', '{disk}', '{title}', '{artist}', '{album}', '{album_artist}', '{year}', '{song_id}', ' - ', '. ']) $('filename-tokens').append(button(token, () => { const field = $('filename'); field.setRangeText(token, field.selectionStart, field.selectionEnd, 'end'); field.focus(); }));
   for (const control of document.querySelectorAll('[data-view]')) control.onclick = () => view(control.dataset.view);
   for (const control of document.querySelectorAll('[data-feed]')) control.onclick = () => { view('browse'); void feed(control.dataset.feed); };
-  function setSidebar(expanded,save=false){const changed=document.body.classList.contains('nav-open')!==expanded;document.body.classList.toggle('nav-open',expanded);$('nav-toggle').setAttribute('aria-expanded',String(expanded));$('nav-toggle').setAttribute('aria-label',expanded?'收起侧边栏':'展开侧边栏');if(changed)requestAnimationFrame(syncDiscoveryShelves);if(changed&&expanded)motion?.enter(document.querySelector('.sidebar-scroll'),'panel');if(save)try{localStorage.setItem('native-v2-sidebar',expanded?'expanded':'collapsed');}catch{}}
-  let sidebarPreference='';try{sidebarPreference=localStorage.getItem('native-v2-sidebar')||'';}catch{}setSidebar(innerWidth>900&&sidebarPreference!=='collapsed');
+  const compactSidebar=matchMedia('(max-width:900px)');
+  let sidebarPreference='',compactSearchOpen=false;
+  try{sidebarPreference=localStorage.getItem('native-v2-sidebar')||'';}catch{}
+  function setSidebar(expanded,save=false){
+    expanded=expanded&&!compactSidebar.matches;
+    const changed=document.body.classList.contains('nav-open')!==expanded;
+    document.body.classList.toggle('nav-open',expanded);
+    const toggle=$('nav-toggle');toggle.disabled=compactSidebar.matches;
+    toggle.setAttribute('aria-expanded',String(expanded));
+    toggle.setAttribute('aria-label',compactSidebar.matches?'窄窗口使用图标导航':expanded?'收起侧边栏':'展开侧边栏');
+    toggle.title=compactSidebar.matches?'拉宽窗口可展开侧边栏':expanded?'收起侧边栏':'展开侧边栏';
+    // Reuse the same form and handlers; compact search occupies a content row,
+    // never an overlay on the page or a second input with a stale query.
+    const inlineSearch=!expanded&&compactSearchOpen,form=$('search-form');
+    $('compact-search').hidden=!inlineSearch;
+    if(inlineSearch)$('compact-search').append(form);
+    else if(form.parentElement!==$('sidebar'))$('sidebar').insertBefore(form,document.querySelector('.sidebar-scroll'));
+    if(changed)requestAnimationFrame(syncDiscoveryShelves);
+    if(changed&&expanded)motion?.enter(document.querySelector('.sidebar-scroll'),'panel');
+    if(save){sidebarPreference=expanded?'expanded':'collapsed';try{localStorage.setItem('native-v2-sidebar',sidebarPreference);}catch{}}
+  }
+  function syncSidebar(){
+    if(compactSidebar.matches&&document.activeElement===$('search-input'))compactSearchOpen=true;
+    const searchFocused=document.activeElement===$('search-input');
+    setSidebar(sidebarPreference!=='collapsed');
+    if(searchFocused&&$('search-input').getClientRects().length)$('search-input').focus();
+  }
+  compactSidebar.addEventListener('change',syncSidebar);syncSidebar();
+  for(const control of document.querySelectorAll('#sidebar nav button'))control.title=control.getAttribute('aria-label');
   $('nav-toggle').onclick = () => setSidebar(!document.body.classList.contains('nav-open'),true);
-  $('sidebar-search-toggle').onclick=()=>{setSidebar(true);$('search-input').focus();};
+  $('sidebar-search-toggle').onclick=()=>{compactSearchOpen=compactSidebar.matches;setSidebar(!compactSidebar.matches);$('search-input').focus();};
   for(const control of document.querySelectorAll('[data-feed]'))preloadOnIntent(control,()=>feedPath(control.dataset.feed));
   $('quality').onchange=()=>gate();
   $('session-light').onclick = () => { view('settings'); if(state.session !== 'authenticated') void desktop.openLogin().catch(()=>notice('登录窗口暂不可用。')); }; $('open-login').onclick = () => desktop.openLogin().catch(()=>notice('登录窗口暂不可用。')); $('recheck').onclick = () => desktop.recheck().catch(() => notice('验证暂不可用，请检查网络。'));
@@ -668,14 +695,15 @@
   $('download-monitor').onclick=()=>view('tasks');
   document.addEventListener('keydown', event => { if(event.key==='Escape'&&!event.defaultPrevented&&state.view==='browse'&&state.detail){event.preventDefault();closeDetail();} });
   $('region').onchange = () => { $('region').dataset.selected = 'true';void loadSidebarLibrary(true); if (state.detail) { state.browseSnapshot = null;detailHistory.length=0; void detail(state.detail,true); } else void feed(state.feed); };
-  $('search-form').onsubmit = event => { event.preventDefault(); view('browse'); searching=true;discardDetail();updateNavigation();if(innerWidth<=900)setSidebar(false); void browse('/api/v1/catalog/search?' + new URLSearchParams({ region: $('region').value, term: $('search-input').value.trim(), type: '', offset: '0' })); };
+  $('search-input').addEventListener('keydown',event=>{if(event.key==='Escape'&&compactSearchOpen&&compactSidebar.matches){event.preventDefault();compactSearchOpen=false;setSidebar(false);$('sidebar-search-toggle').focus();}});
+  $('search-form').onsubmit = event => { event.preventDefault(); view('browse'); searching=true;discardDetail();updateNavigation();if(compactSidebar.matches){compactSearchOpen=false;setSidebar(false);$('sidebar-search-toggle').focus();} void browse('/api/v1/catalog/search?' + new URLSearchParams({ region: $('region').value, term: $('search-input').value.trim(), type: '', offset: '0' })); };
   $('manual-form').onsubmit = event => { event.preventDefault(); void queue($('manual-url').value.trim()); };
   $('stop-playback').onclick = () => stopPlayback(); for (const event of ['playing','pause','ended']) $('audio').addEventListener(event, () => { $('player-status').textContent = (statusNames[event] || { playing: '正在播放', pause: '已暂停', ended: '播放结束' }[event]) + ' · ' + ($('audio').dataset.mode || ''); }); $('audio').onerror = () => { if(state.playbackItem&&$('audio').dataset.mode==='完整播放'){void preview(state.playbackItem,state.playbackGeneration);}else if(state.playbackItem)$('player-status').textContent = '音频暂不可用，请重试'; };
   try { const saved = JSON.parse(localStorage.getItem('native-v2-download-defaults') || '{}'); if (['aac-lc','alac','atmos'].includes(saved.quality)) $('quality').value = saved.quality; if (['skip','overwrite','fail'].includes(saved.existing)) $('existing').value = saved.existing; } catch {}
   $('save-settings').onclick = async () => { if (!state.preferences) return; const next = { ...state.preferences, songFileFormat: $('filename').value }; for (const control of document.querySelectorAll('[data-preference]')) next[control.dataset.preference] = control.type === 'checkbox' ? control.checked : control.dataset.preference === 'alacMax' ? Number(control.value) : control.value; try { await api('/api/v1/settings/download','PUT',next); await api('/api/v1/settings/download-concurrency','PUT',{downloadConcurrency:Number($('concurrency').value)}); localStorage.setItem('native-v2-download-defaults',JSON.stringify({quality:$('quality').value,existing:$('existing').value})); notice('设置已保存，下一个任务生效。'); } catch { notice('保存失败，请检查设置值。'); } };
   $('reset-settings').onclick = async () => { try { await api('/api/v1/settings/download','DELETE'); await api('/api/v1/settings/download-concurrency','DELETE'); $('quality').value='alac';$('existing').value='skip';localStorage.removeItem('native-v2-download-defaults');await settings();await gate(); } catch {notice('恢复默认未完成，请重试。');} };
   desktop.onSession(observe); desktop.getState().then(observe).catch(() => observe({state:'runtime_unavailable'}));
-  const icons={home:['m3 10 9-7 9 7','M5 9v12h5v-7h4v7h5V9'],grid:['M3 3h7v7H3z','M14 3h7v7h-7z','M3 14h7v7H3z','M14 14h7v7h-7z'],library:['M5 3h14v18H5z','M8 7h8','M8 11h8','m9 16 2 2 4-4'],download:['M12 3v12','m7 10 5 5 5-5','M4 16v5h16v-5'],settings:['M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8','m10 3-1 3-3 1-3-1-1 4 2 2-1 3 3 2 3-1 2 2 4-1 1-3 3-1 1-4-2-2 1-3-3-2-3 1-2-2Z'],search:['M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14','m15 15 6 6'],sidebar:['M3 4h18v16H3z','M8 4v16'],music:['M9 18V5l10-2v13','m9 9 10-2','M5 16a3 2 0 1 0 0 4 3 2 0 0 0 0-4','M15 14a3 2 0 1 0 0 4 3 2 0 0 0 0-4'],refresh:['M20 11a8 8 0 1 0-2 6','M20 4v7h-7']};
+  const icons={home:['m3 10 9-7 9 7','M5 9v12h5v-7h4v7h5V9'],grid:['M3 3h7v7H3z','M14 3h7v7h-7z','M3 14h7v7H3z','M14 14h7v7h-7z'],library:['M5 3h14v18H5z','M8 7h8','M8 11h8','m9 16 2 2 4-4'],download:['M12 3v12','m7 10 5 5 5-5','M4 16v5h16v-5'],settings:['M10 2h4l.5 3 1.5 1 3-1 2 3.5-2.5 2v3l2.5 2-2 3.5-3-1-1.5 1-.5 3h-4l-.5-3-1.5-1-3 1-2-3.5 2.5-2v-3L3 8.5 5 5l3 1 1.5-1Z','M15.5 12a3.5 3.5 0 1 1-7 0 3.5 3.5 0 1 1 7 0'],search:['M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14','m15 15 6 6'],sidebar:['M3 4h18v16H3z','M8 4v16'],music:['M9 18V5l10-2v13','m9 9 10-2','M5 16a3 2 0 1 0 0 4 3 2 0 0 0 0-4','M15 14a3 2 0 1 0 0 4 3 2 0 0 0 0-4'],refresh:['M20 11a8 8 0 1 0-2 6','M20 4v7h-7']};
   function icon(name){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');svg.setAttribute('focusable','false');svg.classList.add('ui-icon');for(const d of icons[name]||[]){const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',d);svg.append(path);}return svg;}
   for(const target of document.querySelectorAll('[data-icon]'))target.append(icon(target.dataset.icon));
   if(desktop.onReady)desktop.onReady(()=>{void feed('home');void loadSidebarLibrary(true);void refreshMonitor();});else {void feed('home');void refreshMonitor();} setInterval(() => {void refreshMonitor();drawMonitor();if (state.view === 'tasks') {void jobs();for(const card of jobCards.values())drawJobTransfer(card);} }, 1000);

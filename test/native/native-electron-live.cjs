@@ -63,6 +63,26 @@ async function main(){
   assert.equal(app.windows().filter(win=>win.url().endsWith('/native-login.html')).length,1);
   assert.equal(await owner.locator('iframe,webview').count(),0);assert.equal(await owner.locator('#concurrency').inputValue(),'3');
   assert.equal(await owner.locator('#quality').inputValue(),'alac');evidence.defaultALACVerified=true;
+  // Resize the real packaged owner, not a replacement HTML fixture. The icon
+  // rail and the content must share one width at either side of the breakpoint.
+  const ownerSize=await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/native-index.html')).getContentSize());
+  await owner.emulateMedia({reducedMotion:'reduce'});
+  const resizeOwner=async width=>{
+    await app.evaluate(({BrowserWindow},width)=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/native-index.html')).setContentSize(width,760),width);
+    await expect(owner.locator('#nav-toggle')).toHaveAttribute('aria-expanded',String(width>900));
+    const bounds=await owner.evaluate(()=>{
+      const side=document.querySelector('#sidebar').getBoundingClientRect(),content=document.querySelector('.native-content').getBoundingClientRect();
+      return {width:side.width,noOverlap:content.left>=side.right,iconBounds:[...document.querySelectorAll('[data-view="settings"] svg path')].map(p=>{const r=p.getBBox();return {x:r.x,y:r.y,right:r.x+r.width,bottom:r.y+r.height};})};
+    });
+    assert.equal(bounds.width,width>900?244:64);assert.equal(bounds.noOverlap,true);
+    for(const b of bounds.iconBounds)assert.ok(b.x>=1&&b.y>=1&&b.right<=23&&b.bottom<=23);
+  };
+  await resizeOwner(888);
+  await owner.screenshot({path:path.join(profile,'narrow-settings.png')});
+  await resizeOwner(901);await resizeOwner(900);await resizeOwner(1100);
+  await owner.screenshot({path:path.join(profile,'wide-settings.png')});
+  await app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/native-index.html')).setContentSize(...size),ownerSize);
+  evidence.packagedResponsiveSidebarAndSettingsIconVerified=true;
   // Device-only entry: this smoke intentionally stops before any login.
   assert.equal(await login.locator('#verification-method,#sms-fields,#sms-send').count(),0);
   assert.equal(await login.locator('#login-email').count(),1);

@@ -70,6 +70,7 @@ jobs:
           npx playwright install --with-deps chromium chrome
           node test/native/native-auth-presentation-live.cjs
           node test/native/native-download-icon-live.cjs
+          node test/native/native-sidebar-responsive-live.cjs
           mkdir -p "$RUNNER_TEMP/amdl-browser"
           AMDL_BROWSER_TEMP="$RUNNER_TEMP/amdl-browser" AMDL_STREAM_OUTPUT="$PWD/.artifacts/ci/aac-output" npm run test:web
 
