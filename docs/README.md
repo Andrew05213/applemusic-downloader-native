@@ -4,7 +4,8 @@
 
 - [用户指南](USER-GUIDE.md)：安装、登录、播放、下载、设置与问题反馈。
 - [下载与发布记录](https://github.com/Andrew05213/applemusic-downloader-native/releases)：安装包、SHA-256 和各版本验证范围。
-- [1.0.0 版本说明](releases/1.0.0.md)：已发布版本的功能与已知限制。
+- [更新日志](../CHANGELOG.md)：1.0.3 正式版功能、修复与下载链接。
+- [1.0.0 历史版本说明](releases/1.0.0.md)：该版本的功能与已知限制。
 
 ## 开发
 

@@ -5,7 +5,7 @@
 | 组件 | 来源与身份依据 |
 | --- | --- |
 | 原始下载器 | [zhaarey/apple-music-downloader](https://github.com/zhaarey/apple-music-downloader)；历史 Gitlink 为 `4bd24bf5374053fbab070f61ee7ae2addcf589bc`，当前作为普通源码维护；原脚本署名 Sorrow，完整来源和再分发授权仍待确认 |
-| Wrapper Lite | [Andrew05213/wrapper](https://github.com/Andrew05213/wrapper) 的 `work` 分支，锁定 commit `15fe0cb75b866e7460bf8d28d155e813a870e076`；源自 [WorldObservationLog/wrapper](https://github.com/WorldObservationLog/wrapper)，保留上游 MIT 声明；归档哈希、补丁和工具链身份在 native-runtime |
+| Wrapper Lite | [Andrew05213/wrapper](https://github.com/Andrew05213/wrapper) 的 `work` 分支，1.0.3 锁定 commit `b2bebc318ae9e7aa208a27642c193d3a79418d95`；源自 [WorldObservationLog/wrapper](https://github.com/WorldObservationLog/wrapper)，保留上游 MIT 声明；归档哈希、补丁和工具链身份在 native-runtime |
 | QEMU Windows | 11.1.0，发行者安装器及 SHA-512 在 native-runtime/inputs.lock.json；具体源码对应性、DLL/固件许可待核查 |
 | Debian Linux / BusyBox | 固定快照与二进制包版本在同一锁文件；部分源码资料包不等于完整对应源码提供 |
 | cJSON / Dobby | commit 分别为 `c859b25da02955fef659d658b8f324b5cde87be3`、`9d271803881f467aabfc24593c7dcaeb710fe861`，许可证在 third-party-licenses |

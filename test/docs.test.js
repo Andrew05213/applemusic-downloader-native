@@ -15,12 +15,12 @@ test('documentation anchors support repeated and non-Latin headings',()=>{
 test('new documentation pages cannot downgrade broken links to historical warnings',t=>{
  const fixture=fs.mkdtempSync(path.join(require('node:os').tmpdir(),'public-docs-'));
  t.after(()=>fs.rmSync(fixture,{recursive:true,force:true}));
- for(const file of ['README.md','CONTRIBUTING.md','NATIVE-LOCAL-NOTICE.md','appliance/README.md','legacy/README.md','src/renderer/README.md','wrapper-linux/README.md','web/README.md','docs/new-topic.md']){
+ for(const file of ['README.md','CHANGELOG.md','CONTRIBUTING.md','NATIVE-LOCAL-NOTICE.md','appliance/README.md','legacy/README.md','src/renderer/README.md','wrapper-linux/README.md','web/README.md','docs/new-topic.md']){
   fs.mkdirSync(path.dirname(path.join(fixture,file)),{recursive:true});
-  fs.writeFileSync(path.join(fixture,file),file==='docs/new-topic.md'?'[missing](missing.md)':'# Fixture');
+  fs.writeFileSync(path.join(fixture,file),['CHANGELOG.md','docs/new-topic.md'].includes(file)?'[missing](missing.md)':'# Fixture');
  }
  const result=audit(fixture);
- assert.deepEqual(result.errors,[{file:'docs/new-topic.md',target:'missing.md',reason:'missing target'}]);
+ assert.deepEqual(result.errors,[{file:'CHANGELOG.md',target:'missing.md',reason:'missing target'},{file:'docs/new-topic.md',target:'missing.md',reason:'missing target'}]);
  assert.deepEqual(result.warnings,[]);
 });
 
@@ -47,7 +47,7 @@ test('public navigation explains the frozen archive without requiring private ma
 });
 
 test('public guides do not reintroduce internal logs, machine paths or obsolete release navigation',()=>{
- const documents=['README.md','CONTRIBUTING.md','docs/README.md','docs/REPOSITORY.md','docs/RELEASE.md','docs/development/README.md','docs/testing/README.md'];
+ const documents=['README.md','CHANGELOG.md','CONTRIBUTING.md','docs/README.md','docs/REPOSITORY.md','docs/RELEASE.md','docs/development/README.md','docs/testing/README.md'];
  for(const file of documents){
   assert.doesNotMatch(read(file),/[CE]:[\\/](?:Users|开发)|\.worktrees[\\/]|docs\/superpowers|releases\/2\.0\.0|testing\/20\d\d-/i,file);
  }

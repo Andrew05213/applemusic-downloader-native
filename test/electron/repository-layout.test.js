@@ -22,7 +22,7 @@ test('generated archives and temporary trees are excluded from Git and Docker co
 });
 
 test('current repository navigation links resolve and old WSL instructions are labelled historical',()=>{
- for(const name of ['README.md','docs/README.md','docs/REPOSITORY.md','docs/development/README.md']){
+ for(const name of ['README.md','CHANGELOG.md','docs/README.md','docs/REPOSITORY.md','docs/development/README.md']){
   const text=fs.readFileSync(path.join(root,name),'utf8');
   for(const match of text.matchAll(/\]\(([^)]+)\)/g)){
    const target=match[1];if(/^(?:https?:|#)/.test(target))continue;
