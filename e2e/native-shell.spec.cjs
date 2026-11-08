@@ -81,11 +81,22 @@ test('related failure is local and retryable, and a late response cannot overwri
  await page.evaluate(()=>window.shellFixture.relatedFailed=false);await page.locator('.detail-related').getByRole('button',{name:'重试',exact:true}).click();await expect(page.locator('.detail-related .catalog-card')).toHaveCount(1);
  await page.locator('#browse-back').click();await page.evaluate(()=>window.shellFixture.holdRelated=true);await page.locator('.catalog-title-action').click();await expect.poll(()=>page.evaluate(()=>window.shellFixture.pendingRelated.length)).toBe(1);await page.locator('#browse-back').click();await page.evaluate(()=>window.shellFixture.pendingRelated.splice(0).forEach(resolve=>resolve()));await expect(page.locator('.detail-related')).toHaveCount(0);
 });
-test('sidebar lists real private playlists, search expands on compact screens, and hover preloads at most once',async({page})=>{
+test('sidebar lists real private playlists, compact search uses a content row, and hover preloads at most once',async({page})=>{
  await install(page);await expect(page.locator('#sidebar-playlists')).toContainText('我的私人歌单');
  await page.locator('.catalog-artwork-action').hover();await page.waitForTimeout(200);await page.locator('.catalog-title-action').focus();await page.waitForTimeout(200);expect(await page.evaluate(()=>window.shellFixture.prefetch.length)).toBe(1);
  await page.locator('#sidebar-playlists button').click();await expect(page.locator('.detail-hero h1')).toHaveText('我的私人歌单');
- await page.setViewportSize({width:390,height:800});await page.locator('#nav-toggle').click();await page.getByRole('button',{name:'展开搜索',exact:true}).click();await expect(page.getByRole('searchbox')).toBeFocused();
+ await page.setViewportSize({width:390,height:800});
+ await expect(page.locator('#nav-toggle')).toBeDisabled();await expect(page.locator('#nav-toggle')).toHaveAttribute('aria-expanded','false');
+ await page.getByRole('button',{name:'展开搜索',exact:true}).click();await expect(page.getByRole('searchbox')).toBeFocused();
+ await expect(page.locator('#compact-search #search-form')).toHaveCount(1);await expect(page.locator('#search-form')).toHaveCount(1);
+ const side=await page.locator('#sidebar').boundingBox(),content=await page.locator('.native-content').boundingBox();
+ expect(side.width).toBe(64);expect(content.x).toBeGreaterThanOrEqual(side.x+side.width);
+ const form=await page.locator('#search-form').boundingBox(),detail=await page.locator('.detail-hero').boundingBox();
+ expect(form.y+form.height).toBeLessThanOrEqual(detail.y);
+ await page.keyboard.press('Escape');await expect(page.locator('#compact-search')).toBeHidden();await expect(page.locator('#sidebar-search-toggle')).toBeFocused();
+ await expect(page.locator('.detail-hero h1')).toHaveText('我的私人歌单');
+ await page.setViewportSize({width:1280,height:900});await expect(page.locator('#nav-toggle')).toHaveAttribute('aria-expanded','true');
+ await expect(page.locator('#sidebar-playlists')).toContainText('我的私人歌单');
 });
 test('settings changes the 500 MB budget, rejects blank input and clears only cache',async({page})=>{
  await install(page);await page.getByRole('button',{name:'设置与状态',exact:true}).click();await expect(page.locator('#cache-limit')).toHaveValue('500');await expect(page.locator('#cache-usage')).toContainText('3.0 MiB');

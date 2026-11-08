@@ -39,13 +39,19 @@ async function install(page,{authenticated=true,ranked=false}={}){
    }};
  },{authenticated,ranked});
  await page.goto(renderer);await expect(page.locator('.catalog-card')).toHaveCount(1);
- if(await page.locator('#nav-toggle').getAttribute('aria-expanded')!=='true')await page.locator('#nav-toggle').click();
+ if(!await page.getByRole('searchbox').isVisible())await page.getByRole('button',{name:'展开搜索',exact:true}).click();
  const search=page.getByRole('searchbox');await search.fill(ranked?'hoyomix':'Genshin');await search.press('Enter');await expect(page.locator('.search-song-row')).toHaveCount(ranked?12:2);
 }
 
 for(const width of [1534,1000,800,390])test(`search songs use compact rows and keep album/playlist artwork at ${width}px`,async({page})=>{
  await page.setViewportSize({width,height:900});await install(page);
- if(width<=900)await expect(page.locator('#nav-toggle')).toHaveAttribute('aria-expanded','false');
+ if(width<=900){
+  await expect(page.locator('#nav-toggle')).toBeDisabled();
+  await expect(page.locator('#nav-toggle')).toHaveAttribute('aria-expanded','false');
+  await expect(page.locator('#compact-search')).toBeHidden();
+  const side=await page.locator('#sidebar').boundingBox(),content=await page.locator('.native-content').boundingBox();
+  expect(side.width).toBe(64);expect(content.x).toBeGreaterThanOrEqual(side.x+side.width);
+ }
  await expect(page.getByRole('heading',{name:'歌曲',exact:true})).toHaveCSS('font-size','20px');
  await expect(page.getByRole('list',{name:'歌曲',exact:true})).toBeVisible();
  const row=page.locator('.search-song-row').first(),cover=await row.locator('.artwork').boundingBox();
