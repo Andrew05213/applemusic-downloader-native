@@ -255,18 +255,7 @@ func runDownloadCommand(invocation internalcli.Invocation, stderr io.Writer) int
 }
 
 func closeCLIJobStore(store *JobStore) error {
-	// The worker has already exited. A cancelled transaction can nevertheless
-	// still own the single pooled connection while database/sql rolls it back
-	// asynchronously; DB.Close alone does not wait for that borrowed handle.
-	// Acquire and return the connection before closing the idle pool, making
-	// normal shutdown synchronous. Bound an unexpectedly stalled drain.
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	connection, err := store.db.Conn(ctx)
-	if err == nil {
-		err = connection.Close()
-	}
-	return errors.Join(err, store.Close())
+	return store.Close()
 }
 
 // runDownloadCommandWithContext keeps the command's synchronous interface

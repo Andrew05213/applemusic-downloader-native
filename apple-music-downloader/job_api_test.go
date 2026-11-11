@@ -552,19 +552,28 @@ func TestManagerRejectsDeletionOfRunningJobWithoutWaitingForOutputLock(t *testin
 	if err != nil {
 		t.Fatalf("open job store: %v", err)
 	}
-	t.Cleanup(func() { _ = store.Close() })
+	t.Cleanup(func() {
+		if err := store.Close(); err != nil {
+			t.Errorf("close job store: %v", err)
+		}
+	})
 	executor := newBlockingJobExecutor()
 	manager, err := NewJobManager(store, executor)
 	if err != nil {
 		t.Fatalf("new manager: %v", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	manager.Start(ctx)
+	if err := manager.Start(ctx); err != nil {
+		cancel()
+		t.Fatalf("start manager: %v", err)
+	}
 	t.Cleanup(func() {
 		cancel()
 		waitCtx, waitCancel := context.WithTimeout(context.Background(), time.Second)
 		defer waitCancel()
-		_ = manager.Wait(waitCtx)
+		if err := manager.Wait(waitCtx); err != nil {
+			t.Errorf("wait for job manager shutdown: %v", err)
+		}
 	})
 	jobs, err := manager.Create(ctx, CreateJobsRequest{
 		URLs:           []string{"https://music.apple.com/us/album/example/234"},

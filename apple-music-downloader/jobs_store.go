@@ -32,6 +32,9 @@ var (
 type JobStore struct {
 	db *sql.DB
 
+	closeOnce sync.Once
+	closeErr  error
+
 	outputRootMu sync.RWMutex
 	outputRoot   string
 }
@@ -69,7 +72,22 @@ func ensureParentDirectory(path string) error {
 	return os.MkdirAll(dir, 0o755)
 }
 
-func (s *JobStore) Close() error { return s.db.Close() }
+// Close is called after the owner has stopped and joined all store users.
+// A cancelled transaction may still own the single pooled connection while
+// database/sql rolls it back asynchronously. Borrowing and returning that
+// connection drains the rollback before DB.Close closes the idle pool.
+func (s *JobStore) Close() error {
+	s.closeOnce.Do(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		connection, err := s.db.Conn(ctx)
+		if err == nil {
+			err = connection.Close()
+		}
+		s.closeErr = errors.Join(err, s.db.Close())
+	})
+	return s.closeErr
+}
 
 func (s *JobStore) Health(ctx context.Context) error { return s.db.PingContext(ctx) }
 
