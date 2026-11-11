@@ -2,6 +2,29 @@
 
 本文件记录正式版本的用户可见变化。预发布及更早版本的原始说明见 [Releases](https://github.com/Andrew05213/applemusic-downloader-native/releases)。
 
+## 1.0.4 — 2026-11-11
+
+[发布说明](https://github.com/Andrew05213/applemusic-downloader-native/releases/tag/v1.0.4) · [Windows x64 安装包](https://github.com/Andrew05213/applemusic-downloader-native/releases/download/v1.0.4/AppleMusicDownloader-1.0.4-Setup.exe) · [SHA-256 校验文件](https://github.com/Andrew05213/applemusic-downloader-native/releases/download/v1.0.4/AppleMusicDownloader-1.0.4-Setup.exe.sha256)
+
+### 下载恢复
+
+- Music 会话临时复验失败时，暂停受影响的下载并显示“等待会话恢复”；复验恢复后自动续跑未完成曲目，保留已成功文件及独立的资源错误。
+- 恢复下载时重新获取当前凭据；等待期间可以取消任务，不会自动发起密码登录。
+- 区分临时复验失败与明确的授权拒绝，避免后续曲目连续误报失败；保留播放客户端原有行为。
+
+### 修复
+
+- 保守处理英国、澳大利亚、日本和法国已确认国内手机号范围的前导零；无法安全判断时提示填写完整国际号码。
+- 统一任务数据库的关闭逻辑，等待取消事务的异步回滚释放连接，并支持重复及并发关闭，修复 Windows 回归中的数据库清理占用风险。
+- 补充跨平台凭据读取、真实子进程回执、选择性恢复、取消及数据库关闭回归测试。
+
+### 验证与安装说明
+
+- 自动化回归包含 61 首合成曲目的恢复、授权拒绝及取消场景，并验证已成功文件的内容和身份不变；不使用真实 Apple 账号或下载真实音乐。
+- 安装包构建、Linux / Windows CI 及解包审计由发布流程执行，具体结果见对应发布记录。
+- 延续现有安装身份与用户数据目录；退出旧版后可覆盖安装，不主动清除设置、会话或已下载文件。
+- Windows x64 安装包未签名；成品用户无需额外安装 WSL、Docker 或 FFmpeg。第三方说明见 [NOTICE](NOTICE)。
+
 ## 1.0.3 — 2026-11-08
 
 [发布说明](https://github.com/Andrew05213/applemusic-downloader-native/releases/tag/v1.0.3) · [Windows x64 安装包](https://github.com/Andrew05213/applemusic-downloader-native/releases/download/v1.0.3/AppleMusicDownloader-1.0.3-Setup.exe) · [SHA-256 校验文件](https://github.com/Andrew05213/applemusic-downloader-native/releases/download/v1.0.3/AppleMusicDownloader-1.0.3-Setup.exe.sha256)
