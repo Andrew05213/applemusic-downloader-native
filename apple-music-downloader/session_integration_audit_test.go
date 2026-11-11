@@ -64,9 +64,17 @@ func TestAuditSessionChildFixture(t *testing.T) {
 	if os.Getenv("AMDL_AUDIT_RECOVERY_CHILD") != "1" {
 		return
 	}
-	credentials, present, err := secretfd.ReadFromEnvironment()
-	if err != nil || !present {
-		t.Fatalf("missing private credentials: %v", err)
+	// Exercise the production reader: Unix uses an inherited descriptor,
+	// while Windows delivers the same document through anonymous stdin.
+	if err := initializeProcessCredentials(); err != nil {
+		t.Fatalf("read private credentials: %v", err)
+	}
+	if !inheritedCredentialsPresent {
+		t.Fatal("missing private credentials")
+	}
+	credentials := inheritedProcessCredentials
+	if os.Getenv(secretfd.EnvironmentKey) != "" || os.Getenv(processCredentialStdinKey) != "" {
+		t.Fatal("credential transport marker was not consumed")
 	}
 	pipe, err := openChildJobProtocolOutput()
 	if err != nil || pipe == nil {
@@ -230,7 +238,7 @@ func TestAudit61TrackRecoveryThroughPrivateChildPipes(t *testing.T) {
 			var events []JobEventInput
 			result, err := engine.Execute(ctx, Job{URL: "https://music.apple.com/us/album/audit/123", Quality: QualityALAC, ExistingPolicy: ExistingPolicyOverwrite}, func(e JobEventInput) { events = append(events, e) })
 			if waits != 1 || len(result.Items) != 61 || runner.logins.Load() != 0 {
-				t.Fatalf("bad lifecycle: waits=%d items=%d logins=%d", waits, len(result.Items), runner.logins.Load())
+				t.Fatalf("bad lifecycle: waits=%d items=%d logins=%d err=%v", waits, len(result.Items), runner.logins.Load(), err)
 			}
 			if result.Total != 61 {
 				t.Fatalf("lost total: %+v", result)
