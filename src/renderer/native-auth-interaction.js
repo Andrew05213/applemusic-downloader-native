@@ -22,7 +22,7 @@
    const input=$('interaction-fields').querySelector('[data-field-id="'+f.id+'"]'),raw=input?.value||'';
    let value=raw;
    try{if(accountInputs.has(f.id))value=accountInputs.get(f.id).read();}
-   catch{$('interaction-error').textContent='请检查手机号和国家区号；已带 + 区号的号码无需重复添加。';input?.focus();return;}
+   catch{$('interaction-error').textContent='请填写完整国际号码，如 +447700900123。';input?.focus();return;}
    const size=new TextEncoder().encode(value).length;
    if((f.required&&!value)||size<f.minBytes||size>f.maxBytes||(f.digitsOnly&&!/^[0-9]*$/.test(value))){$('interaction-error').textContent='请按字段要求完成输入。';input?.focus();return;}
    values.push({fieldId:f.id,value});

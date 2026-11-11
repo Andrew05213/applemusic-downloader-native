@@ -7,6 +7,16 @@
   ['新加坡','+65',8],['美国 / 加拿大','+1',10],['英国','+44',10],['澳大利亚','+61',9],
   ['日本','+81',10],['韩国','+82',10],['印度','+91',10],['德国','+49',0],['法国','+33',9],
  ];
+ // Only verified domestic mobile ranges may lose one national trunk zero.
+ // Other leading-zero numbers require explicit international input: a zero
+ // can be significant (e.g. Italy), and French overseas ranges use other codes.
+ const domesticMobile={
+  '+44':/^07[1-57-9][0-9]{8}$/,
+  '+61':/^04[0-9]{8}$/,
+  '+81':/^0[789]0[0-9]{8}$/,
+  // Metropolitan France: ARCEP numbering plan, section 2.3.4(a).
+  '+33':/^0(?:6(?:[1246-8][0-9]|0[1-9]|3[0-8]|5[0-26-9]|9[589])|7[3-8][0-9])[0-9]{6}$/,
+ };
  const invalid=()=>{throw Error('native_phone_invalid');};
  function international(value){if(!/^\+[1-9][0-9]{5,14}$/.test(value))return invalid();return value;}
  function normalize(raw,dial='+86'){
@@ -22,6 +32,10 @@
   // Also accept an unambiguous selected-country prefix without '+' (e.g.
   // 86 + an eleven-digit China mainland number). Do not guess other prefixes.
   if(region?.[2]&&compact.startsWith(prefix)&&compact.length===prefix.length+region[2])return international('+'+compact);
+  if(compact.startsWith('0')){
+   if(!domesticMobile[dial]?.test(compact))return invalid();
+   return international(dial+compact.slice(1));
+  }
   return international(dial+compact);
  }
  let serial=0;
@@ -47,7 +61,7 @@
    try{
     const formatted=normalize(raw,code());
     hint.textContent=explicit?'号码已带国际区号，不会重复添加。':raw&&formatted!==raw?'将使用 '+formatted+' 登录。':'手机号会补上所选国家区号，默认中国大陆 +86；已带 + 区号的号码直接使用。';
-   }catch{hint.textContent='请检查手机号和国家区号；完整号码可写成 +86138…，区号只填写一次。';}
+   }catch{hint.textContent='请填写完整国际号码，如 +447700900123。';}
   }
   const change=()=>{refresh();onDialChange(code());};
   input.addEventListener('input',refresh);select.addEventListener('change',change);custom.addEventListener('input',change);
