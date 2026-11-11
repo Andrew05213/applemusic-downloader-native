@@ -19,7 +19,7 @@
     native_login_store_response_failed:'原生账号验证未通过。请导出诊断；这不一定是密码错误。',
     native_login_store_bridge_failed:'原生账号验证组件初始化失败。请导出诊断。',
     native_login_input_invalid:'原生登录组件未接受本次输入。请导出诊断。',
-    native_phone_invalid:'请检查手机号和国家区号；中国大陆默认 +86，已带区号的号码不必重复填写。',
+    native_phone_invalid:'请填写完整国际号码，如 +447700900123。',
     native_login_interaction_timeout:'验证提示已超时，请重新登录。',
     native_login_interaction_unavailable:'验证交互通道不可用，请重新登录或导出诊断。',
     native_login_interaction_unsupported:'Apple 要求的此步骤暂不支持在原生窗口完成，请查看提示说明。',
