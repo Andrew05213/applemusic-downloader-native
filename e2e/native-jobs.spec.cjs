@@ -46,6 +46,29 @@ const card = page => page.locator('[data-job-id="one"]');
 const record = page => card(page).getByRole('button',{name:'仅删除任务',exact:true});
 const mutations = page => page.evaluate(()=>window.jobFixture.calls.filter(call=>call.method==='DELETE'));
 
+test('paused session leaves successful tracks visible and resumes without a manual retry',async({page})=>{
+  await install(page);
+  await page.evaluate(()=>{
+    const job=window.jobFixture.jobs[0];
+    Object.assign(job,{status:'running',total:2,succeeded:1,failed:0});
+    job.items.push({sourceId:'pending',name:'Remaining track',status:'interrupted',errorCode:'session_verification_pending'});
+  });
+  await page.clock.fastForward(3000);
+  await expect(card(page).locator('.job-summary')).toHaveText(/等待会话恢复.*成功 1.*失败 0/);
+  await expect(card(page).getByText('Fixture one · 完成')).toBeVisible();
+  await expect(card(page).getByText('恢复后自动续跑未完成的曲目。',{exact:false})).toBeVisible();
+  await expect(card(page).getByRole('button',{name:'取消',exact:true})).toBeEnabled();
+  await expect(card(page).getByRole('button',{name:'重试失败项'})).toHaveCount(0);
+  await page.evaluate(()=>{
+    const job=window.jobFixture.jobs[0];
+    Object.assign(job,{status:'succeeded',succeeded:2});
+    Object.assign(job.items[1],{status:'succeeded',errorCode:''});
+  });
+  await page.clock.fastForward(3000);
+  await expect(card(page).locator('.job-summary')).toHaveText(/完成.*成功 2.*失败 0/);
+  await expect(card(page).getByText('等待会话恢复',{exact:false})).toHaveCount(0);
+});
+
 test('polling preserves a pressed delete button through pointer-up',async({page})=>{
   await install(page);
   const target=record(page), box=await target.boundingBox();

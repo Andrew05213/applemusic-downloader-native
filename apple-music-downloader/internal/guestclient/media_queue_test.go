@@ -14,6 +14,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/Andrew05213/applemusic_downloader/internal/nativeauth"
 )
 
 func mediaTestClient(t *testing.T, handler http.HandlerFunc) *Client {
@@ -31,6 +33,83 @@ func mediaTestClient(t *testing.T, handler http.HandlerFunc) *Client {
 }
 
 const fixtureManifest = `{"code":0,"data":{"m3u8":"https://audio-ssl.itunes.apple.com/fixture.m3u8"}}`
+
+func TestDownloadParksOnExplicitSessionCodeButNotAnUpstream503(t *testing.T) {
+	var mediaCalls, cleanupCalls atomic.Int32
+	c := mediaTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			cleanupCalls.Add(1)
+			w.WriteHeader(204)
+			return
+		}
+		w.WriteHeader(http.StatusServiceUnavailable)
+		if mediaCalls.Add(1) == 1 {
+			io.WriteString(w, `{"code":"native_media_http_failed"}`)
+		} else {
+			io.WriteString(w, `{"code":"native_session_unverified"}`)
+		}
+	})
+	c.pauseDownload = true
+	ctx := context.Background()
+	// A plain upstream 503 retries; only the second reply parks the job.
+	if _, err := c.M3U8(ctx, "1"); !errors.Is(err, nativeauth.ErrUnverified) || mediaCalls.Load() != 2 {
+		t.Fatalf("unexpected classification: calls=%d err=%v", mediaCalls.Load(), err)
+	}
+	var wg sync.WaitGroup
+	for i := 2; i < 10; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			if _, err := c.M3U8(ctx, strconv.Itoa(i)); !errors.Is(err, nativeauth.ErrUnverified) {
+				t.Errorf("pending track %d: %v", i, err)
+			}
+		}(i)
+	}
+	wg.Wait()
+	if mediaCalls.Load() != 2 {
+		t.Fatal("pending tracks still contacted the agent")
+	}
+	c.CloseStream(ctx, strings.Repeat("b", 32))
+	if cleanupCalls.Load() != 1 {
+		t.Fatal("pause prevented owned stream cleanup")
+	}
+}
+
+func TestDecryptorPipePreservesSessionFailure(t *testing.T) {
+	for _, tc := range []struct {
+		status int
+		cause  error
+	}{
+		{503, nativeauth.ErrUnverified},
+		{401, nativeauth.ErrAuthRequired},
+	} {
+		t.Run(strconv.Itoa(tc.status), func(t *testing.T) {
+			c := mediaTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == http.MethodDelete {
+					w.WriteHeader(204)
+					return
+				}
+				w.WriteHeader(tc.status)
+				fmt.Fprintf(w, `{"code":%q}`, tc.cause.Error())
+			})
+			conn, err := c.DialDecryptor(context.Background())
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer conn.Close()
+			_ = conn.SetDeadline(time.Now().Add(time.Second))
+			key := "skd://itunes.apple.com/fixture"
+			packet := append([]byte{1, '1', byte(len(key))}, key...)
+			packet = append(packet, 16, 0, 0, 0)
+			if _, err := conn.Write(append(packet, make([]byte, 16)...)); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := conn.Read(make([]byte, 16)); !errors.Is(err, tc.cause) {
+				t.Fatalf("pipe lost the session reason: %v", err)
+			}
+		})
+	}
+}
 
 func TestThreeConcurrentManifestCallsQueueOutsideHTTPTimeout(t *testing.T) {
 	var active, maximum atomic.Int32

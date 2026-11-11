@@ -23,6 +23,7 @@ import (
 	"time"
 
 	runtimeconfig "github.com/Andrew05213/applemusic_downloader/internal/config"
+	"github.com/Andrew05213/applemusic_downloader/internal/nativeauth"
 	"github.com/Andrew05213/applemusic_downloader/internal/transfer"
 	"github.com/Andrew05213/applemusic_downloader/utils/ampapi"
 	"github.com/Andrew05213/applemusic_downloader/utils/runv2"
@@ -994,9 +995,12 @@ func ripTrackContext(ctx context.Context, track *task.Track, token string, media
 	emitLegacyJobItem(JobItemInput{SourceID: itemSourceID, Name: name, Status: JobItemStatusRunning})
 	defer func() {
 		status := legacyTrackItemStatus(before, counter)
+		if status == JobItemStatusFailed && nativeDownloadClient != nil && errors.Is(failureErr, nativeauth.ErrUnverified) {
+			status = JobItemStatusInterrupted
+		}
 		transfer.Complete(ctx, string(status))
 		item := JobItemInput{SourceID: itemSourceID, Name: name, Status: status}
-		if status == JobItemStatusFailed {
+		if status == JobItemStatusFailed || status == JobItemStatusInterrupted {
 			item.ErrorCode, item.ErrorMessage = downloadItemDiagnostic(stage, failureErr)
 		} else if status == JobItemStatusUnavailable {
 			item.ErrorCode, item.ErrorMessage = "track_unavailable", "track has no supported playable resource"

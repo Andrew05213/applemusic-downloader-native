@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/Andrew05213/applemusic_downloader/internal/nativeauth"
@@ -32,6 +33,8 @@ type Client struct {
 	http                 *http.Client
 	port                 int
 	mediaGate            chan struct{}
+	pauseDownload        bool
+	downloadPaused       atomic.Bool
 }
 
 func New(port int, capability string) (*Client, error) {
@@ -47,13 +50,31 @@ func New(port int, capability string) (*Client, error) {
 }
 func (c *Client) Close()                    { c.http.CloseIdleConnections() }
 func (c *Client) Connection() (int, string) { return c.port, c.capability }
+
+// NewDownloadClient is owned by one download attempt. After session renewal
+// fails, park the rest of that attempt before it submits further media work.
+// The queue will resume with a fresh client and the verified credentials.
+func NewDownloadClient(port int, capability string) (*Client, error) {
+	client, err := New(port, capability)
+	if err != nil {
+		return nil, err
+	}
+	client.pauseDownload = true
+	return client, nil
+}
+
 func (c *Client) request(ctx context.Context, method, path string, body []byte, stream string, limit int64) ([]byte, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	// Lite serializes these operations on one playback mutex. Admit them before
 	// starting the HTTP timeout, not after they are queued inside that mutex.
-	if path == "/decrypt" || strings.HasPrefix(path, "/decrypt?") || strings.HasPrefix(path, "/m3u8?") || path == "/license" {
+	serialized := path == "/decrypt" || strings.HasPrefix(path, "/decrypt?") || strings.HasPrefix(path, "/m3u8?") || path == "/license"
+	pausable := c.pauseDownload && serialized && method != http.MethodDelete
+	if pausable && c.downloadPaused.Load() && ctx.Err() == nil {
+		return nil, nativeauth.ErrUnverified
+	}
+	if serialized {
 		wait := time.NewTimer(2 * time.Minute)
 		defer wait.Stop()
 		select {
@@ -67,6 +88,9 @@ func (c *Client) request(ctx context.Context, method, path string, body []byte, 
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
+	}
+	if pausable && c.downloadPaused.Load() {
+		return nil, nativeauth.ErrUnverified
 	}
 	req, err := http.NewRequestWithContext(ctx, method, c.endpoint+path, bytes.NewReader(body))
 	if err != nil {
@@ -91,6 +115,20 @@ func (c *Client) request(ctx context.Context, method, path string, body []byte, 
 	defer response.Body.Close()
 	if response.StatusCode == 401 {
 		return nil, nativeauth.ErrAuthRequired
+	}
+	if response.StatusCode == http.StatusServiceUnavailable {
+		// Only the explicit local preflight code can park a download. An
+		// upstream 503 is a normal media error, not a renewal failure.
+		var failure struct {
+			Code string `json:"code"`
+		}
+		raw, err := io.ReadAll(io.LimitReader(response.Body, 257))
+		if err == nil && len(raw) <= 256 && json.Unmarshal(raw, &failure) == nil && failure.Code == nativeauth.ErrUnverified.Error() {
+			if pausable {
+				c.downloadPaused.Store(true)
+			}
+			return nil, nativeauth.ErrUnverified
+		}
 	}
 	if response.StatusCode < 200 || response.StatusCode > 299 {
 		if response.StatusCode == 504 || response.StatusCode == 408 {
