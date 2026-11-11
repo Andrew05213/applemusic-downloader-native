@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"errors"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -50,7 +51,16 @@ func (tx cliRollbackTx) Rollback() error {
 	return nil
 }
 
+func TestJobStoreCloseDrainsCancelledTransactionBeforeReturning(t *testing.T) {
+	checkStoreCloseDrainsCancelledTransaction(t, (*JobStore).Close)
+}
+
 func TestCLIStoreCloseDrainsCancelledTransactionBeforeReturning(t *testing.T) {
+	checkStoreCloseDrainsCancelledTransaction(t, closeCLIJobStore)
+}
+
+func checkStoreCloseDrainsCancelledTransaction(t *testing.T, closeStore func(*JobStore) error) {
+	t.Helper()
 	connector := &cliRollbackConnector{
 		started: make(chan struct{}), release: make(chan struct{}), closed: make(chan struct{}),
 	}
@@ -90,7 +100,7 @@ func TestCLIStoreCloseDrainsCancelledTransactionBeforeReturning(t *testing.T) {
 			t.Error("fixture driver connection did not close")
 		}
 	})
-	go func() { closeErr = closeCLIJobStore(store); close(finished) }()
+	go func() { closeErr = closeStore(store); close(finished) }()
 	deadline := time.NewTimer(2 * time.Second)
 	defer deadline.Stop()
 	ticker := time.NewTicker(time.Millisecond)
@@ -119,6 +129,30 @@ func TestCLIStoreCloseDrainsCancelledTransactionBeforeReturning(t *testing.T) {
 		t.Fatal("store close returned before the driver closed its handle")
 	}
 	if db.Stats().OpenConnections != 0 {
+		t.Fatal("store close left an open database connection")
+	}
+}
+
+func TestJobStoreCloseIsConcurrentAndIdempotent(t *testing.T) {
+	store, err := OpenJobStore(filepath.Join(t.TempDir(), "jobs.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+	const callers = 8
+	results := make(chan error, callers)
+	for i := 0; i < callers; i++ {
+		go func() { results <- store.Close() }()
+	}
+	for i := 0; i < callers; i++ {
+		if err := <-results; err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := store.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if store.db.Stats().OpenConnections != 0 {
 		t.Fatal("store close left an open database connection")
 	}
 }
