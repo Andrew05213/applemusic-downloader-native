@@ -11,6 +11,10 @@ test('cloud release is an explicit same-run Linux to Windows transfer with least
  assert.match(text,/retention-days: 3/);assert.match(text,/if-no-files-found: error/);
  assert.match(text,/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9/);
  assert.match(text,/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333/);
+ assert.match(text,/native-ci-windows\.ps1 -CloudRelease/);
+ const scope=fs.readFileSync(path.join(root,'electron/native-ci-windows.ps1'),'utf8');
+ assert.match(scope,/\[switch\]\$CloudRelease/);assert.match(scope,/node electron\/native-cloud-release\.js windows/);
+ assert.doesNotMatch(scope,/Set-Acl|icacls|Set-LocalUser|AdjustTokenPrivileges/);
  assert.doesNotMatch(text,/docker push|docker login|run:.*\$\{\{.*inputs/);
  const script=fs.readFileSync(path.join(root,'electron/native-cloud-release.js'),'utf8');
  assert.match(script,/sourceIdentity\(\)/);assert.match(script,/ensureTagAvailable\(repo,tag\)/);

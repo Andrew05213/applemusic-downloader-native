@@ -91,6 +91,6 @@ jobs:
           merge-multiple: true
       - name: Verify same-commit guest, assemble QEMU, build/audit NSIS and smoke isolated app
         shell: powershell
-        run: node electron/native-cloud-release.js windows
+        run: ./electron/native-ci-windows.ps1 -CloudRelease
       # Draft is the only Release write. Public promotion is a separate review.
       # No image/NDK, account, profile or downloaded music is uploaded.

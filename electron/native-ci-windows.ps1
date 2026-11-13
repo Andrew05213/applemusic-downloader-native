@@ -1,4 +1,4 @@
-param([string]$TemporaryRoot = '')
+param([string]$TemporaryRoot = '', [switch]$CloudRelease)
 $ErrorActionPreference = 'Stop'
 
 # The hosted runner is elevated: its token's default file owner is normally
@@ -61,9 +61,15 @@ try {
         $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
         [Environment]::SetEnvironmentVariable($name, $temporary, 'Process')
     }
-    Push-Location (Join-Path $root 'apple-music-downloader')
+    Push-Location $(if ($CloudRelease) { $root } else { Join-Path $root 'apple-music-downloader' })
     try {
-        & go test -race -skip '^TestWrapperSession' ./...
+        if ($CloudRelease) {
+            # The packaged app keeps its real owner/ACL checks. Scope creation
+            # only in this disposable runner process and inherited children.
+            & node electron/native-cloud-release.js windows
+        } else {
+            & go test -race -skip '^TestWrapperSession' ./...
+        }
         $code = $LASTEXITCODE
     } finally { Pop-Location }
 } finally {
