@@ -1,6 +1,6 @@
 # Apple Music Downloader Native installation notes
 
-Version: 1.0.3. Windows native release. Third-party rights and corresponding-source review remain incomplete.
+Version: 1.0.4. Windows native release. Third-party rights and corresponding-source review remain incomplete.
 
 Original project-authored code and modifications the maintainer has the right
 to license are licensed under Apache-2.0; see the included LICENSE and NOTICE.

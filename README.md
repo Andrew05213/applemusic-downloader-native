@@ -11,14 +11,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Andrew05213/applemusic-downloader-native/releases/tag/v1.0.3">下载 1.0.3 正式版</a> · <a href="CHANGELOG.md">更新日志</a> · <a href="docs/USER-GUIDE.md">使用指南</a> · <a href="docs/development/README.md">开发文档</a> · <a href="https://github.com/Andrew05213/applemusic-downloader-native/issues">问题反馈</a>
+  <a href="https://github.com/Andrew05213/applemusic-downloader-native/releases/tag/v1.0.4">下载 1.0.4 正式版</a> · <a href="CHANGELOG.md">更新日志</a> · <a href="docs/USER-GUIDE.md">使用指南</a> · <a href="docs/development/README.md">开发文档</a> · <a href="https://github.com/Andrew05213/applemusic-downloader-native/issues">问题反馈</a>
 </p>
 
 ## 功能
 
 - **浏览与搜索**：首页推荐、新发现、歌单、专辑和音乐人详情，支持页面缓存与预加载。
 - **播放**：AAC 分片流式播放，支持进度拖动；完整播放不可用时回退到试听。
-- **下载**：默认 ALAC，支持并行队列、实时速度与进度、失败重试，以及原生动态封面下载。
+- **下载**：默认 ALAC，支持并行队列、实时速度与进度、失败重试、会话临时复验失败后的选择性恢复，以及原生动态封面下载。
 - **文件管理**：选择保存位置、点击生成文件名模板、定位文件夹，分别支持仅删除任务或同时删除文件。
 - **登录**：原生界面展示 Apple 验证提示、按钮和必要输入，支持受信任设备验证码、重试与取消；手机号可选择国家区号，默认中国大陆 `+86`，已有国际区号不会重复添加，邮箱保持原样。
 - **界面**：窗口宽度为 900px 及以下时自动收为图标导航栏，拉宽后按原有展开偏好恢复；窄窗口搜索使用独立内容行，不遮挡正文。
@@ -27,13 +27,13 @@
 
 ## 下载与安装
 
-当前正式版为 **1.0.3**，适用于 Windows x64：
+当前正式版为 **1.0.4**，适用于 Windows x64：
 
-- [下载安装包](https://github.com/Andrew05213/applemusic-downloader-native/releases/download/v1.0.3/AppleMusicDownloader-1.0.3-Setup.exe)
-- [下载 SHA-256 校验文件](https://github.com/Andrew05213/applemusic-downloader-native/releases/download/v1.0.3/AppleMusicDownloader-1.0.3-Setup.exe.sha256)
-- [1.0.3 发布说明](https://github.com/Andrew05213/applemusic-downloader-native/releases/tag/v1.0.3) · [更新日志](CHANGELOG.md) · [历史版本](https://github.com/Andrew05213/applemusic-downloader-native/releases)
+- [下载安装包](https://github.com/Andrew05213/applemusic-downloader-native/releases/download/v1.0.4/AppleMusicDownloader-1.0.4-Setup.exe)
+- [下载 SHA-256 校验文件](https://github.com/Andrew05213/applemusic-downloader-native/releases/download/v1.0.4/AppleMusicDownloader-1.0.4-Setup.exe.sha256)
+- [1.0.4 发布说明](https://github.com/Andrew05213/applemusic-downloader-native/releases/tag/v1.0.4) · [更新日志](CHANGELOG.md) · [历史版本](https://github.com/Andrew05213/applemusic-downloader-native/releases)
 
-1.0.3 整合原生认证交互、手机号区号、原生动态封面下载、新应用与下载图标，并修复窄窗口遮挡和设置齿轮显示。成品用户无需额外安装 WSL、Docker 或 FFmpeg。
+1.0.4 改善批量下载：Music 会话临时复验失败时显示“等待会话恢复”，恢复后自动续跑未完成曲目；修复国际手机号的国内前导零处理，以及关闭任务数据库时的资源释放时序。成品用户无需额外安装 WSL、Docker 或 FFmpeg。
 
 运行安装器并选择安装位置，启动后登录账号。完整操作见[用户指南](docs/USER-GUIDE.md)。
 
@@ -71,7 +71,7 @@ npm run package:native
 ## 直接上游
 
 - [zhaarey/apple-music-downloader](https://github.com/zhaarey/apple-music-downloader)：本项目下载器的直接上游，原始脚本署名 Sorrow。
-- [Andrew05213/wrapper（Wrapper Lite 维护分支）](https://github.com/Andrew05213/wrapper)：提供 Lite 服务，1.0.3 固定使用提交 [b2bebc3](https://github.com/Andrew05213/wrapper/commit/b2bebc318ae9e7aa208a27642c193d3a79418d95)；源自 [WorldObservationLog/wrapper](https://github.com/WorldObservationLog/wrapper)，保留上游 [MIT License](https://github.com/WorldObservationLog/wrapper/blob/2fd7e0eaef081f93cf687428b965674937832ba4/LICENSE) 声明。
+- [Andrew05213/wrapper（Wrapper Lite 维护分支）](https://github.com/Andrew05213/wrapper)：提供 Lite 服务，1.0.4 固定使用提交 [b2bebc3](https://github.com/Andrew05213/wrapper/commit/b2bebc318ae9e7aa208a27642c193d3a79418d95)；源自 [WorldObservationLog/wrapper](https://github.com/WorldObservationLog/wrapper)，保留上游 [MIT License](https://github.com/WorldObservationLog/wrapper/blob/2fd7e0eaef081f93cf687428b965674937832ba4/LICENSE) 声明。
 
 感谢上述项目的作者与贡献者。各上游代码保留其原有版权和适用许可；版本及许可记录见[上游来源](docs/UPSTREAMS.md)。
 
