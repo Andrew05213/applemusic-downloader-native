@@ -98,6 +98,27 @@ function freshnessFixture(t){
  return {repository,bundle,stage,evidence,guestSource,sourceFields,write};
 }
 
+test('cloud guest transfer binds commit, independent receipt hash, bytes and current production sources',t=>{
+ const {sealGuestExport,verifyGuestExport}=require('../../electron/native-cloud-guest');
+ const {verifyGuestSources,verifyBundleSources}=require('../../electron/native-package');
+ const f=freshnessFixture(t),directory=path.join(path.dirname(f.bundle),'exported');fs.mkdirSync(directory);
+ for(const name of ['guest','notices','evidence'])require('../../electron/native-package').copyTree(path.join(f.bundle,name),path.join(directory,name));
+ // A guest export is not yet a Windows runtime and must not pass that gate.
+ delete f.evidence.manifestSHA256;f.write(path.join(directory,'evidence/build.json'),JSON.stringify(f.evidence));
+ assert.doesNotThrow(()=>verifyGuestSources(directory,f.repository));
+ assert.throws(()=>verifyBundleSources(directory,f.repository),/native_bundle_source_stale/);
+ const commit='a'.repeat(40),digest=sealGuestExport(directory,commit,f.repository);
+ assert.equal(verifyGuestExport(directory,commit,digest,f.repository).commit,commit);
+ assert.throws(()=>verifyGuestExport(directory,'b'.repeat(40),digest,f.repository),/payload_mismatch/);
+ assert.throws(()=>verifyGuestExport(directory,commit,'0'.repeat(64),f.repository),/receipt_mismatch/);
+ const payload=path.join(directory,'guest/initramfs.cpio.gz'),original=fs.readFileSync(payload);fs.appendFileSync(payload,'tampered');
+ assert.throws(()=>verifyGuestExport(directory,commit,digest,f.repository),/payload_mismatch/);fs.writeFileSync(payload,original);
+ f.write(path.join(directory,'notices/added.txt'),'unlisted');assert.throws(()=>verifyGuestExport(directory,commit,digest,f.repository),/payload_mismatch/);fs.unlinkSync(path.join(directory,'notices/added.txt'));
+ f.write(path.join(directory,'.env'),'must never transfer');assert.throws(()=>verifyGuestExport(directory,commit,digest,f.repository),/extra_root/);fs.unlinkSync(path.join(directory,'.env'));
+ const production=path.join(f.repository,'apple-music-downloader/internal/guestagent/fixture.go');fs.appendFileSync(production,'changed');
+ assert.throws(()=>verifyGuestExport(directory,commit,digest,f.repository),/native_bundle_source_stale/);
+});
+
 test('native package accepts only a guest whose store and complete device-login sources match this checkout',t=>{
  const {createReceipt}=require('../../electron/native-package');const fixture=freshnessFixture(t);
  assert.equal(createReceipt(fixture.stage,fixture.bundle,fixture.repository).version,require('../../package.json').version);

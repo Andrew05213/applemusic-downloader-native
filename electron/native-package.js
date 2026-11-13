@@ -17,7 +17,7 @@ const AGENT_DIRECTORIES=['internal/nativeauth','internal/guestagent','cmd/amdl-g
 // A wrapper pin alone cannot distinguish an old guest from the current
 // device-only guest. Compare its native and complete production Go inputs before
 // allowing a new installer to combine it with today's backend and renderer.
-function verifyBundleSources(bundle,repository=ROOT){
+function verifyGuestSources(bundle,repository=ROOT){
  try{
   const native=path.join(repository,'native-runtime');
   const lock=JSON.parse(fs.readFileSync(path.join(native,'inputs.lock.json'),'utf8'));
@@ -25,7 +25,7 @@ function verifyBundleSources(bundle,repository=ROOT){
   const build=JSON.parse(fs.readFileSync(path.join(bundle,'evidence/build.json'),'utf8'));
   if(build.schemaVersion!==1||build.publicReleaseAllowed!==false||build.wrapperCommit!==lock.wrapper.commit||build.sourceSHA256!==lock.wrapper.sha256||
    build.sourceDateEpoch!==lock.sourceDateEpoch||build.qemuInstallerSHA512!==lock.qemu.sha512||
-   build.inputsLockSHA256!==hash(path.join(native,'inputs.lock.json'))||build.manifestSHA256!==hash(path.join(bundle,'bundle.json')))
+   build.inputsLockSHA256!==hash(path.join(native,'inputs.lock.json')))
    throw new Error();
   const toolchainFile=path.join(bundle,'evidence/toolchain-build.json');
   const toolchain=require('./native-toolchain').verifyEvidence(JSON.parse(fs.readFileSync(toolchainFile,'utf8')),repository);
@@ -49,7 +49,19 @@ function verifyBundleSources(bundle,repository=ROOT){
   return build;
  }catch{throw new Error('native_bundle_source_stale');}
 }
+function verifyBundleSources(bundle,repository=ROOT){
+ const build=verifyGuestSources(bundle,repository);
+ try{if(build.manifestSHA256!==hash(path.join(bundle,'bundle.json')))throw new Error();}
+ catch{throw new Error('native_bundle_source_stale');}
+ return build;
+}
 function walk(root,prefix=''){const files={};for(const name of fs.readdirSync(path.join(root,prefix)).sort()){const relative=(prefix?prefix+'/':'')+name;const file=path.join(root,relative);const stat=fs.lstatSync(file);if(stat.isSymbolicLink())throw new Error('native_package_link_rejected');if(stat.isDirectory())Object.assign(files,walk(root,relative));else if(stat.isFile())files[relative]={sha256:hash(file),size:stat.size};else throw new Error('native_package_file_invalid');}return files;}
+function copyTree(source,destination){
+ // Avoid Node's native recursive cp path handling on long Windows worktrees.
+ // walk rejects links/special files; copying never overwrites an existing file.
+ fs.mkdirSync(destination,{recursive:true});
+ for(const relative of Object.keys(walk(source))){const target=path.join(destination,relative);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(path.join(source,relative),target,fs.constants.COPYFILE_EXCL);}
+}
 function verifyReceipt(root,receipt){if(receipt.schemaVersion!==1||receipt.version!==VERSION||receipt.publicReleaseAllowed!==false||receipt.electronVersion!==ELECTRON||!receipt.files||!receipt.ui)throw new Error('native_package_receipt_invalid');for(const [relative,identity]of Object.entries(receipt.files)){if(path.posix.normalize(relative)!==relative||relative.startsWith('../')||path.isAbsolute(relative)||relative.includes('\\'))throw new Error('native_package_path_invalid');const file=path.join(root,relative);if(!fs.lstatSync(file).isFile()||fs.statSync(file).size!==identity.size||hash(file)!==identity.sha256)throw new Error('native_package_identity_mismatch');}return true;}
 function createReceipt(stage,bundle,repository=ROOT){
  const manifest=JSON.parse(fs.readFileSync(path.join(bundle,'bundle.json'),'utf8'));const computed=makeManifest(bundle,{isolated:false});
@@ -67,4 +79,4 @@ function prepare(stage,bundle){if(fs.existsSync(stage))throw new Error('native_s
  for(const name of ['guest','qemu','notices','evidence']){const source=path.join(bundle,name);for(const relative of Object.keys(walk(source))){const target=path.join(stage,'native-runtime',name,relative);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(path.join(source,relative),target);}}
  fs.copyFileSync(path.join(bundle,'bundle.json'),path.join(stage,'native-runtime/bundle.json'));const receipt=createReceipt(stage,bundle);fs.writeFileSync(path.join(stage,'native-package.json'),JSON.stringify(receipt,null,2)+'\n',{flag:'wx'});verifyStage(stage);return receipt;}
 function verifyStage(stage){const receipt=JSON.parse(fs.readFileSync(path.join(stage,'native-package.json'),'utf8'));verifyReceipt(stage,receipt);verifyBundleSources(path.join(stage,'native-runtime'));for(const [file,digest]of Object.entries(receipt.ui))if(hash(path.join(ROOT,file))!==digest)throw new Error('native_ui_changed_after_staging');if(hash(path.join(ROOT,'node_modules/electron/dist/electron.exe'))!==receipt.electronOriginalEXESHA256)throw new Error('native_electron_changed_after_staging');return receipt;}
-module.exports={createReceipt,verifyReceipt,verifyBundleSources,prepare,verifyStage,hash,walk,UI_FILES,ELECTRON,ROOT};
+module.exports={createReceipt,verifyReceipt,verifyGuestSources,verifyBundleSources,prepare,verifyStage,hash,walk,copyTree,UI_FILES,ELECTRON,ROOT};

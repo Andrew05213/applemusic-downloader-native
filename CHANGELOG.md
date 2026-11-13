@@ -2,7 +2,7 @@
 
 本文件记录正式版本的用户可见变化。预发布及更早版本的原始说明见 [Releases](https://github.com/Andrew05213/applemusic-downloader-native/releases)。
 
-## 1.0.4 — 2026-11-11
+## 1.0.4 — 2026-11-13
 
 [发布说明](https://github.com/Andrew05213/applemusic-downloader-native/releases/tag/v1.0.4) · [Windows x64 安装包](https://github.com/Andrew05213/applemusic-downloader-native/releases/download/v1.0.4/AppleMusicDownloader-1.0.4-Setup.exe) · [SHA-256 校验文件](https://github.com/Andrew05213/applemusic-downloader-native/releases/download/v1.0.4/AppleMusicDownloader-1.0.4-Setup.exe.sha256)
 
@@ -17,6 +17,7 @@
 - 保守处理英国、澳大利亚、日本和法国已确认国内手机号范围的前导零；无法安全判断时提示填写完整国际号码。
 - 统一任务数据库的关闭逻辑，等待取消事务的异步回滚释放连接，并支持重复及并发关闭，修复 Windows 回归中的数据库清理占用风险。
 - 补充跨平台凭据读取、真实子进程回执、选择性恢复、取消及数据库关闭回归测试。
+- 发布流程新增 GitHub Actions 两阶段云端构建：Linux 从锁定源码编译 guest，Windows 复验同次运行的提交和文件哈希，再打包、审计并验证实际程序。
 
 ### 验证与安装说明
 

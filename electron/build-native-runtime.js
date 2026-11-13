@@ -55,7 +55,7 @@ function cachedInput(cache, input, algorithm) {
   const file = path.join(cache, input.cacheName);
   if (!fs.existsSync(file)) {
     const temporary = file + '.' + crypto.randomUUID() + '.partial';
-    run('curl.exe', ['--fail', '--location', '--retry', '2', '--connect-timeout', '20', '--max-time', '1800', '--output', temporary, input.url]);
+    run(process.platform==='win32'?'curl.exe':'curl', ['--fail', '--location', '--retry', '2', '--connect-timeout', '20', '--max-time', '1800', '--output', temporary, input.url]);
     verifyFile(temporary, algorithm, input[algorithm]);
     fs.renameSync(temporary, file);
   }
@@ -94,8 +94,7 @@ function copyQemu(extracted, output) {
 }
 
 function runtimeOutput(root,id) { return path.join(root, '.artifacts', 'runtime', id); }
-function buildNativeRuntime(options = {}) {
-  if (process.platform !== 'win32') throw new Error('native_windows_build_host_required');
+function buildGuest(options = {}) {
   const root = options.repositoryRoot || path.resolve(__dirname, '..');
   const id = crypto.randomUUID();
   const output = path.resolve(root, options.output || runtimeOutput(root, id));
@@ -109,7 +108,6 @@ function buildNativeRuntime(options = {}) {
   const cache = path.join(root, '.tmp-v2-native', 'cache');
   fs.mkdirSync(cache, { recursive: true });
   const source = cachedInput(cache, lock.wrapper, 'sha256');
-  const qemu = cachedInput(cache, lock.qemu, 'sha512');
   const context = path.join(root, '.tmp-v2-native', 'context-' + id);
   fs.mkdirSync(context);
   for (const name of ['Dockerfile', 'inputs.lock.json', 'guest-agent.lock.json', 'lite-native.patch', 'lite-session.patch', 'lite-store-bridge.patch', 'native_login.h', 'native_service.h', 'native_store_bridge.h', 'build-guest.sh', 'init']) fs.copyFileSync(path.join(root, 'native-runtime', name), path.join(context, name));
@@ -136,29 +134,47 @@ function buildNativeRuntime(options = {}) {
   try {
     for (const directory of ['guest', 'notices', 'evidence']) run('docker', ['cp', container + ':/' + directory, path.join(output, directory)]);
   } finally { run('docker', ['rm', container]); }
-  const extracted = path.join(context, 'qemu-extracted');
-  const sevenZip = options.sevenZip || require('./native-archive-tools').prepare(root);
-  // Keep input/output paths relative to the current checkout.
-  run(sevenZip, ['x', '-y', '-o' + path.relative(root,extracted), path.relative(root,qemu), 'qemu-system-x86_64.exe', '*.dll', 'share/*', 'COPYING', 'COPYING.LIB'], {cwd:root});
-  copyQemu(extracted, output);
-  const qemuVersion = run(path.join(output, 'qemu', 'qemu-system-x86_64.exe'), ['--version'], { capture: true });
-  if (!qemuVersion.includes('version ' + lock.qemu.version)) throw new Error('native_qemu_version_mismatch');
-  const manifest = makeManifest(output,{isolated:options.isolated});
-  fs.writeFileSync(path.join(output, 'bundle.json'), JSON.stringify(manifest, null, 2) + '\n');
   fs.writeFileSync(path.join(output, 'evidence', 'toolchain-build.json'), JSON.stringify(toolchain,null,2)+'\n');
   fs.writeFileSync(path.join(output, 'evidence', 'build.json'), JSON.stringify({ schemaVersion: 1, publicReleaseAllowed: false, sourceDateEpoch: lock.sourceDateEpoch,
     toolchainID: toolchain.imageID, toolchainDefinitionSHA256:toolchain.definitionSHA256,
     toolchainEvidenceSHA256:digest(path.join(output,'evidence','toolchain-build.json')),
     wrapperCommit: lock.wrapper.commit, sourceSHA256: lock.wrapper.sha256,
-    qemuInstallerSHA512: lock.qemu.sha512, qemuVersion, patchSHA256: digest(path.join(context, 'lite-native.patch')),
+    qemuInstallerSHA512: lock.qemu.sha512, patchSHA256: digest(path.join(context, 'lite-native.patch')),
     recipeSHA256: digest(path.join(context, 'Dockerfile')), initSHA256: digest(path.join(context, 'init')),
     extractionToolsLockSHA256:digest(path.join(root,'native-runtime/build-tools.lock.json')),
     assemblySHA256: digest(path.join(context, 'build-guest.sh')), inputsLockSHA256: digest(path.join(context, 'inputs.lock.json')),
     sessionPatchSHA256: digest(path.join(context, 'lite-session.patch')), nativeLoginSHA256: digest(path.join(context, 'native_login.h')),
     nativeServiceSHA256: digest(path.join(context, 'native_service.h')), guestAgentSHA256: digest(agentBinary), guestAgentSourceSHA256: digest(path.join(context, 'guest-agent-source.json')),
     storeBridgeSHA256: digest(path.join(context,'native_store_bridge.h')), storeBridgePatchSHA256: digest(path.join(context,'lite-store-bridge.patch')),
-    guestAssemblyRun: id, manifestSHA256: digest(path.join(output, 'bundle.json')),
+    guestAssemblyRun: id,
   }, null, 2) + '\n');
+  return output;
+}
+
+function buildNativeRuntime(options = {}) {
+  if(process.platform!=='win32')throw new Error('native_windows_build_host_required');
+  const root=options.repositoryRoot||path.resolve(__dirname,'..');
+  const output=path.resolve(root,options.output||runtimeOutput(root,crypto.randomUUID()));
+  const relative=path.relative(root,output);
+  if(!relative||relative.startsWith('..')||path.isAbsolute(relative)||fs.existsSync(output))throw new Error('native_output_must_be_new');
+  if(options.guestInput){
+    const input=path.resolve(options.guestInput);
+    require('./native-cloud-guest').verifyGuestExport(input,options.commit,options.receiptSHA256,root);
+    fs.mkdirSync(output,{recursive:true});
+    for(const name of ['guest','notices','evidence'])require('./native-package').copyTree(path.join(input,name),path.join(output,name));
+  }else buildGuest({...options,output});
+  const context=path.join(root,'.tmp-v2-native','qemu-'+crypto.randomUUID());fs.mkdirSync(context,{recursive:true});
+  const cache=path.join(root,'.tmp-v2-native','cache');fs.mkdirSync(cache,{recursive:true});
+  const qemu=cachedInput(cache,lock.qemu,'sha512'),extracted=path.join(context,'qemu-extracted');
+  const sevenZip=options.sevenZip||require('./native-archive-tools').prepare(root);
+  run(sevenZip,['x','-y','-o'+path.relative(root,extracted),path.relative(root,qemu),'qemu-system-x86_64.exe','*.dll','share/*','COPYING','COPYING.LIB'],{cwd:root});
+  copyQemu(extracted,output);
+  const qemuVersion=run(path.join(output,'qemu','qemu-system-x86_64.exe'),['--version'],{capture:true});
+  if(!qemuVersion.includes('version '+lock.qemu.version))throw new Error('native_qemu_version_mismatch');
+  fs.writeFileSync(path.join(output,'bundle.json'),JSON.stringify(makeManifest(output,{isolated:options.isolated}),null,2)+'\n');
+  const file=path.join(output,'evidence/build.json'),build=JSON.parse(fs.readFileSync(file));
+  fs.writeFileSync(file,JSON.stringify({...build,qemuVersion,manifestSHA256:digest(path.join(output,'bundle.json'))},null,2)+'\n');
+  require('./native-package').verifyBundleSources(output,root);
   return output;
 }
 
@@ -170,4 +186,4 @@ if (require.main === module) {
   } catch (error) { process.stderr.write((/^native_[a-z_]+$/.test(error.message) ? error.message : 'native_runtime_build_failed') + '\n'); process.exitCode = 1; }
 }
 
-module.exports = { buildNativeRuntime, verifyFile, makeManifest, runtimeOutput };
+module.exports = { buildNativeRuntime, buildGuest, verifyFile, makeManifest, runtimeOutput };

@@ -1,0 +1,20 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const root=path.resolve(__dirname,'../..');
+test('cloud release is an explicit same-run Linux to Windows transfer with least-privilege draft-only publishing',()=>{
+ const text=fs.readFileSync(path.join(root,'.github/workflows/release-cloud.yml'),'utf8');
+ assert.match(text,/workflow_dispatch:/);assert.doesNotMatch(text,/pull_request:|workflow_run:|pull_request_target:/);
+ assert.deepEqual([...text.matchAll(/runs-on:\s+(\S+)/g)].map(m=>m[1]),['ubuntu-24.04','windows-2025']);
+ assert.equal((text.match(/contents: write/g)||[]).length,1);assert.equal((text.match(/GH_TOKEN:/g)||[]).length,1);
+ assert.match(text,/needs: \[verify, guest\]/);assert.match(text,/artifact-ids: \$\{\{ needs\.guest\.outputs\.artifact_id \}\}/);
+ assert.match(text,/AMDL_GUEST_RECEIPT_SHA256: \$\{\{ needs\.guest\.outputs\.guest_receipt_sha256 \}\}/);
+ assert.match(text,/retention-days: 3/);assert.match(text,/if-no-files-found: error/);
+ assert.match(text,/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9/);
+ assert.match(text,/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333/);
+ assert.doesNotMatch(text,/docker push|docker login|run:.*\$\{\{.*inputs/);
+ const script=fs.readFileSync(path.join(root,'electron/native-cloud-release.js'),'utf8');
+ assert.match(script,/sourceIdentity\(\)/);assert.match(script,/ensureTagAvailable\(repo,tag\)/);
+ assert.match(script,/audit-native-installer/);assert.match(script,/native-electron-live\.cjs/);
+ assert.match(script,/--draft/);assert.doesNotMatch(script,/'--clobber'|'edit'|'delete'|push.*--force/);
+ assert(script.indexOf('const evidence=smoke(')<script.indexOf("run('gh',['release','create'"));
+});

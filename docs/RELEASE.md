@@ -2,6 +2,19 @@
 
 工作流入口为 `.github/workflows/verify.yml` 和 `release-native.yml`。正式安装包位于[本仓库 Releases](https://github.com/Andrew05213/applemusic-downloader-native/releases)，版本来自 `package.json`。
 
+## 推荐：两阶段云端构建
+
+在 main 手动运行 `.github/workflows/release-cloud.yml`（**Native Cloud Release**），不需要维护者本机 Docker，也不需要先上传 runtime。
+
+1. Linux 从仓库中的锁定公开输入构建工具链，编译当前提交的 Lite/guest，生成源码身份和完整文件哈希清单。工具链镜像、NDK、账号及用户数据不上传。
+2. guest 通过同次 workflow 的确切 artifact ID 传递，保留 3 天；只上传白名单中的 pristine guest、许可证和构建证据。Windows 同时验证 job 输出的独立回执哈希、提交号、逐文件内容和当前源码，再按锁文件获取 QEMU、组装联网 runtime、编译 Windows 服务和 NSIS。
+3. 完整 Linux/Windows CI、安装包解包比对及实际打包程序的隔离测试全部成功后，`create_draft=true` 才创建新的草稿预发布。公开仓库还需显式选择 `public_release=true`；两项默认均为 false。
+4. 人工核对草稿附件大小、SHA-256 和验证记录后，再将其公开为正式版。脚本不自动公开，不覆盖已有标签或附件。main 的 README 下载入口应与将要发布的版本一致，发布后检查链接可用。
+
+Linux 只需要 Node.js 22、Go 1.25.0 和 Docker；Windows 不运行 Docker。临时 artifact 不是完整对应源码提供或第三方授权证明，相关限制仍按下文及核查状态处理。
+
+下述 `release-native.yml` 保留为已有 runtime Release 输入的兼容发布方式；普通 CI 不自动上传产物。
+
 ## 普通 CI
 
 - Linux：Go 全量 race/vet、guest 交叉编译、原生/共享 JS、UI 与真实合成 AAC 回归。
