@@ -115,8 +115,15 @@ func TestRestartRecoveryInterruptsInflightAndResumesQueuedJob(t *testing.T) {
 	t.Cleanup(func() {
 		releaseExecutor()
 		cancelManager()
-		_ = manager.Wait(context.Background())
-		_ = afterRestart.Close()
+		if err := manager.Wait(context.Background()); err != nil {
+			t.Errorf("wait for restarted manager: %v", err)
+		}
+		if err := afterRestart.Close(); err != nil {
+			t.Errorf("close restarted store: %v", err)
+		}
+		if open := afterRestart.db.Stats().OpenConnections; open != 0 {
+			t.Errorf("restarted store retained %d driver connections", open)
+		}
 	})
 	if err := manager.Start(managerContext); err != nil {
 		t.Fatalf("start manager after restart: %v", err)

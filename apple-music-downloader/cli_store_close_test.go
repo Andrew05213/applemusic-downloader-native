@@ -7,6 +7,7 @@ import (
 	"errors"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -154,5 +155,91 @@ func TestJobStoreCloseIsConcurrentAndIdempotent(t *testing.T) {
 	}
 	if store.db.Stats().OpenConnections != 0 {
 		t.Fatal("store close left an open database connection")
+	}
+}
+
+// An already-retired connection can be inside driver.Close while another
+// pooled connection has completed the borrow/return barrier. DB.Close only
+// synchronously closes idle connections, not every such pending finalizer.
+type pendingCloseConnector struct {
+	connections  atomic.Int32
+	firstStarted chan struct{}
+	releaseFirst chan struct{}
+	secondClosed chan struct{}
+}
+
+func (c *pendingCloseConnector) Connect(context.Context) (driver.Conn, error) {
+	return &pendingCloseConn{owner: c, id: c.connections.Add(1)}, nil
+}
+func (c *pendingCloseConnector) Driver() driver.Driver { return pendingCloseDriver{c} }
+
+type pendingCloseDriver struct{ owner *pendingCloseConnector }
+
+func (d pendingCloseDriver) Open(string) (driver.Conn, error) {
+	return d.owner.Connect(context.Background())
+}
+
+type pendingCloseConn struct {
+	owner *pendingCloseConnector
+	id    int32
+}
+
+func (*pendingCloseConn) Prepare(string) (driver.Stmt, error) {
+	return nil, errors.New("unexpected statement")
+}
+func (*pendingCloseConn) Begin() (driver.Tx, error) { return nil, errors.New("unexpected transaction") }
+func (c *pendingCloseConn) Close() error {
+	if c.id == 1 {
+		close(c.owner.firstStarted)
+		<-c.owner.releaseFirst
+	}
+	if c.id == 2 {
+		close(c.owner.secondClosed)
+	}
+	return nil
+}
+
+func TestJobStoreCloseWaitsForAlreadyRetiredDriverConnection(t *testing.T) {
+	c := &pendingCloseConnector{firstStarted: make(chan struct{}), releaseFirst: make(chan struct{}), secondClosed: make(chan struct{})}
+	db := sql.OpenDB(c)
+	db.SetMaxOpenConns(2)
+	db.SetMaxIdleConns(0)
+	connection, err := db.Conn(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var releaseOnce sync.Once
+	release := func() { releaseOnce.Do(func() { close(c.releaseFirst) }) }
+	retired, finished := make(chan struct{}), make(chan error, 1)
+	t.Cleanup(func() { release(); _ = db.Close(); <-retired })
+	go func() { _ = connection.Close(); close(retired) }()
+	select {
+	case <-c.firstStarted:
+	case <-time.After(2 * time.Second):
+		t.Fatal("driver close did not start")
+	}
+	store := &JobStore{db: db}
+	go func() { finished <- store.Close() }()
+	select {
+	case <-c.secondClosed:
+	case <-time.After(2 * time.Second):
+		t.Fatal("close did not drain the other connection")
+	}
+	select {
+	case err := <-finished:
+		t.Fatalf("store closed before retired driver released its handle: %v", err)
+	case <-time.After(30 * time.Millisecond):
+	}
+	release()
+	select {
+	case err := <-finished:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("store close remained blocked")
+	}
+	if open := db.Stats().OpenConnections; open != 0 {
+		t.Fatalf("store close left %d driver connections", open)
 	}
 }

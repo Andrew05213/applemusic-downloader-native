@@ -75,7 +75,9 @@ func ensureParentDirectory(path string) error {
 // Close is called after the owner has stopped and joined all store users.
 // A cancelled transaction may still own the single pooled connection while
 // database/sql rolls it back asynchronously. Borrowing and returning that
-// connection drains the rollback before DB.Close closes the idle pool.
+// connection drains the rollback before DB.Close closes the idle pool. A
+// retired driver connection may still be closing outside that pool; wait for
+// the observable open-connection count to reach zero before reporting success.
 func (s *JobStore) Close() error {
 	s.closeOnce.Do(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -85,6 +87,16 @@ func (s *JobStore) Close() error {
 			err = connection.Close()
 		}
 		s.closeErr = errors.Join(err, s.db.Close())
+		ticker := time.NewTicker(time.Millisecond)
+		defer ticker.Stop()
+		for s.db.Stats().OpenConnections != 0 {
+			select {
+			case <-ctx.Done():
+				s.closeErr = errors.Join(s.closeErr, fmt.Errorf("wait for job database connections to close: %w", ctx.Err()))
+				return
+			case <-ticker.C:
+			}
+		}
 	})
 	return s.closeErr
 }
