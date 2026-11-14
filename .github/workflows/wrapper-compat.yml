@@ -1,0 +1,50 @@
+name: Wrapper Compatibility
+
+on:
+  push:
+    branches: ['codex/wrapper-80dc-compat']
+  workflow_dispatch:
+
+# This verification workflow cannot create tags, Releases or installers.
+permissions:
+  contents: read
+
+concurrency:
+  group: wrapper-compat-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GOMAXPROCS: '2'
+  GOFLAGS: '-p=2'
+  GOTOOLCHAIN: local
+
+jobs:
+  verify:
+    uses: ./.github/workflows/verify.yml
+  guest:
+    name: Compile locked Lite and guest with offline DNS/TLS fixtures
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.25.0'
+          cache-dependency-path: apple-music-downloader/go.sum
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Build toolchain and compile current source without accounts
+        run: node electron/native-cloud-release.js linux
+      - name: Retain pristine guest and source/hash evidence for review
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: wrapper-compat-guest
+          path: |
+            .artifacts/cloud-guest/guest
+            .artifacts/cloud-guest/notices
+            .artifacts/cloud-guest/evidence
+            .artifacts/cloud-guest/guest-export.json
+          retention-days: 3
+          if-no-files-found: error
+          include-hidden-files: true

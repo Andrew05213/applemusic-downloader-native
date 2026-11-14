@@ -4,10 +4,11 @@
   "wrapper": {
     "repository": "https://github.com/Andrew05213/wrapper",
     "branch": "work",
-    "commit": "b2bebc318ae9e7aa208a27642c193d3a79418d95",
-    "url": "https://codeload.github.com/Andrew05213/wrapper/tar.gz/b2bebc318ae9e7aa208a27642c193d3a79418d95",
-    "cacheName": "wrapper-andrew05213-b2bebc31.tar.gz",
-    "sha256": "c61e1b921d6a298bb3c1cf01e67f523b951d94de2d9ebdcd2dc53957bbb3cd3f"
+    "commit": "80dcaa1bc6cc88e41f1d6bb16d0cc9a241d4bca3",
+    "url": "https://codeload.github.com/Andrew05213/wrapper/tar.gz/80dcaa1bc6cc88e41f1d6bb16d0cc9a241d4bca3",
+    "cacheName": "wrapper-andrew05213-80dcaa1b.tar.gz",
+    "sha256": "5041380a5488f79060bbfd0e0356ac4241f50e035bcf89a3fc0bd1b372e7dfa7",
+    "caBundleSHA256": "427c064216761a1e72a8b30f0d954d08cb6e4435a82091fb865afd20c8497285"
   },
   "qemu": {
     "version": "11.1.0",

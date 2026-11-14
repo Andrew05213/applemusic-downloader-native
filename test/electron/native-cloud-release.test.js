@@ -1,6 +1,15 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'../..');
+test('wrapper compatibility branch can verify and compile but cannot publish or build an installer',()=>{
+ const text=fs.readFileSync(path.join(root,'.github/workflows/wrapper-compat.yml'),'utf8');
+ assert.match(text,/branches: \['codex\/wrapper-80dc-compat'\]/);
+ assert.match(text,/uses: \.\/\.github\/workflows\/verify\.yml/);
+ assert.match(text,/contents: read/);
+ assert.match(text,/run: node electron\/native-cloud-release\.js linux/);
+ assert.match(text,/retention-days: 3/);
+ assert.doesNotMatch(text,/contents: write|GH_TOKEN:|secrets:|pull_request_target:|release-native|dist-native|native-cloud-release\.js windows|gh release|tags:/);
+});
 test('cloud release is an explicit same-run Linux to Windows transfer with least-privilege draft-only publishing',()=>{
  const text=fs.readFileSync(path.join(root,'.github/workflows/release-cloud.yml'),'utf8');
  assert.match(text,/workflow_dispatch:/);assert.doesNotMatch(text,/pull_request:|workflow_run:|pull_request_target:/);

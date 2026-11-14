@@ -71,7 +71,7 @@ npm run package:native
 ## 直接上游
 
 - [zhaarey/apple-music-downloader](https://github.com/zhaarey/apple-music-downloader)：本项目下载器的直接上游，原始脚本署名 Sorrow。
-- [Andrew05213/wrapper（Wrapper Lite 维护分支）](https://github.com/Andrew05213/wrapper)：提供 Lite 服务，1.0.4 固定使用提交 [b2bebc3](https://github.com/Andrew05213/wrapper/commit/b2bebc318ae9e7aa208a27642c193d3a79418d95)；源自 [WorldObservationLog/wrapper](https://github.com/WorldObservationLog/wrapper)，保留上游 [MIT License](https://github.com/WorldObservationLog/wrapper/blob/2fd7e0eaef081f93cf687428b965674937832ba4/LICENSE) 声明。
+- [Andrew05213/wrapper（Wrapper Lite 维护分支）](https://github.com/Andrew05213/wrapper)：提供 Lite 服务，当前开发源码锁定 [80dcaa1](https://github.com/Andrew05213/wrapper/commit/80dcaa1bc6cc88e41f1d6bb16d0cc9a241d4bca3)，已发布的 1.0.4 仍使用 [b2bebc3](https://github.com/Andrew05213/wrapper/commit/b2bebc318ae9e7aa208a27642c193d3a79418d95)；源自 [WorldObservationLog/wrapper](https://github.com/WorldObservationLog/wrapper)，保留上游 [MIT License](https://github.com/WorldObservationLog/wrapper/blob/2fd7e0eaef081f93cf687428b965674937832ba4/LICENSE) 声明。
 
 感谢上述项目的作者与贡献者。各上游代码保留其原有版权和适用许可；版本及许可记录见[上游来源](docs/UPSTREAMS.md)。
 

@@ -1,24 +1,17 @@
 diff --git a/lite/apple_api.cpp b/lite/apple_api.cpp
 --- a/lite/apple_api.cpp
 +++ b/lite/apple_api.cpp
-@@ -34,17 +34,9 @@ CurlEasy::CurlEasy() : handle(nullptr), ok(false) {
+@@ -34,11 +34,11 @@ CurlEasy::CurlEasy() : handle(nullptr), ok(false) {
      handle = init();
      ok = (handle != nullptr);
      if (ok) {
 -        ok = setOptInt(CURLOPT_SSL_VERIFYPEER, g_ssl_verify_disabled ? 0 : 1) &&
 -             setOptInt(CURLOPT_SSL_VERIFYHOST, g_ssl_verify_disabled ? 0 : 2);
--        const char* configured = std::getenv("SSL_CERT_FILE");
--        const char* paths[] = {configured, "/usr/local/android/cert.pem",
--                               "/system/etc/security/cacert.pem"};
--        for (const char* path : paths) {
--            if (path && *path && std::ifstream(path).good()) {
--                ok = ok && setOptStr(CURLOPT_CAINFO, path);
--                break;
--            }
--        }
 +        ok = setOptInt(CURLOPT_SSL_VERIFYPEER, 1) &&
-+             setOptInt(CURLOPT_SSL_VERIFYHOST, 2) &&
-+             setOptStr(CURLOPT_CAINFO, "/usr/local/android/cert.pem");
++             setOptInt(CURLOPT_SSL_VERIFYHOST, 2);
+         // Explicit CA paths fail closed at perform(), never fall back to a
+         // different trust store when the requested file is missing.
+         ok = ok && setOptStr(CURLOPT_CAINFO, get_ca_bundle());
      }
  }
  
@@ -35,7 +28,7 @@ diff --git a/lite/apple_api.cpp b/lite/apple_api.cpp
  
  bool CurlEasy::setOptStr(int opt, const char* str) {
      if (!handle) return false;
-+    if (opt == CURLOPT_CAINFO && (!str || strcmp(str, "/usr/local/android/cert.pem") != 0)) return false;
++    if (opt == CURLOPT_CAINFO && (!str || strcmp(str, get_ca_bundle()) != 0)) return false;
      void* lib = getCurl();
      if (!lib) return false;
      typedef int (*curl_easy_setopt_t)(void*, int, ...);
@@ -53,17 +46,6 @@ diff --git a/lite/bridge.cpp b/lite/bridge.cpp
  bool g_code_from_file = false;
  
  extern const char* const fairplayCert;
-@@ -62,8 +64,8 @@ void init(const char* device_info_str) {
-     setenv("ANDROID_DNS_MODE", "local", 1);
-     setenv("ANDROID_DATA", "/data", 1);
-     setenv("ANDROID_ROOT", "/system", 1);
--    static const char* resolvers[2] = {"223.5.5.5", "223.6.6.6"};
--    _resolv_set_nameservers_for_net(0, resolvers, 2, ".");
-+    static const char* resolvers[1] = {"10.0.2.3"};
-+    _resolv_set_nameservers_for_net(0, resolvers, 1, ".");
- 
-     union std_string conf1 = new_std_string(device_infos[8] ? device_infos[8] : "");
-     union std_string conf2 = new_std_string("");
 @@ -130,7 +132,6 @@ struct shared_ptr init_ctx() {
  static int (*orig_debug_log_enabled)(void);
  static int (*orig_log_print)(int prio, const char *tag, const char *fmt, ...);
