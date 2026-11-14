@@ -15,8 +15,9 @@ test('native guest inputs pin sources, package snapshot and QEMU publisher diges
   const lock = require('../../native-runtime/inputs.lock.json');
   assert.equal(lock.wrapper.repository, 'https://github.com/Andrew05213/wrapper');
   assert.equal(lock.wrapper.branch, 'work');
-  assert.equal(lock.wrapper.commit, 'b2bebc318ae9e7aa208a27642c193d3a79418d95');
-  assert.equal(lock.wrapper.sha256, 'c61e1b921d6a298bb3c1cf01e67f523b951d94de2d9ebdcd2dc53957bbb3cd3f');
+  assert.equal(lock.wrapper.commit, '80dcaa1bc6cc88e41f1d6bb16d0cc9a241d4bca3');
+  assert.equal(lock.wrapper.sha256, '5041380a5488f79060bbfd0e0356ac4241f50e035bcf89a3fc0bd1b372e7dfa7');
+  assert.equal(lock.wrapper.caBundleSHA256, '427c064216761a1e72a8b30f0d954d08cb6e4435a82091fb865afd20c8497285');
   assert.equal(lock.wrapper.url, 'https://codeload.github.com/Andrew05213/wrapper/tar.gz/'+lock.wrapper.commit);
   assert.equal(lock.wrapper.cacheName, 'wrapper-andrew05213-'+lock.wrapper.commit.slice(0,8)+'.tar.gz');
   assert.match(fs.readFileSync(path.join(root,'native-runtime/Dockerfile'),'utf8'),new RegExp(lock.wrapper.sha256+'  wrapper\\.tar\\.gz'));
@@ -65,7 +66,8 @@ test('native guest recipe preserves strict TLS, source pins and a fail-closed da
   const dockerfile = fs.readFileSync(path.join(root, 'native-runtime/Dockerfile'), 'utf8');
   const init = fs.readFileSync(path.join(root, 'native-runtime/init'), 'utf8');
   assert.match(patch, /CURLOPT_CAINFO/);
-  assert.match(patch, /\/usr\/local\/android\/cert\.pem/);
+  assert.match(patch, /get_ca_bundle\(\)/);
+  assert.match(patch, /strcmp\(str, get_ca_bundle\(\)\)/);
   assert.match(patch, /-.*DobbyHook.*curl_easy_setopt/);
   assert.doesNotMatch(patch.split('\n').filter((line) => line.startsWith('+')).join('\n'), /SSL_VERIFYPEER, 0|SSL_VERIFYHOST, 0|g_ssl_verify_disabled = true/);
   assert.match(dockerfile, /CMAKE_BUILD_TYPE=Release/);
@@ -74,6 +76,13 @@ test('native guest recipe preserves strict TLS, source pins and a fail-closed da
   assert.match(init, /mount -t ext4 \/dev\/vda \/data \|\| fail/);
   assert.match(init, /crc32c_generic ext4/);
   const assembly = fs.readFileSync(path.join(root, 'native-runtime/build-guest.sh'), 'utf8');
+  assert.match(assembly, /\$source\/rootfs\/system\/etc\/security\/cacert\.pem/);
+  assert.doesNotMatch(assembly, /install .*\/etc\/ssl\/certs\/ca-certificates\.crt/);
+  assert(assembly.includes("printf 'nameserver 10.0.2.3"));
+  assert.doesNotMatch(patch.split('\n').filter(line=>line.startsWith('+')).join('\n'), /resolvers\[|223\.5\.5\.5|8\.8\.8\.8/);
+  const ca=require('../../native-runtime/inputs.lock.json').wrapper.caBundleSHA256;
+  assert(dockerfile.includes(ca+'  rootfs/system/etc/security/cacert.pem'));
+  assert(dockerfile.includes('python3 /native-build/check-wrapper-network.py'));
   assert.match(assembly, /crc32c_generic ext4/);
   assert.match(dockerfile, /ARG GUEST_REPRO_RUN/);
   assert.match(init, /amdl-guest --base-dir \/data --capability-file \/run\/control\.secret/);
@@ -96,7 +105,7 @@ test('guest export comparison refuses changed bytes or reused assembly evidence'
   const bundles = ['a', 'b'].map((name) => path.join(directory, name));
   const evidence = { toolchainID: 'fixture', toolchainDefinitionSHA256:'definition',toolchainEvidenceSHA256:'toolchain',extractionToolsLockSHA256:'extraction',sourceDateEpoch: 1786320000, sourceSHA256: 'source', qemuInstallerSHA512: 'qemu',
     patchSHA256: 'patch', recipeSHA256: 'recipe', initSHA256: 'init', assemblySHA256: 'assembly', inputsLockSHA256: 'lock', sessionPatchSHA256:'session',nativeLoginSHA256:'login',nativeServiceSHA256:'service',guestAgentSHA256:'agent',guestAgentSourceSHA256:'source',
-    storeBridgeSHA256:'store',storeBridgePatchSHA256:'store-patch' };
+    storeBridgeSHA256:'store',storeBridgePatchSHA256:'store-patch',networkCheckSHA256:'network-check' };
   for (const bundle of bundles) {
     for (const name of ['qemu/qemu-system-x86_64.exe', 'qemu/share/bios-256k.bin', 'guest/vmlinuz', 'guest/initramfs.cpio.gz', 'guest/data.img', 'notices/wrapper-LICENSE']) {
       fs.mkdirSync(path.dirname(path.join(bundle, name)), { recursive: true });
@@ -107,7 +116,7 @@ test('guest export comparison refuses changed bytes or reused assembly evidence'
     fs.writeFileSync(path.join(bundle, 'evidence/build.json'), JSON.stringify({ ...evidence, guestAssemblyRun: crypto.randomUUID() }));
   }
   assert.equal(compareBundles(...bundles).passed, true);
-  for(const field of ['storeBridgeSHA256','storeBridgePatchSHA256']){
+  for(const field of ['storeBridgeSHA256','storeBridgePatchSHA256','networkCheckSHA256']){
     const files=bundles.map(bundle=>path.join(bundle,'evidence/build.json'));
     const before=files.map(file=>fs.readFileSync(file));const changed=JSON.parse(before[1]);changed[field]='changed';
     fs.writeFileSync(files[1],JSON.stringify(changed));assert.throws(()=>compareBundles(...bundles),field+' differs');

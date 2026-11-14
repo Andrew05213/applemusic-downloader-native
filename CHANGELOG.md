@@ -1,6 +1,12 @@
 # 更新日志
 
-本文件记录正式版本的用户可见变化。预发布及更早版本的原始说明见 [Releases](https://github.com/Andrew05213/applemusic-downloader-native/releases)。
+本文件记录开发中和正式版本的用户可见变化。预发布及更早版本的原始说明见 [Releases](https://github.com/Andrew05213/applemusic-downloader-native/releases)。
+
+## 未发布
+
+- Wrapper Lite 升级至维护分支的 `80dcaa1`，适配新的 DNS 和 CA 配置逻辑；原生认证交互、下载和流式播放接口不变。
+- Lite HTTP 与 Android SDK 使用同一份哈希锁定的 CA 证书，保留严格证书及主机名校验，不允许调试开关关闭 TLS 校验。
+- guest 构建增加离线 DNS/TLS 回归，校验脚本也纳入运行时来源与可复现性记录。以上更改不影响已发布的 1.0.4 附件。
 
 ## 1.0.4 — 2026-11-13
 

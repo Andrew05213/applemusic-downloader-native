@@ -75,7 +75,7 @@ function freshnessFixture(t){
  const toolchain={...require('../../electron/native-toolchain').definition(repository),imageID:'sha256:'+'a'.repeat(64)};
  const sourceFields={patchSHA256:'lite-native.patch',recipeSHA256:'Dockerfile',initSHA256:'init',assemblySHA256:'build-guest.sh',
   sessionPatchSHA256:'lite-session.patch',nativeLoginSHA256:'native_login.h',nativeServiceSHA256:'native_service.h',
-  storeBridgeSHA256:'native_store_bridge.h',storeBridgePatchSHA256:'lite-store-bridge.patch',extractionToolsLockSHA256:'build-tools.lock.json'};
+  storeBridgeSHA256:'native_store_bridge.h',storeBridgePatchSHA256:'lite-store-bridge.patch',networkCheckSHA256:'check-wrapper-network.py',extractionToolsLockSHA256:'build-tools.lock.json'};
  for(const file of Object.values(sourceFields))write(path.join(repository,'native-runtime',file),'fixture '+file);
  const sources={};for(const part of ['internal/nativeauth','internal/guestagent','cmd/amdl-guest']){
   const name=part+'/fixture.go';write(path.join(repository,'apple-music-downloader',name),'package fixture\n');sources[name]=hash(path.join(repository,'apple-music-downloader',name));
@@ -122,7 +122,7 @@ test('cloud guest transfer binds commit, independent receipt hash, bytes and cur
 test('native package accepts only a guest whose store and complete device-login sources match this checkout',t=>{
  const {createReceipt}=require('../../electron/native-package');const fixture=freshnessFixture(t);
  assert.equal(createReceipt(fixture.stage,fixture.bundle,fixture.repository).version,require('../../package.json').version);
- for(const field of ['storeBridgeSHA256','storeBridgePatchSHA256']){
+ for(const field of ['storeBridgeSHA256','storeBridgePatchSHA256','networkCheckSHA256']){
   const original=fixture.evidence[field];delete fixture.evidence[field];fixture.write(path.join(fixture.bundle,'evidence/build.json'),JSON.stringify(fixture.evidence));
   assert.throws(()=>createReceipt(fixture.stage,fixture.bundle,fixture.repository),/native_bundle_source_stale/,field+' missing');
   fixture.evidence[field]=original;fixture.write(path.join(fixture.bundle,'evidence/build.json'),JSON.stringify(fixture.evidence));

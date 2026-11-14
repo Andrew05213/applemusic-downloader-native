@@ -15,7 +15,9 @@ rm -f "$stage/system/bin/main"
 install -m 0755 "$source/rootfs/system/bin/lite" "$stage/system/bin/lite"
 install -m 0755 /native-build/init "$stage/init"
 install -m 0755 /native-build/amdl-guest "$stage/bin/amdl-guest"
-install -m 0644 /etc/ssl/certs/ca-certificates.crt "$stage/usr/local/android/cert.pem"
+# Lite defaults to the upstream trust store; the Android SDK has its legacy
+# default compiled into libcurl. Keep both paths on the same hash-pinned bytes.
+install -m 0644 "$source/rootfs/system/etc/security/cacert.pem" "$stage/usr/local/android/cert.pem"
 printf 'nameserver 10.0.2.3\n' > "$stage/etc/resolv.conf"
 chmod 1777 "$stage/tmp"
 test -z "$(find "$stage/data" -mindepth 1 -print -quit)"
@@ -54,5 +56,5 @@ install -m 0644 "$source/LICENSE" /out/notices/wrapper-LICENSE
 install -m 0644 /native-build/inputs.lock.json /out/evidence/inputs.lock.json
 install -m 0644 /native-build/guest-agent.lock.json /native-build/guest-agent-source.json /out/evidence/
 dpkg-query -W -f='${Package}=${Version}\n' | sort > /out/evidence/packages.resolved.lock
-sha256sum "$stage/system/bin/lite" "$stage/usr/local/android/cert.pem" > /out/evidence/guest-components.sha256
+sha256sum "$stage/system/bin/lite" "$stage/usr/local/android/cert.pem" "$stage/system/etc/security/cacert.pem" > /out/evidence/guest-components.sha256
 find /out -type f -exec touch -d "@$SOURCE_DATE_EPOCH" {} +

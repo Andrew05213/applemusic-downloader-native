@@ -110,7 +110,7 @@ function buildGuest(options = {}) {
   const source = cachedInput(cache, lock.wrapper, 'sha256');
   const context = path.join(root, '.tmp-v2-native', 'context-' + id);
   fs.mkdirSync(context);
-  for (const name of ['Dockerfile', 'inputs.lock.json', 'guest-agent.lock.json', 'lite-native.patch', 'lite-session.patch', 'lite-store-bridge.patch', 'native_login.h', 'native_service.h', 'native_store_bridge.h', 'build-guest.sh', 'init']) fs.copyFileSync(path.join(root, 'native-runtime', name), path.join(context, name));
+  for (const name of ['Dockerfile', 'inputs.lock.json', 'guest-agent.lock.json', 'lite-native.patch', 'lite-session.patch', 'lite-store-bridge.patch', 'native_login.h', 'native_service.h', 'native_store_bridge.h', 'check-wrapper-network.py', 'build-guest.sh', 'init']) fs.copyFileSync(path.join(root, 'native-runtime', name), path.join(context, name));
   const goVersion = run('go', ['version'], { capture: true });
   if (!goVersion.startsWith('go version ' + agentLock.goVersion + ' ')) throw new Error('native_go_identity_mismatch');
   const agentBinary = path.join(context, 'amdl-guest');
@@ -146,6 +146,7 @@ function buildGuest(options = {}) {
     sessionPatchSHA256: digest(path.join(context, 'lite-session.patch')), nativeLoginSHA256: digest(path.join(context, 'native_login.h')),
     nativeServiceSHA256: digest(path.join(context, 'native_service.h')), guestAgentSHA256: digest(agentBinary), guestAgentSourceSHA256: digest(path.join(context, 'guest-agent-source.json')),
     storeBridgeSHA256: digest(path.join(context,'native_store_bridge.h')), storeBridgePatchSHA256: digest(path.join(context,'lite-store-bridge.patch')),
+    networkCheckSHA256: digest(path.join(context,'check-wrapper-network.py')),
     guestAssemblyRun: id,
   }, null, 2) + '\n');
   return output;

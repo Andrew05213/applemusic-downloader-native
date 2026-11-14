@@ -11,10 +11,10 @@ COPY inputs.lock.json /native-build/
 # The source-built toolchain contains the locked kernel/BusyBox packages.
 # Compilation and guest assembly need no network access.
 
-COPY lite-native.patch lite-session.patch lite-store-bridge.patch native_login.h native_service.h native_store_bridge.h /native-build/
+COPY lite-native.patch lite-session.patch lite-store-bridge.patch native_login.h native_service.h native_store_bridge.h check-wrapper-network.py /native-build/
 COPY wrapper.tar.gz /native-build/wrapper.tar.gz
 RUN set -eux; \
-    echo 'c61e1b921d6a298bb3c1cf01e67f523b951d94de2d9ebdcd2dc53957bbb3cd3f  wrapper.tar.gz' | sha256sum -c -; \
+    echo '5041380a5488f79060bbfd0e0356ac4241f50e035bcf89a3fc0bd1b372e7dfa7  wrapper.tar.gz' | sha256sum -c -; \
     test "$(git -C /src/cjson rev-parse HEAD)" = c859b25da02955fef659d658b8f324b5cde87be3; \
     test "$(git -C /src/dobby rev-parse HEAD)" = 9d271803881f467aabfc24593c7dcaeb710fe861; \
     grep -q 'Pkg.Revision = 23.1.7779620' /opt/android-ndk-r23b/source.properties; \
@@ -24,6 +24,7 @@ RUN set -eux; \
     tar -xzf wrapper.tar.gz --strip-components=1 -C /native-build/source \
       --exclude='*/rootfs/data' --exclude='*/rootfs/dev' --exclude='*/rootfs/proc'; \
     cd /native-build/source; \
+    echo '427c064216761a1e72a8b30f0d954d08cb6e4435a82091fb865afd20c8497285  rootfs/system/etc/security/cacert.pem' | sha256sum -c -; \
     git apply --recount --check /native-build/lite-native.patch; \
     git apply --recount /native-build/lite-native.patch; \
     git apply --recount --unidiff-zero --check /native-build/lite-session.patch; \
@@ -33,6 +34,7 @@ RUN set -eux; \
     cp /native-build/native_login.h /native-build/native_service.h /native-build/native_store_bridge.h lite/; \
     ! grep -R 'curl_easy_setopt_hook\|g_ssl_verify_disabled' lite --exclude=httplib.h; \
     ! grep -E 'setOptInt\(CURLOPT_SSL_(VERIFYPEER|VERIFYHOST), 0\)' lite/apple_api.cpp; \
+    PYTHONDONTWRITEBYTECODE=1 python3 /native-build/check-wrapper-network.py; \
     /opt/cmake/bin/cmake -S . -B /native-build/compiled \
       -DANDROID_NDK_PATH=/opt/android-ndk-r23b \
       -DFETCHCONTENT_SOURCE_DIR_CJSON=/src/cjson \
