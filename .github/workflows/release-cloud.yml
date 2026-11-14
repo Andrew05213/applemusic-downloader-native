@@ -92,5 +92,16 @@ jobs:
       - name: Verify same-commit guest, assemble QEMU, build/audit NSIS and smoke isolated app
         shell: powershell
         run: ./electron/native-ci-windows.ps1 -CloudRelease
+      - name: Deliver verified test installer without creating a Release
+        if: ${{ !inputs.create_draft }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-test-installer
+          path: |
+            .artifacts/installers/**/AppleMusicDownloader-*-Setup.exe
+            .artifacts/installers/**/AppleMusicDownloader-*-Setup.exe.sha256
+            .artifacts/cloud-release-result.json
+          retention-days: 7
+          if-no-files-found: error
       # Draft is the only Release write. Public promotion is a separate review.
       # No image/NDK, account, profile or downloaded music is uploaded.

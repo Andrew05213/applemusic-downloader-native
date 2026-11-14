@@ -31,3 +31,15 @@ test('cloud release is an explicit same-run Linux to Windows transfer with least
  assert.match(script,/--draft/);assert.doesNotMatch(script,/'--clobber'|'edit'|'delete'|push.*--force/);
  assert(script.indexOf('const evidence=smoke(')<script.indexOf("run('gh',['release','create'"));
 });
+
+test('cloud test installer is uploaded only after audit and packaged smoke, without Release creation',()=>{
+ const text=fs.readFileSync(path.join(root,'.github/workflows/release-cloud.yml'),'utf8');
+ const step=text.slice(text.indexOf('      - name: Deliver verified test installer'));
+ assert.match(step,/if: \$\{\{ !inputs\.create_draft \}\}/);
+ assert.match(step,/name: native-test-installer/);
+ assert.match(step,/\.artifacts\/installers\/\*\*\/AppleMusicDownloader-\*-Setup\.exe\.sha256/);
+ assert.match(step,/\.artifacts\/cloud-release-result\.json/);
+ assert.match(step,/retention-days: 7/);
+ assert.doesNotMatch(step,/\.log|native-build-evidence|\.tmp-v2-native|win-unpacked|gh release|run:/);
+ assert(text.indexOf('native-ci-windows.ps1 -CloudRelease')<text.indexOf('name: Deliver verified test installer'));
+});

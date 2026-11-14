@@ -2,7 +2,9 @@
 
 本文件记录开发中和正式版本的用户可见变化。预发布及更早版本的原始说明见 [Releases](https://github.com/Andrew05213/applemusic-downloader-native/releases)。
 
-## 未发布
+## 1.0.5-beta.1 — 2026-11-14
+
+测试构建，仅通过 Actions 附件交付，不创建 Release 或标签。当前正式版下载入口仍为 1.0.4。
 
 - Wrapper Lite 升级至维护分支的 `80dcaa1`，适配新的 DNS 和 CA 配置逻辑；原生认证交互、下载和流式播放接口不变。
 - Lite HTTP 与 Android SDK 使用同一份哈希锁定的 CA 证书，保留严格证书及主机名校验，不允许调试开关关闭 TLS 校验。
