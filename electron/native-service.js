@@ -3,6 +3,7 @@ const { spawn } = require('node:child_process');
 const crypto = require('node:crypto');
 const { EventEmitter } = require('node:events');
 const { VERSION } = require('./native-version');
+const startupFailureCodes = new Set('native_server_failed native_arguments_invalid native_parent_required native_parent_invalid native_parent_unavailable native_bundle_missing native_bundle_invalid native_directory_unavailable native_job_store_unavailable native_queue_unavailable native_queue_in_use native_api_unavailable'.split(' '));
 
 function allowedAPI(method, target) {
   if (typeof target !== 'string' || target.length > 4096 || !target.startsWith('/api/') || /[\r\n\\#]/.test(target)) return false;
@@ -22,7 +23,8 @@ class NativeService extends EventEmitter {
     });
     this.child.stderr.resume(); this.child.stdin.on('error', () => {});
     this.completion = new Promise((resolve) => this.child.once('close', (code) => {
-      this.closed = true; for (const request of this.requests) request.abort(); this.requests.clear();this.cancelPlaybackChunks(); this.emit('closed'); resolve(code);
+      this.exitCode = Number.isInteger(code) && code >= -2147483648 && code <= 0xffffffff ? code >>> 0 : undefined;
+      this.closed = true; for (const request of this.requests) request.abort(); this.requests.clear();this.cancelPlaybackChunks(); this.emit('closed', this.exitCode); resolve(code);
     }));
     this.ready = new Promise((resolve, reject) => {
       let settled = false;
@@ -44,8 +46,10 @@ class NativeService extends EventEmitter {
           const line = this.buffer.slice(0, newline); this.buffer = this.buffer.slice(newline + 1);
           if (this.origin) continue;
           let receipt; try { receipt = JSON.parse(line); } catch { continue; }
-          if (receipt.nativeServer === false) { fail('native_service_unavailable'); return; }
-          if (receipt.nativeServer === true && receipt.version === VERSION && Number.isInteger(receipt.port) && receipt.port > 0 && receipt.port <= 65535) {
+          if (receipt?.nativeServer === false) { fail(startupFailureCodes.has(receipt.code) ? receipt.code : 'native_service_unavailable'); return; }
+          if (receipt?.nativeServer === true) {
+            if (typeof receipt.version !== 'string' || !Number.isInteger(receipt.port) || receipt.port < 1 || receipt.port > 65535) { fail('native_service_protocol_invalid'); return; }
+            if (receipt.version !== VERSION) { fail('native_service_version_mismatch'); return; }
             settled = true; this.origin = 'http://127.0.0.1:' + receipt.port; this.buffer = ''; clearTimeout(timer); resolve(this.origin); return;
           }
         }
@@ -57,7 +61,7 @@ class NativeService extends EventEmitter {
     if (details.webContentsId !== ownerID || !this.origin || !details.url.startsWith(this.origin + '/api/native/playback/')) return details.requestHeaders;
     return { ...details.requestHeaders, Authorization: 'Bearer ' + this.token };
   }
-  async api(target, options = {}) {
+  async api(target, options = {}, timeout) {
     const method = options.method || 'GET';
     if (!allowedAPI(method, target) || this.closed || this.failed) throw new Error('native_api_unavailable');
     await this.ready;
@@ -70,15 +74,25 @@ class NativeService extends EventEmitter {
     const catalogSlot = method !== 'GET' || !target.startsWith('/api/v1/catalog/') ? null
       : target.split('?')[0] === '/api/v1/catalog/discover' ? 'discoveryCatalog' : 'catalog';
     if (catalogSlot) { this[catalogSlot]?.abort(); this[catalogSlot] = abort; }
-    const timer = setTimeout(() => abort.abort(), target === '/api/native/playback' && method === 'POST' ? 60000 : 90000);
+    const lifecycleRequest = target === '/api/native/state' || target === '/api/native/retry';
+    let timedOut = false;
+    const timer = setTimeout(() => { timedOut = true; abort.abort(); }, timeout ?? (target === '/api/native/retry' ? 180000 : target === '/api/native/state' ? 10000 : target === '/api/native/playback' && method === 'POST' ? 60000 : 90000));
     try {
       const response = await fetch(this.origin + target, { method, redirect: 'error', headers: { Authorization: 'Bearer ' + this.token, 'Content-Type': 'application/json' }, body: options.body === undefined ? undefined : JSON.stringify(options.body), signal: abort.signal });
       if (response.status === 204) return { ok: true };
       const raw = await response.text(); if (raw.length > 4 * 1024 * 1024) throw new Error('native_api_response_invalid');
       let result; try { result = JSON.parse(raw); } catch { throw new Error('native_api_response_invalid'); }
-      if (!response.ok) throw new Error(/^[a-z_]+$/.test(result?.error?.code) ? result.error.code : 'native_api_failed');
+      if (!response.ok) {
+        const error = new Error(/^[a-z_]+$/.test(result?.error?.code) ? result.error.code : 'native_api_failed');
+        if (target === '/api/native/retry') error.runtime = result?.runtime;
+        throw error;
+      }
       if (target === '/api/native/playback' && method === 'POST' && /^\/api\/native\/playback\/[a-f0-9]{32}$/.test(result.mediaPath)) result.mediaURL = this.origin + result.mediaPath;
       return result;
+    } catch (error) {
+      if (lifecycleRequest && timedOut) throw new Error('native_api_timeout');
+      if (lifecycleRequest && error instanceof TypeError) throw new Error('native_api_connection_failed');
+      throw error;
     } finally { clearTimeout(timer); this.requests.delete(abort); if (catalogSlot && this[catalogSlot] === abort) this[catalogSlot] = null;if(this.playbackPrepare===abort)this.playbackPrepare=null; }
   }
   cancelPlaybackChunks(base) {for(const [abort,target] of this.playbackRequests)if(!base||target.startsWith(base+'/'))abort.abort();}

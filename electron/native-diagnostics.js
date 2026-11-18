@@ -3,6 +3,21 @@ const fs=require('node:fs');const path=require('node:path');const crypto=require
 const STAGES=new Set(['restore_session','login_start','stop_lite','device_login','device_code','gsa_provider','gsa_prepare','adi_helper_start','adi_initialize','adi_status','adi_lookup','adi_provision_start','adi_provision_sdk_start','adi_provision_finish','adi_provision_sdk_finish','adi_state_save','adi_otp','gsa_authenticate','phone_list','sms_wait_phone','sms_send','sms_wait_code','sms_verify','gsa_resume','store_credentials','lite_bind','music_service_start','music_tokens','music_storefront','login_complete','login_cancel','desktop_login_submit','desktop_sms_send','desktop_sms_code','desktop_service','desktop_recheck','desktop_code','diagnostics']);
 const CODES=new Set(['native_auth_required','native_session_unverified','native_login_failed','native_auth_busy','native_auth_input_invalid','native_auth_cancelled','native_adi_provider_unavailable','native_adi_provisioning_failed','native_adi_state_invalid','native_adi_cancelled','native_adi_not_provisioned','native_network_dns_failed','native_network_timeout','native_tls_certificate_invalid','native_network_connection_failed','native_adi_http_failed','native_adi_response_invalid','native_agent_unavailable','native_agent_protocol_invalid','native_service_unavailable','native_service_timeout','native_service_closed','native_api_unavailable','native_api_failed','native_api_response_invalid','native_login_rejected','native_code_rejected','native_sms_rejected','native_operation_failed','native_runtime_unavailable','native_diagnostics_read_failed','native_diagnostics_write_failed','native_gsa_provider_unavailable','native_gsa_protocol_invalid','native_gsa_unavailable','native_gsa_authentication_failed','native_gsa_cancelled','native_gsa_input_invalid','native_gsa_code_rejected','native_gsa_challenge_expired','native_gsa_sms_cooldown','native_gsa_sms_unavailable','native_gsa_busy','native_music_binding_failed']);
 const OUTCOMES=new Set(['begin','ok','waiting','failed','cancelled']);
+const runtimeStages = new Set('runtime_port runtime_bundle runtime_state runtime_boot desktop_api'.split(' '));
+const runtimeCodes = new Set('native_server_failed native_arguments_invalid native_parent_required native_parent_invalid native_parent_unavailable native_bundle_missing native_bundle_invalid native_directory_unavailable native_job_store_unavailable native_queue_unavailable native_queue_in_use native_api_unavailable native_bundle_identity_mismatch native_state_invalid native_state_in_use native_operation_cancelled native_runtime_prepare_timeout native_guest_not_ready native_guest_exited native_process_start_failed native_port_in_use lite_invalid_port native_service_protocol_invalid native_service_version_mismatch native_api_connection_failed native_api_timeout native_service_unavailable native_service_timeout native_service_closed native_runtime_unavailable native_api_failed native_api_response_invalid'.split(' '));
+for (const stage of runtimeStages) STAGES.add(stage);
+for (const code of runtimeCodes) CODES.add(code);
+const exitCodeValid = code => Number.isInteger(code) && code >= 0 && code <= 0xffffffff;
+const guestBootEvents = new Set('init_start modules_ready network_ready state_mounted service_start dev_mount_failed proc_mount_failed sys_mount_failed run_mount_failed module_load_failed loopback_failed network_device_missing network_address_failed network_route_failed state_device_missing data_mount_failed ca_bundle_missing control_capability_missing control_capability_copy_failed control_capability_permissions_failed service_exited'.split(' '));
+function safeRuntime(input) {
+ if (!['stopped','starting','ready','stopping','failed','unavailable'].includes(input?.phase)) return undefined;
+ const {phase, stage, code, authState, processExitCode, guestBootEvent} = input;
+ return {phase, ...(runtimeStages.has(stage)||stage==='desktop_service' ? {stage} : {}),
+  ...((phase==='failed'||phase==='unavailable')&&runtimeCodes.has(code) ? {code} : {}),
+  ...(['checking','needs_login','authenticating','needs_2fa','needs_interaction','authenticated','unverified'].includes(authState) ? {authState} : {}),
+  ...(phase==='failed'&&stage==='runtime_boot'&&guestBootEvents.has(guestBootEvent) ? {guestBootEvent} : {}),
+  ...(phase==='failed'&&((stage==='runtime_boot'&&code==='native_guest_exited')||stage==='desktop_service')&&exitCodeValid(processExitCode) ? {processExitCode} : {})};
+}
 for(const code of 'native_music_developer_rejected native_music_user_rejected native_music_rate_limited native_music_upstream_failed native_music_http_failed native_music_response_invalid'.split(' '))CODES.add(code);
 const APPLE_CODES=new Set(['40100','40101','40300','40301','40302','40303','42900','50000','50001','50300']);
 // Keep this fixed vocabulary aligned with nativeauth.ADIResponseCodes and the
@@ -15,6 +30,8 @@ function safeEvent(e){
  const extra={};if(e.loginEvent!==undefined){if(e.stage!=='device_login'||e.outcome!=='waiting'||e.code!==undefined||!LOGIN_EVENTS.has(e.loginEvent))return undefined;extra.loginEvent=e.loginEvent;}
  for(const [key,min,max] of [['exitCode',0,255],['exitSignal',1,64],['storeResponseType',0,255],['storeErrorCode',-2147483648,2147483647],['storeExternalErrorCode',-9007199254740991,9007199254740991],['storeProtocolErrorCode',-9007199254740991,9007199254740991],['storeAuthStatus',-2147483648,2147483647]])if(e[key]!==undefined){if(e.stage!=='device_login'||!Number.isSafeInteger(e[key])||e[key]<min||e[key]>max)return undefined;if(key.startsWith('store')){if(!(e.outcome==='failed'&&e.code==='native_login_store_response_failed')&&!(e.outcome==='waiting'&&e.loginEvent==='store_response_received'&&e.code===undefined&&e.exitCode===undefined&&e.exitSignal===undefined))return undefined;}else if(e.outcome!=='failed')return undefined;extra[key]=e[key];}
  if(extra.exitCode!==undefined&&extra.exitSignal!==undefined)return undefined;
+ if (e.outcome==='failed'&&((e.stage==='runtime_boot'&&e.code==='native_guest_exited')||e.stage==='desktop_service')&&exitCodeValid(e.processExitCode)) extra.processExitCode=e.processExitCode;
+ if (e.outcome==='failed'&&e.stage==='runtime_boot'&&guestBootEvents.has(e.guestBootEvent)) extra.guestBootEvent=e.guestBootEvent;
  return {traceId:e.traceId,seq:e.seq,attempt:e.attempt,at:e.at,stage:e.stage,outcome:e.outcome,...(e.code!==undefined?{code:e.code}:{}),...(e.httpStatus!==undefined?{httpStatus:e.httpStatus}:{}),...(e.appleErrorCode!==undefined?{appleErrorCode:e.appleErrorCode}:{}),...extra};
 }
 function sanitizeDiagnostics(input,limit=256){
@@ -33,11 +50,11 @@ class DiagnosticJournal{
   if(changed){this.data.events=this.data.events.slice(-256);while(this.sequences.size>64)this.sequences.delete(this.sequences.keys().next().value);this.persist();}
  }
  retain(e){if(!this.data.lastFailure||e.at>=this.data.lastFailure.at)this.data.lastFailure={...e};}
- record(stage,outcome,code){const e=safeEvent({traceId:this.traceId,seq:++this.seq,attempt:1,at:Date.now(),stage,outcome,...(code||outcome==='failed'?{code:CODES.has(code)?code:'native_operation_failed'}:{})});if(!e)return;this.data.events.push(e);this.data.events=this.data.events.slice(-256);if(outcome==='failed')this.retain(e);this.persist();}
+ record(stage,outcome,code,{processExitCode,guestBootEvent}={}){const e=safeEvent({traceId:this.traceId,seq:++this.seq,attempt:1,at:Date.now(),stage,outcome,processExitCode,guestBootEvent,...(code||outcome==='failed'?{code:CODES.has(code)?code:'native_operation_failed'}:{})});if(!e)return;this.data.events.push(e);this.data.events=this.data.events.slice(-256);if(outcome==='failed')this.retain(e);this.persist();}
  persist(){let temporary;
   try{fs.mkdirSync(path.dirname(this.file),{recursive:true});temporary=this.file+'.'+crypto.randomUUID()+'.tmp';const fd=fs.openSync(temporary,'wx',0o600);try{fs.writeFileSync(fd,JSON.stringify(this.data,null,2)+'\n');fs.fsyncSync(fd);}finally{fs.closeSync(fd);}fs.renameSync(temporary,this.file);this.storageCode=undefined;}
   catch{this.storageCode='native_diagnostics_write_failed';if(temporary)try{fs.unlinkSync(temporary);}catch{}}
  }
  snapshot(limit=256){return {...sanitizeDiagnostics(this.data,limit),...(this.storageCode?{storageCode:this.storageCode}:{})};}
 }
-module.exports={STAGES,CODES,OUTCOMES,APPLE_CODES,safeEvent,sanitizeDiagnostics,DiagnosticJournal};
+module.exports={STAGES,CODES,OUTCOMES,APPLE_CODES,safeEvent,sanitizeDiagnostics,DiagnosticJournal,runtimeCodes,safeRuntime,guestBootEvents};

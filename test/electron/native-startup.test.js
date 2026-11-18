@@ -39,19 +39,29 @@ test('late successful recovery can leave the failure screen but disposal cannot 
   const closed = fixture(); closed.startup.dispose(); closed.timeout(); closed.startup.observe({ state: 'needs_login' }); closed.startup.finish();
   assert.equal(closed.finishCount(), 0); assert.deepEqual(closed.changes, []);
 });
+
+test('a concrete version error can replace a generic startup failure', () => {
+  const f = fixture();
+  f.timeout();
+  f.startup.observe({state:'runtime_unavailable',code:'native_service_version_mismatch'});
+  f.startup.observe({state:'runtime_unavailable',code:'native_service_version_mismatch'});
+  assert.deepEqual(f.changes,[{phase:'failed'},{phase:'failed',reason:'version_mismatch'}]);
+});
 test('startup preload exposes only fixed presentation actions and copies its state', async () => {
   const calls = []; const listeners = new Map(); let exposed;
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../../src/preload/native-startup-preload.js'), 'utf8'), { require: name => {
     assert.equal(name, 'electron');
     return { contextBridge: { exposeInMainWorld: (key, value) => { assert.equal(key, 'nativeStartup'); exposed = value; } }, ipcRenderer: { invoke: async (...args) => { calls.push(args); return { phase: 'loading', token: 'SENTINEL' }; }, on: (key, value) => listeners.set(key, value), removeListener: key => listeners.delete(key) } };
   } });
-  assert.deepEqual(Object.keys(exposed).sort(), ['enter', 'getState', 'onState', 'quit']);
+  assert.deepEqual(Object.keys(exposed).sort(), ['enter', 'exportDiagnostics', 'getState', 'onState', 'quit']);
   assert.equal(JSON.stringify(await exposed.getState()), '{"phase":"loading"}');
   let value; const unsubscribe = exposed.onState(state => { value = state; });
   listeners.get('native:startup-state')({}, { phase: 'bad', token: 'SENTINEL' });
   assert.equal(JSON.stringify(value), '{"phase":"failed"}');
-  await exposed.enter(); await exposed.quit(); unsubscribe();
-  assert.deepEqual(calls, [['native:startup-state'], ['native:startup-enter'], ['native:startup-quit']]);
+  listeners.get('native:startup-state')({}, { phase: 'failed', reason: 'version_mismatch', token: 'SENTINEL' });
+  assert.equal(JSON.stringify(value), '{"phase":"failed","reason":"version_mismatch"}');
+  await exposed.enter(); await exposed.quit(); await exposed.exportDiagnostics(); unsubscribe();
+  assert.deepEqual(calls, [['native:startup-state'], ['native:startup-enter'], ['native:startup-quit'], ['native:startup-export-diagnostics']]);
   assert.equal(listeners.size, 0);
 });
 test('startup resources enter the exact native package whitelist', () => {
@@ -86,7 +96,7 @@ function mainFixture() {
 }
 test('startup IPC accepts only the exact startup window and main frame', () => {
   const f = mainFixture();
-  for (const name of ['native:startup-state', 'native:startup-enter', 'native:startup-quit']) {
+  for (const name of ['native:startup-state', 'native:startup-enter', 'native:startup-quit', 'native:startup-export-diagnostics']) {
     assert.throws(() => f.handlers.get(name)(f.event(f.owner)), /native_sender_rejected/);
     assert.throws(() => f.handlers.get(name)({ sender: f.boot.webContents, senderFrame: { url: f.boot.webContents.mainFrame.url } }), /native_sender_rejected/);
   }
@@ -127,4 +137,21 @@ test('polling cannot overwrite the retained bootstrap failure with generic API e
   vm.runInContext('service={failed:true,closed:false,api(){throw Error("must not poll a failed service")}};journal={record(){fixtureCalls.push("generic-error")}};', f.context);
   await vm.runInContext('refresh()', f.context);
   assert.deepEqual(f.calls, []);
+});
+
+test('manual runtime retry preserves the stage and error from its failure response', async () => {
+  const f = mainFixture();
+  vm.runInContext(`
+    runtimeFailed({stage:'runtime_boot',code:'native_guest_not_ready'});
+    service={async api(target) {
+      fixtureCalls.push(target);
+      const error=Error('native_session_operation_failed');
+      error.runtime={phase:'failed',stage:'runtime_state',code:'native_state_in_use'};
+      throw error;
+    }};
+  `, f.context);
+  await assert.rejects(f.handlers.get('native:recheck')(f.event(f.owner)), {message:'native_state_in_use'});
+  assert.equal(vm.runInContext('state.stage',f.context),'runtime_state');
+  assert.equal(vm.runInContext('lastRuntime.code',f.context),'native_state_in_use');
+  assert.equal(f.calls.filter(call=>call==='/api/native/retry').length,1);
 });
