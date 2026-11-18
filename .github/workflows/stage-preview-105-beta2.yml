@@ -1,0 +1,90 @@
+name: Stage verified 1.0.5-beta.2 attachments
+
+on:
+  push:
+    branches: ['codex/stage-preview-1.0.5-beta.2']
+
+permissions: {}
+
+concurrency:
+  group: stage-preview-105-beta2
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    if: github.repository == 'Andrew05213/applemusic-downloader-native' && github.ref == 'refs/heads/codex/stage-preview-1.0.5-beta.2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      actions: read
+      contents: write
+    env:
+      BUILD_RUN: '44334929428'
+      BUILD_COMMIT: '209d0f73527275ab1ea0a7e914995ee1ca91005a'
+      VERSION: '1.0.5-beta.2'
+      INSTALLER_BYTES: '252625196'
+      INSTALLER_SHA256: '4a0e35c7d9504256b3c85baa0cdc7093c3bf4ca3dbe641b91ff08507cfae7dc9'
+      CHECKSUM_SHA256: 'fad825b36a53d9eef8bf7db1a3619907b277b79b123e1111572dd5527f175c82'
+    steps:
+      - name: Confirm the source build succeeded
+        env:
+          GH_TOKEN: \${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BUILD_RUN" |
+            jq -e --arg commit "$BUILD_COMMIT" \
+              '.head_sha == $commit and .status == "completed" and .conclusion == "success"'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          github-token: \${{ github.token }}
+          run-id: '44334929428'
+          artifact-ids: '14442905099'
+          path: verified
+          merge-multiple: true
+      - name: Validate and stage only the two new attachments
+        env:
+          GH_TOKEN: \${{ github.token }}
+          RELEASE_NOTES: |
+            ## 1.0.5-beta.2 · Windows x64 预览版
+
+            本版用于验证“本机服务暂不可用”和登录卡住的问题。若仍遇到故障，可直接在启动失败页点击「导出诊断」，无需先登录或删除会话。
+
+            - 界面与后端版本不一致时立即提示；运行文件准备和 QEMU 启动分别计时。
+            - 默认音乐目录不可用时不会阻塞登录；已选择的下载目录不变。
+            - 诊断区分后端启动、QEMU 就绪超时，以及虚拟机内的网络、数据盘和控制通道问题。只保存固定标记，不导出原始串口内容或凭据。
+            - 延续 beta.1 的 Wrapper Lite DNS/证书适配，移除打包工具中存在告警的间接依赖。
+
+            自动验证包含 Linux/Windows CI、Guest 源码构建、安装包解包审计和打包程序的隔离启动；未使用真实 Apple 账号。预览版不替代 [1.0.4 正式版](https://github.com/Andrew05213/applemusic-downloader-native/releases/tag/v1.0.4)。
+
+            [PR #14](https://github.com/Andrew05213/applemusic-downloader-native/pull/14) · [云端验证与构建](https://github.com/Andrew05213/applemusic-downloader-native/actions/runs/44334929428) · 源码提交 `209d0f73527275ab1ea0a7e914995ee1ca91005a`
+        run: |
+          set -euo pipefail
+          tag="v$VERSION"
+          filename="AppleMusicDownloader-$VERSION-Setup.exe"
+          mapfile -d '' -t installer < <(find verified -type f -name "$filename" -print0)
+          mapfile -d '' -t checksum < <(find verified -type f -name "$filename.sha256" -print0)
+          mapfile -d '' -t evidence < <(find verified -type f -name cloud-release-result.json -print0)
+          mapfile -d '' -t all_files < <(find verified -type f -print0)
+          [[ ${#all_files[@]} = 3 && ${#installer[@]} = 1 && ${#checksum[@]} = 1 && ${#evidence[@]} = 1 ]]
+          [[ "$(stat -c %s "${installer[0]}")" = "$INSTALLER_BYTES" ]]
+          printf '%s  %s\n' "$INSTALLER_SHA256" "${installer[0]}" | sha256sum --check
+          printf '%s  %s\n' "$CHECKSUM_SHA256" "${checksum[0]}" | sha256sum --check
+          [[ "$(tr -d '\r' < "${checksum[0]}")" = "$INSTALLER_SHA256  $filename" ]]
+          jq -e \
+            --arg version "$VERSION" --arg commit "$BUILD_COMMIT" \
+            --arg installer "$INSTALLER_SHA256" --arg checksum "$CHECKSUM_SHA256" \
+            --argjson bytes "$INSTALLER_BYTES" \
+            '.passed == true and .packagedSmokePassed == true and .draftCreated == false and
+             .version == $version and .commit == $commit and .installerBytes == $bytes and
+             .installerSHA256 == $installer and .checksumFileSHA256 == $checksum and .filesCompared == 283' \
+            "${evidence[0]}"
+          existing_releases="$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate --jq '.[].tag_name')"
+          existing_tags="$(gh api "repos/$GITHUB_REPOSITORY/tags" --paginate --jq '.[].name')"
+          if grep -Fxq "$tag" <<< "$existing_releases" || grep -Fxq "$tag" <<< "$existing_tags"; then
+            echo "::error::The preview version already exists; refusing to replace it."
+            exit 1
+          fi
+          gh release create "$tag" "${installer[0]}" "${checksum[0]}" \
+            --repo "$GITHUB_REPOSITORY" --target "$BUILD_COMMIT" \
+            --title "Apple Music Downloader Native $VERSION" --notes "$RELEASE_NOTES" \
+            --draft --prerelease --latest=false
