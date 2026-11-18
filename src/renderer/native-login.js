@@ -8,6 +8,31 @@
   const messages = { checking: '正在恢复并验证已有会话…', needs_login: '使用 Apple 账户继续', authenticating: '正在登录，请稍候…', needs_2fa: '请输入本次登录的六位验证码', authenticated: '登录成功', unverified: '暂时无法验证已有会话，请先重试', runtime_unavailable: '本机服务暂不可用，请重试' };
   messages.needs_interaction='请完成下方 Apple 账户验证提示';
   const stageMessages={device_login:'正在验证 Apple 账户…',device_code:'正在验证设备验证码…',music_service_start:'正在启动 Music 服务…',music_tokens:'正在获取 Music 会话…',music_storefront:'正在校验 Music 会话…'};
+  const runtimeErrors = {
+    native_service_version_mismatch:'界面与本机服务版本不一致。请退出后用同一安装包重新安装。',
+    native_service_timeout:'本机服务初始化超时。请导出诊断后重试。',
+    native_service_closed:'本机服务已退出。请查看系统拦截记录，或导出诊断后重试。',
+    native_service_unavailable:'无法启动本机服务。请检查安装是否完整及系统拦截记录。',
+    native_service_protocol_invalid:'本机服务启动回执无效。请导出诊断或重新安装。',
+    native_bundle_missing:'运行组件缺失。请检查安装是否完整及系统拦截记录。',
+    native_bundle_invalid:'运行组件版本或结构无效。请用同一安装包重新安装。',
+    native_bundle_identity_mismatch:'运行组件完整性校验失败。请导出诊断，不要删除会话。',
+    native_directory_unavailable:'无法访问应用数据目录。请检查该目录的可用性和权限。',
+    native_job_store_unavailable:'无法打开或初始化下载任务数据库。请导出诊断，不要删除任务记录。',
+    native_queue_unavailable:'下载任务队列初始化失败。请导出诊断。',
+    native_queue_in_use:'下载任务队列正被另一个服务占用。请完全退出软件后重试。',
+    native_state_invalid:'无法读取或准备本机运行数据。请导出诊断，不要删除会话。',
+    native_state_in_use:'本机运行数据无法加锁，可能被其他进程占用。请完全退出软件后重试。',
+    native_runtime_prepare_timeout:'准备运行文件超时。请检查磁盘是否可用，并导出诊断。',
+    native_guest_not_ready:'运行组件启动后未及时就绪。请导出诊断后重试。',
+    native_guest_exited:'运行组件意外退出。请导出诊断。',
+    native_process_start_failed:'无法启动运行组件。请检查安装是否完整及系统拦截记录。',
+    native_port_in_use:'运行组件的本地端口不可用。请重试启动本机服务。',
+    native_api_unavailable:'本机服务无法建立本地连接。请导出诊断。',
+    native_api_connection_failed:'无法连接本机服务。请导出诊断后重试。',
+    native_api_timeout:'本机服务响应超时。请导出诊断后重试。',
+    native_api_response_invalid:'本机服务返回了无效的状态。请导出诊断。',
+  };
   const errors = {
     native_login_failed:'登录未完成，请导出诊断后重试。',native_auth_cancelled:'本次登录已取消。',native_auth_required:'请先完成登录。',native_session_unverified:'暂时无法确认 Music 会话，请重试。',native_auth_busy:'正在处理登录，请稍候。',native_auth_input_invalid:'登录信息格式不正确。',
     native_login_process_start_failed:'原生登录进程无法启动。请导出诊断。',
@@ -44,6 +69,7 @@
   }
   function controls() {
     $('login-recheck').disabled = pending || ['authenticating','needs_interaction','needs_2fa','checking'].includes(state);
+    $('login-recheck').textContent = state === 'runtime_unavailable' ? '重试本机服务' : '重新验证会话';
     const codeReady = state === 'needs_2fa';
     $('login-submit').hidden = state !== 'needs_login' && !codeReady;
     $('login-submit').disabled = pending;
@@ -61,7 +87,7 @@
     // An older failure must not replace an error from another stage.
     const leafIsCurrent=lastFailure&&lastFailure.stage===value?.stage&&['native_gsa_provider_unavailable','native_login_failed','native_session_unverified','native_auth_required'].includes(currentCode);
     const errorCode=leafIsCurrent?lastFailure.code:currentCode||lastFailure?.code;
-    $('login-error').textContent = errors[errorCode] || '';
+    $('login-error').textContent = state === 'runtime_unavailable' ? runtimeErrors[currentCode] || '' : errors[errorCode] || '';
     motion?.feedback($('login-error'),$('login-error').textContent);
     const codeReady = state === 'needs_2fa';
     $('account-fields').hidden = state !== 'needs_login'; $('code-field').hidden = !codeReady;
@@ -86,7 +112,16 @@
     } catch (error) { $('login-error').textContent = failure(error);motion?.feedback($('login-error'),$('login-error').textContent); }
     finally { $('login-password').value = ''; $('login-code').value = ''; pending = false; controls(); }
   });
-  $('login-recheck').addEventListener('click', async () => { if (pending) return; $('login-error').textContent = ''; motion?.feedback($('login-error'),''); try { render(await window.nativeDesktop.recheck()); } catch { render({ state: 'runtime_unavailable' }); } });
+  $('login-recheck').addEventListener('click', async () => {
+    if (pending) return;
+    pending = true; controls();
+    $('login-error').textContent = ''; motion?.feedback($('login-error'),'');
+    try { render(await window.nativeDesktop.recheck()); }
+    catch {
+      render(await window.nativeDesktop.getState().catch(() => ({state:'runtime_unavailable'})));
+      if (state !== 'runtime_unavailable') $('login-error').textContent = '暂时无法重新验证会话，请稍后重试。';
+    } finally { pending = false; controls(); }
+  });
   $('login-cancel').addEventListener('click', () => window.nativeDesktop.cancelLogin().catch(() => {}));
   motion?.enter(document.querySelector('.login-content'),'panel');
 })();

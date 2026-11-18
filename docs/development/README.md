@@ -117,6 +117,8 @@ npm run dist:native
 | 编译/打包失败 | 保留版本、失败阶段和脱敏日志；不要上传整个账号目录 |
 | npm audit 报告安全告警 | 执行 npm run audit:native；CI 阻止 moderate 及以上。构建成功不等于依赖审计通过，不使用 audit fix --force 降级或忽略开发依赖 |
 | native_build_compat_* | 重新执行 npm ci；如有意使用 --ignore-scripts，随后执行 npm run prepare:build-deps。版本或哈希仍不匹配时停止构建并核对锁文件，不手动绕过校验 |
+
+`node-gyp@12.4.0` 的构建文件查找使用已有的 `glob@14.0.3`，通过仅作用于该调用方的覆盖移除 `tinyglobby → picomatch` 依赖链。适配的源码与版本均受构建兼容锁校验；npm 审计仍包含开发依赖。
 | native_build_dependencies_linked | node_modules 是共享链接；在独立 clone 安装依赖。不要直接用 npm ci 清理共享目标，若需移除链接，先确认操作对象只是链接而不是目标目录 |
 
 ### npm 依赖审计

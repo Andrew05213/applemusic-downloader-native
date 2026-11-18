@@ -53,7 +53,10 @@
   },
   "overrides": {
     "minimatch": "11.0.3",
-    "glob@>=9.0.0 <14.0.2": "14.0.3"
+    "glob@>=9.0.0 <14.0.2": "14.0.3",
+    "node-gyp@12.4.0": {
+      "tinyglobby": "npm:glob@14.0.3"
+    }
   },
   "build": {
     "extends": "./electron-builder.native.cjs"
