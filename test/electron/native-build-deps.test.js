@@ -35,11 +35,14 @@ function compatibilityFixture(t) {
       write(fixture, relative + '/package.json', JSON.stringify({name,version:entry.version}));
     }
   }
+  const gypGlob = 'node_modules/node-gyp/node_modules/tinyglobby';
+  packages[gypGlob] = lock.packages[gypGlob];
+  write(fixture,gypGlob+'/package.json',JSON.stringify({name:'glob',version:'14.0.3'}));
   write(fixture, 'package-lock.json', JSON.stringify({packages}));
   return fixture;
 }
 
-test('complete installed tree uses genuine patched engines, not audit aliases or version edits', () => {
+test('complete installed tree uses genuine registry engines, not relabelled vulnerable packages', () => {
   assert.deepEqual(prepare(root, {checkOnly:true}), {prepared:true,changed:0});
   assert.equal(modules('minimatch').length, 1);
   for (const [relative, entry] of modules('minimatch')) {
@@ -50,17 +53,43 @@ test('complete installed tree uses genuine patched engines, not audit aliases or
   }
   for (const [,entry] of modules('glob')) assert.ok(['7.2.3','14.0.3'].includes(entry.version));
   assert.ok(modules('glob').some(([,e]) => e.version === '14.0.3'));
+  assert.equal(modules('picomatch').length,0);
+  assert.equal(modules('fdir').length,0);
+  assert.equal(modules('tinyglobby').length,1);
+  const [[alias, replacement]] = modules('tinyglobby');
+  assert.equal(replacement.name,'glob');
+  assert.equal(replacement.version,'14.0.3');
+  assert.equal(replacement.resolved,'https://registry.npmjs.org/glob/-/glob-14.0.3.tgz');
+  const gypRequire=createRequire(require.resolve('node-gyp/package.json'));
+  assert.equal(gypRequire('tinyglobby/package.json').name,'glob');
+  assert.equal(gypRequire.resolve('tinyglobby/package.json'),path.join(root,alias,'package.json'));
+});
+
+test('node-gyp still discovers only immediate visible solution and make files with the replacement',async t=>{
+  const fixture=temporary(t);
+  for (const file of ['build/z.sln','build/a.sln','build/deps.mk','build/uppercase.SLN','build/.hidden.sln','build/nested/other.mk','build/nested/other.sln','outside.sln']) write(fixture,file,'fixture');
+  fs.mkdirSync(path.join(fixture,'build/directory.sln'));
+  const buildFile=require.resolve('node-gyp/lib/build.js');
+  const source=fs.readFileSync(buildFile,'utf8');
+  const adapter=source.match(/^const \{ glob \}.*\r?\nconst listBuildFiles = [^\r\n]+/m)[0];
+  const list=require('node:vm').runInNewContext(adapter+'\nlistBuildFiles',{require:createRequire(buildFile)});
+  assert.deepEqual(Array.from(await list('build/*.sln',fixture)),['build/a.sln','build/z.sln']);
+  assert.deepEqual(Array.from(await list('build/*.mk',fixture)),['build/deps.mk']);
+  assert.deepEqual(Array.from(await list('build/*.sln',path.join(fixture,'build'))),[]);
+  assert.match(source,/await listBuildFiles\('build\/\*\.sln'\)/);
+  assert.match(source,/await listBuildFiles\('build\/\*\.mk'\)/);
 });
 
 test('compatibility preparation is idempotent and rejects unknown bytes before any write', t => {
   const fixture = compatibilityFixture(t);
   assert.throws(() => prepare(fixture, {checkOnly:true}), /not_prepared/);
-  const patch = PATCHES[1], [relative] = modules(patch.package).find(([,e]) => e.version === patch.version);
+  const patch = PATCHES.find(item=>item.package==='dir-compare'), [relative] = modules(patch.package).find(([,e]) => e.version === patch.version);
   const file = path.join(fixture,relative,patch.file), original = fs.readFileSync(file);
   fs.appendFileSync(file, '\nunknown code');
   assert.throws(() => prepare(fixture), /identity_mismatch/);
-  const [first] = modules(PATCHES[0].package).find(([,e]) => e.version === PATCHES[0].version);
-  assert.ok(fs.readFileSync(path.join(fixture,first,PATCHES[0].file),'utf8').includes(PATCHES[0].from));
+  const asar = PATCHES.find(item=>item.package==='@electron/asar');
+  const [first] = modules(asar.package).find(([,e]) => e.version === asar.version);
+  assert.ok(fs.readFileSync(path.join(fixture,first,asar.file),'utf8').includes(asar.from));
   fs.writeFileSync(file, original);
   const changed=PATCHES.reduce((count,patch)=>count+modules(patch.package).filter(([,e])=>e.version===patch.version).length,0);
   assert.deepEqual(prepare(fixture), {prepared:true,changed});

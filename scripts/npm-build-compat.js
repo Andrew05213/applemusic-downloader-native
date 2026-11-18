@@ -1,12 +1,13 @@
 'use strict';
-// Build-time API adaptation only. The matching implementation remains the
-// real, registry-integrity-locked minimatch 11; never rename an old algorithm
-// or edit package versions to silence audit. No network or subprocesses here.
+// Build-time API adaptation only. Use the genuine registry glob and minimatch
+// releases; never relabel package versions to silence audit. No network or
+// subprocesses here.
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const ROOT = path.resolve(__dirname, '..');
 const PATCHES = require('./npm-build-compat.lock.json').patches;
+const GYP_GLOB = 'node_modules/node-gyp/node_modules/tinyglobby';
 const hash = data => crypto.createHash('sha256').update(data).digest('hex');
 function within(root, file) {
   const relative = path.relative(root, file);
@@ -17,10 +18,16 @@ function prepare(root = ROOT, { checkOnly = false } = {}) {
   if (fs.lstatSync(modules).isSymbolicLink()) throw Error('native_build_dependencies_linked');
   const canonical = fs.realpathSync(modules);
   const lock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8'));
+  const gypGlob = lock.packages[GYP_GLOB];
+  if (gypGlob?.name !== 'glob' || gypGlob.resolved !== 'https://registry.npmjs.org/glob/-/glob-14.0.3.tgz' || !/^sha512-/.test(gypGlob.integrity) ||
+      !Object.entries(lock.packages).some(([relative, entry]) => relative.endsWith('/glob') &&
+        entry.version === '14.0.3' && entry.resolved === gypGlob.resolved && entry.integrity === gypGlob.integrity)) {
+    throw Error('native_build_compat_glob_replacement_invalid');
+  }
   const plans = [];
   let engines = 0;
   for (const [relative, entry] of Object.entries(lock.packages)) {
-    const name = relative.endsWith('/minimatch') ? 'minimatch' : relative.endsWith('/glob') ? 'glob' : '';
+    const name = relative.endsWith('/minimatch') ? 'minimatch' : relative.endsWith('/glob') || relative === GYP_GLOB ? 'glob' : '';
     if (!name) continue;
     const expected = name === 'minimatch' ? '11.0.3' : Number(entry.version?.split('.')[0]) >= 9 ? '14.0.3' : '7.2.3';
     const file = path.resolve(root, relative, 'package.json');
