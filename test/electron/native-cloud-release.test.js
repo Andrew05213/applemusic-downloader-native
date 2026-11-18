@@ -1,6 +1,18 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'../..');
+test('1.0.5-beta.2 preview workflow builds only from its branch without write access or draft creation',()=>{
+ const text=fs.readFileSync(path.join(root,'.github/workflows/preview-105-beta2.yml'),'utf8');
+ assert.match(text,/branches: \['codex\/preview-1\.0\.5-beta\.2'\]/);
+ assert.match(text,/permissions:\s+contents: read/);
+ assert.match(text,/AMDL_CREATE_DRAFT: 'false'/);
+ assert.match(text,/needs: \[verify, guest\]/);
+ assert.match(text,/native-ci-windows\.ps1 -CloudRelease/);
+ assert.match(text,/artifact-ids: \$\{\{ needs\.guest\.outputs\.artifact_id \}\}/);
+ assert.match(text,/AMDL_GUEST_RECEIPT_SHA256: \$\{\{ needs\.guest\.outputs\.guest_receipt_sha256 \}\}/);
+ assert.match(text,/AppleMusicDownloader-1\.0\.5-beta\.2-Setup\.exe\.sha256/);
+ assert.doesNotMatch(text,/contents: write|pull_request|workflow_dispatch|secrets:|gh release/);
+});
 test('wrapper compatibility branch can verify and compile but cannot publish or build an installer',()=>{
  const text=fs.readFileSync(path.join(root,'.github/workflows/wrapper-compat.yml'),'utf8');
  assert.match(text,/branches: \['codex\/wrapper-80dc-compat'\]/);
