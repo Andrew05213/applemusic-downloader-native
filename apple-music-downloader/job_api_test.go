@@ -149,6 +149,26 @@ func (e *blockingJobExecutor) maxConcurrent() int {
 	return e.maxActive
 }
 
+// Register after the store cleanup so the worker and its final lease write
+// finish first. Cancellation alone does not join SQLite users on Windows.
+func startJobAPITestWorker(t *testing.T, manager *JobManager) context.Context {
+	t.Helper()
+	ctx, cancel := context.WithCancel(context.Background())
+	if err := manager.Start(ctx); err != nil {
+		cancel()
+		t.Fatalf("start job manager: %v", err)
+	}
+	t.Cleanup(func() {
+		cancel()
+		wait, done := context.WithTimeout(context.Background(), 5*time.Second)
+		defer done()
+		if err := manager.Wait(wait); err != nil {
+			t.Errorf("wait for job manager cleanup: %v", err)
+		}
+	})
+	return ctx
+}
+
 func TestJobAPICreatesOnePersistedJobPerURLAndRunsSerially(t *testing.T) {
 	t.Parallel()
 
@@ -163,9 +183,7 @@ func TestJobAPICreatesOnePersistedJobPerURLAndRunsSerially(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new manager: %v", err)
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	manager.Start(ctx)
+	startJobAPITestWorker(t, manager)
 
 	router := mux.NewRouter()
 	RegisterJobRoutes(router, NewJobAPI(manager, JobAPIDependencies{}))
@@ -1363,9 +1381,7 @@ func TestJobAPIDeleteReportsBusyDuringRunningOverwriteAndRetries(t *testing.T) {
 		Name:         "shared.m4a",
 		Size:         int64(len("old output")),
 	}}})
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	manager.Start(ctx)
+	ctx := startJobAPITestWorker(t, manager)
 	newJobs, err := manager.Create(ctx, CreateJobsRequest{
 		URLs:           []string{"https://music.apple.com/us/album/example/456"},
 		Quality:        QualityALAC,
@@ -1442,9 +1458,7 @@ func TestJobAPIDeleteReportsBusyDuringRunningSkipAndRetries(t *testing.T) {
 		Name:         "shared.m4a",
 		Size:         int64(len("existing output")),
 	}}})
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	manager.Start(ctx)
+	ctx := startJobAPITestWorker(t, manager)
 	newJobs, err := manager.Create(ctx, CreateJobsRequest{
 		URLs:           []string{"https://music.apple.com/us/album/example/457"},
 		Quality:        QualityALAC,
@@ -1736,9 +1750,7 @@ func TestJobAPIHonorsCancelAndProvidesResumableEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new manager: %v", err)
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	manager.Start(ctx)
+	startJobAPITestWorker(t, manager)
 
 	router := mux.NewRouter()
 	RegisterJobRoutes(router, NewJobAPI(manager, JobAPIDependencies{OutputDir: t.TempDir()}))
@@ -2263,9 +2275,7 @@ func TestLegacySSEReconnectUsesOriginalJobWithoutCreatingAnother(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new manager: %v", err)
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	manager.Start(ctx)
+	startJobAPITestWorker(t, manager)
 	created, err := manager.Create(context.Background(), CreateJobsRequest{URLs: []string{"https://music.apple.com/us/album/example/123"}, Quality: QualityALAC})
 	if err != nil || len(created) != 1 {
 		t.Fatalf("create original job = %#v, %v", created, err)
@@ -2318,15 +2328,15 @@ func TestLegacySSERequiresExistingJobReference(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
-	t.Cleanup(func() { _ = store.Close() })
+	t.Cleanup(func() {
+		if err := store.Close(); err != nil {
+			t.Errorf("close SSE fixture database: %v", err)
+		}
+	})
 	manager, err := NewJobManager(store, completedJobExecutor{})
 	if err != nil {
 		t.Fatalf("new manager: %v", err)
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	manager.Start(ctx)
-
 	router := mux.NewRouter()
 	router.HandleFunc("/api/download", legacyDownloadSSE(manager)).Methods(http.MethodGet)
 	request := httptest.NewRequest(http.MethodGet, "/api/download?url=https%3A%2F%2Fmusic.apple.com%2Fus%2Falbum%2Fexample%2F123&quality=alac", nil)
@@ -2346,15 +2356,18 @@ func TestLegacySSERejectsInvalidCursorBeforeCreatingAJob(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
-	t.Cleanup(func() { _ = store.Close() })
+	t.Cleanup(func() {
+		if err := store.Close(); err != nil {
+			t.Errorf("close SSE fixture database: %v", err)
+		}
+	})
 	manager, err := NewJobManager(store, completedJobExecutor{})
 	if err != nil {
 		t.Fatalf("new manager: %v", err)
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	manager.Start(ctx)
-
+	// A bad cursor must be rejected before the route creates a job. There is
+	// no worker to run in this negative test; an accidental create still
+	// writes a persisted row and fails the assertion below.
 	router := mux.NewRouter()
 	router.HandleFunc("/api/download", legacyDownloadSSE(manager)).Methods(http.MethodGet)
 	request := httptest.NewRequest(http.MethodGet, "/api/download?url=https%3A%2F%2Fmusic.apple.com%2Fus%2Falbum%2Fexample%2F123&quality=alac", nil)
