@@ -10,3 +10,4 @@ const result = spawnSync('go', ['build', '-mod=readonly', '-trimpath', '-buildvc
   cwd: path.join(root, 'apple-music-downloader'), shell: false, stdio: 'inherit', env: { ...require('./native-build-environment').buildEnvironment(root), GOOS: 'windows', GOARCH: 'amd64', CGO_ENABLED: '0' },
 });
 if (result.error || result.status !== 0) { process.stderr.write('native_service_build_failed\n'); process.exitCode = 1; }
+else if (process.platform === 'win32') require('./native-audio-tools').prepare().catch(error=>{console.error(error.message);process.exitCode=1;});

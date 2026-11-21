@@ -653,7 +653,7 @@ func splitJobOutputLines(data []byte, atEOF bool) (advance int, token []byte, er
 
 func isMediaOutputPath(path string) bool {
 	switch strings.ToLower(filepath.Ext(path)) {
-	case ".m4a", ".mp4", ".flac", ".alac", ".lrc", ".ttml", ".jpg", ".jpeg", ".png", ".webp", ".gif":
+	case ".m4a", ".mp4", ".flac", ".mp3", ".alac", ".lrc", ".ttml", ".jpg", ".jpeg", ".png", ".webp", ".gif":
 		return true
 	default:
 		return false

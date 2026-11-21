@@ -15,6 +15,7 @@ function verifyPackage(directory){const resources=path.join(directory,'resources
  for(const entry of entries){const stat=asar.statFile(archive,entry);if(stat.files)continue;if(!allowed.has(entry.replaceAll('\\','/')))throw new Error('native_archive_unexpected_file');}
  const pkg=JSON.parse(asar.extractFile(archive,'package.json'));if(pkg.version!==VERSION||pkg.main!=='src/main/native-main.js'||pkg.license!=='Apache-2.0')throw new Error('native_archive_entry_invalid');
  verifyProjectNotices(resources);
+ require('./native-audio-tools').verify(path.join(resources,'bin/audio-tools'));
  for(const [file,digest]of Object.entries(receipt.ui))if(crypto.createHash('sha256').update(readArchiveFile(archive,file)).digest('hex')!==digest)throw new Error('native_archive_ui_mismatch');
  const manifest=JSON.parse(fs.readFileSync(path.join(resources,'native-runtime/bundle.json'),'utf8'));if(manifest.isolated!==false||manifest.controlProtocol!==1||hash(path.join(resources,'native-runtime/bundle.json'))!==receipt.runtimeManifestSHA256)throw new Error('native_packaged_runtime_invalid');
  for(const name of ['amdl-windows-probe.exe','amdl-wslinterop-bootstrap.exe','ffmpeg.exe','mp4decrypt.exe'])if(fs.existsSync(path.join(resources,'bin',name)))throw new Error('native_legacy_resource_found');
