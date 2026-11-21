@@ -1022,6 +1022,10 @@ func ripTrackContext(ctx context.Context, track *task.Track, token string, media
 	}
 	//mv dl dev
 	if track.Type == "music-videos" {
+		if _, converting := ctx.Value(audioExportKey{}).(audioExport); converting {
+			counter.Unavailable++
+			return nil
+		}
 		stage = "credentials"
 		if len(mediaUserToken) <= 50 {
 			fmt.Println("meida-user-token is not set, skip MV dl")
@@ -1108,6 +1112,7 @@ func ripTrackContext(ctx context.Context, track *task.Track, token string, media
 			}
 		}
 	}
+	track.Codec, Quality = exportLabels(ctx, track.Codec, Quality)
 	track.Quality = Quality
 
 	stringsToJoin := []string{}
@@ -1130,11 +1135,18 @@ func ripTrackContext(ctx context.Context, track *task.Track, token string, media
 
 	songName := trackFilename(Config.SongFileFormat, track, Quality, Tag_string)
 	fmt.Println(songName)
-	filename := fmt.Sprintf("%s.m4a", forbiddenNames.ReplaceAllString(songName, "_"))
+	export, converting := ctx.Value(audioExportKey{}).(audioExport)
+	extension := ".m4a"
+	validate := validateMediaOutput
+	if converting {
+		extension = "." + export.format
+		validate = func(file string) error { return export.validate(ctx, file) }
+	}
+	filename := forbiddenNames.ReplaceAllString(songName, "_") + extension
 	track.SaveName = filename
 	trackPath := filepath.Join(track.SaveDir, track.SaveName)
 	stage = "output"
-	output, err := prepareLegacyTrackMediaOutputContext(ctx, trackPath)
+	output, err := prepareValidatedOutputContext(ctx, trackPath, legacyTrackExistingPolicy, validate)
 	failureErr = err
 	if err != nil {
 		fmt.Printf("Existing track cannot be used: %v\n", err)
@@ -1151,6 +1163,19 @@ func ripTrackContext(ctx context.Context, track *task.Track, token string, media
 	}
 	defer output.Cleanup()
 	workPath := output.WorkPath
+	if converting {
+		f, tempErr := os.CreateTemp(filepath.Dir(workPath), ".amdl-source-*.m4a")
+		if tempErr == nil {
+			workPath = f.Name()
+			defer os.Remove(workPath)
+			tempErr = f.Close()
+		}
+		if tempErr != nil {
+			counter.Error++
+			failureErr = tempErr
+			return tempErr
+		}
+	}
 	lrcFilename := fmt.Sprintf("%s.%s", forbiddenNames.ReplaceAllString(songName, "_"), Config.LrcFormat)
 
 	//get lrc
@@ -1281,6 +1306,14 @@ func ripTrackContext(ctx context.Context, track *task.Track, token string, media
 	}
 	if err := ctx.Err(); err != nil {
 		return err
+	}
+	if converting {
+		stage = "conversion"
+		transfer.Phase(ctx, "processing")
+		if failureErr = export.convert(ctx, workPath, output.WorkPath); failureErr != nil {
+			counter.Error++
+			return failureErr
+		}
 	}
 	transfer.Phase(ctx, "publish")
 	if err := output.Commit(); err != nil {
@@ -1705,6 +1738,7 @@ func ripAlbumContext(ctx context.Context, albumId string, token string, storefro
 	}
 	Tag_string := strings.Join(stringsToJoin, " ")
 	var albumFolderName string
+	Codec, Quality = exportLabels(ctx, Codec, Quality)
 	albumFolderName = strings.NewReplacer(
 		"{ReleaseDate}", meta.Data[0].Attributes.ReleaseDate,
 		"{ReleaseYear}", meta.Data[0].Attributes.ReleaseDate[:4],
@@ -2029,6 +2063,7 @@ func ripPlaylistSourceContext(ctx context.Context, source PlaylistSource, token,
 		}
 	}
 	Tag_string := strings.Join(stringsToJoin, " ")
+	Codec, Quality = exportLabels(ctx, Codec, Quality)
 	playlistFolder := strings.NewReplacer(
 		"{ArtistName}", "Apple Music",
 		"{PlaylistName}", LimitString(meta.Data[0].Attributes.Name),
@@ -2301,6 +2336,17 @@ func runDownloadWithExistingPolicyContext(ctx context.Context, request DownloadR
 // and subprocess boundaries.
 func runDownloadContext(ctx context.Context, request DownloadRequest) error {
 	ctx = networkContext(ctx)
+	if request.Quality == QualityFLAC || request.Quality == QualityMP3 {
+		export, err := bundledAudioExport(request.Quality)
+		if err != nil {
+			return err
+		}
+		if nativeDownloadClient == nil {
+			return errors.New("conversion requires native ALAC downloads")
+		}
+		ctx = context.WithValue(ctx, audioExportKey{}, export)
+		request.Quality = QualityALAC
+	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}

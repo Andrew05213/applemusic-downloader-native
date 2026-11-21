@@ -53,6 +53,8 @@ const (
 
 const (
 	QualityALAC  = "alac"
+	QualityFLAC  = "flac"
+	QualityMP3   = "mp3"
 	QualityAAC   = "aac"
 	QualityAACLC = "aac-lc"
 	QualityAtmos = "atmos"
@@ -334,9 +336,9 @@ func validateCreateJobsRequest(request CreateJobsRequest) (CreateJobsRequest, er
 		request.Quality = QualityALAC
 	}
 	switch request.Quality {
-	case QualityALAC, QualityAAC, QualityAACLC, QualityAtmos:
+	case QualityALAC, QualityAAC, QualityAACLC, QualityAtmos, QualityFLAC, QualityMP3:
 	default:
-		return CreateJobsRequest{}, newInputError("quality must be one of alac, aac, aac-lc, atmos")
+		return CreateJobsRequest{}, newInputError("quality must be one of alac, aac, aac-lc, atmos, flac, mp3")
 	}
 	if request.ExistingPolicy == "" {
 		request.ExistingPolicy = ExistingPolicySkip

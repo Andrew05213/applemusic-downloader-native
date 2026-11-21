@@ -9,7 +9,7 @@ async function install(page,overrides={}){
   window.nativeDesktop={getState:async()=>({state:'authenticated',region:'us'}),onSession(){},onReady:fn=>queueMicrotask(fn),openLogin:async()=>{},
    cacheInfo:async()=>({available:true,usedBytes:0,limitMB:500,entries:0}),
    api:async(target,options={})=>{f.calls.push({target,...options});const u=new URL(target,'http://fixture');
-    if(target==='/api/v1/capabilities')return {queue:{state:'ready'},jobExecutorConfigured:true,qualities:{alac:{available:true},'aac-lc':{available:true},atmos:{available:true}}};
+    if(target==='/api/v1/capabilities')return {queue:{state:'ready'},jobExecutorConfigured:true,qualities:{alac:{available:true},'aac-lc':{available:true},atmos:{available:true},flac:{available:true},mp3:{available:true}}};
     if(u.pathname.startsWith('/api/v1/catalog/'))return {groups:[]};
     if(u.pathname==='/api/v1/jobs')return {jobs:[]};
     if(target==='/api/native/state')return {runtime:{phase:'ready'},downloadDirectory:'D:\\Music'};
@@ -38,14 +38,19 @@ test('all settings dropdowns share native custom styling, including the open pic
  expect(await page.evaluate(()=>window.settingsFixture.calls.filter(c=>c.method==='PUT'))).toEqual([]);
 });
 
-test('keyboard navigation, Escape, focus and explicit save keep native semantics',async({page})=>{
+for(const target of ['aac-lc','flac','mp3']) test(`keyboard selection of ${target} supports Escape, focus and explicit save`,async({page})=>{
  await install(page);const quality=page.getByLabel('默认音质');await quality.focus();await page.keyboard.press('Space');await expect(page.locator('#quality:open')).toBeVisible();
  await page.keyboard.press('ArrowDown');await page.keyboard.press('Escape');await expect(quality).toBeFocused();await expect(quality).toHaveValue('alac');
  expect(await page.evaluate(()=>window.settingsFixture.changes)).toEqual([]);
- await page.keyboard.press('Space');await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');await expect(quality).toHaveValue('aac-lc');await expect(quality).toBeFocused();
+ const steps=await quality.evaluate((select,value)=>[...select.options].findIndex(o=>o.value===value)-select.selectedIndex,target);
+ expect(steps).toBeGreaterThan(0);
+ await page.keyboard.press('Space');
+ for(let i=0;i<steps;i++)await page.keyboard.press('ArrowDown');
+ await page.keyboard.press('Enter');await expect(quality).toHaveValue(target);await expect(quality).toBeFocused();
+ expect(await page.evaluate(()=>localStorage.getItem('native-v2-download-defaults'))).toBeNull();
  await page.getByRole('button',{name:'保存设置',exact:true}).click();await expect(page.locator('#notice')).toHaveText('设置已保存，下一个任务生效。');
- expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('native-v2-download-defaults')))).toEqual({quality:'aac-lc',existing:'skip'});
- await page.reload();await expect(page.getByLabel('默认音质')).toHaveValue('aac-lc');
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('native-v2-download-defaults')))).toEqual({quality:target,existing:'skip'});
+ await page.reload();await expect(page.getByLabel('默认音质')).toHaveValue(target);
 });
 
 test('friendly labels preserve the original API values and numeric sampling rate',async({page})=>{

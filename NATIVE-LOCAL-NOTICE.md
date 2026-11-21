@@ -44,3 +44,7 @@ Uninstall preserves user data and downloaded media.
 
 Automated checks use isolated synthetic profiles, not real user accounts.
 This installer is unsigned and may trigger Windows reputation warnings.
+
+### FFmpeg 音频转换工具
+
+Windows 安装包的 `resources/bin/audio-tools/` 包含 Gyan Windows Essentials 9.0.2 的 ffmpeg、ffprobe 及上游 LICENSE、README.txt（GPLv3），不属于本项目 Apache-2.0 许可范围。[构建与归档](https://www.gyan.dev/ffmpeg/builds/) · [对应 FFmpeg 源码](https://github.com/FFmpeg/FFmpeg/commit/946fcce07b)。开发者可运行 `node electron/native-audio-tools.js` 下载并校验固定归档，打包时也会自动执行。运行已安装的客户端无需网络获取这些工具。

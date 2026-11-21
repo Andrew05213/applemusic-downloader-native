@@ -18,6 +18,7 @@ DEBUG_REPORT_*.md
 android-ndk-r23b-linux.zip
 .env
 electron/generated/
+/electron/bin/audio-tools/
 .claude/
 .worktrees/
 wrapper-linux/rootfs/data/data/

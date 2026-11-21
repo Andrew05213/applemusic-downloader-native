@@ -328,6 +328,13 @@ func (a *JobAPI) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 		QualityAACLC: {"available": hasToken, "reason": unavailableReason(hasToken, "Configure MEDIA_USER_TOKEN."), "action": unavailableReason(hasToken, "Configure MEDIA_USER_TOKEN.")},
 		QualityAtmos: {"available": wrapperOnline, "reason": unavailableReason(wrapperOnline, wrapperAction), "action": unavailableReason(wrapperOnline, wrapperAction)},
 	}
+	for _, q := range []string{QualityFLAC, QualityMP3} {
+		if _, err := bundledAudioExport(q); err != nil {
+			qualities[q] = map[string]any{"available": false, "reason": errAudioTools.message, "action": errAudioTools.message}
+		} else {
+			qualities[q] = qualities[QualityALAC]
+		}
+	}
 	wrapper := map[string]any{"status": wrapperStatus, "loginCompleted": wrapperSnapshot.LoginCompleted &&
 		(wrapperSnapshot.Status == WrapperStatusOnline || wrapperSnapshot.Status == WrapperStatusStarting)}
 	// The retry generation lets a client tell a third retry from a first start
