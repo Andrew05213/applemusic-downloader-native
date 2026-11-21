@@ -2,6 +2,30 @@
   "schemaVersion": 1,
   "patches": [
     {
+      "package": "node-gyp",
+      "version": "12.4.0",
+      "file": "lib/build.js",
+      "beforeSHA256": "d11b1d799a2522bd38a364bc39d36175d9e68225e0e5a36d9fc3a64e1710fbc0",
+      "afterSHA256": "f36e9ab0adb98ec6abeadd31a9d88eb9f50ce44bb1ff33997abbc49391fdd78e",
+      "edits": [
+        {
+          "from": "const { glob } = require('tinyglobby')",
+          "to": "const { glob } = require('tinyglobby') // npm override: registry glob 14\nconst listBuildFiles = async (pattern, cwd = process.cwd()) => (await glob(pattern, { cwd, nodir: true, dot: false, posix: true, nocase: false })).sort()",
+          "count": 1
+        },
+        {
+          "from": "glob('build/*.sln', { expandDirectories: false })",
+          "to": "listBuildFiles('build/*.sln')",
+          "count": 1
+        },
+        {
+          "from": "glob('build/*.mk', { expandDirectories: false })",
+          "to": "listBuildFiles('build/*.mk')",
+          "count": 1
+        }
+      ]
+    },
+    {
       "package": "@electron/asar",
       "version": "3.4.1",
       "unmodifiedVersions": ["4.3.1"],

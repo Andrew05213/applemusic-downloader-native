@@ -17,7 +17,10 @@ import (
 type State struct {
 	Runtime         string   `json:"runtime"`
 	Phase           string   `json:"phase"`
+	Stage           string   `json:"stage,omitempty"`
 	Code            string   `json:"code,omitempty"`
+	ProcessExitCode *uint32  `json:"processExitCode,omitempty"`
+	GuestBootEvent  string   `json:"guestBootEvent,omitempty"`
 	Regions         []string `json:"regions"`
 	SessionVerified bool     `json:"sessionVerified"`
 	AuthState       string   `json:"authState,omitempty"`
@@ -29,26 +32,26 @@ type statusProbe interface {
 }
 
 type Controller struct {
-	opMu                       sync.Mutex
-	mu                         sync.Mutex
-	manifestPath, stateDir     string
-	port                       int
-	probe                      statusProbe
-	start                      func(Command) (Process, error)
-	readyTimeout, pollInterval time.Duration
-	state                      State
-	process                    Process
-	agent                      *guestclient.Client
-	lease                      io.Closer
-	cancel                     context.CancelFunc
-	generation                 uint64
-	stopEpoch                  uint64
-	requireControl             bool
+	opMu                                       sync.Mutex
+	mu                                         sync.Mutex
+	manifestPath, stateDir                     string
+	port                                       int
+	probe                                      statusProbe
+	start                                      func(Command) (Process, error)
+	prepareTimeout, readyTimeout, pollInterval time.Duration
+	state                                      State
+	process                                    Process
+	agent                                      *guestclient.Client
+	lease                                      io.Closer
+	cancel                                     context.CancelFunc
+	generation                                 uint64
+	stopEpoch                                  uint64
+	requireControl                             bool
 }
 
 func NewController(manifestPath, stateDir string, port int) *Controller {
 	probe, _ := wrapperlite.NewClient(port)
-	return &Controller{manifestPath: manifestPath, stateDir: stateDir, port: port, probe: probe, start: startProcess, readyTimeout: 60 * time.Second, pollInterval: 100 * time.Millisecond,
+	return &Controller{manifestPath: manifestPath, stateDir: stateDir, port: port, probe: probe, start: startProcess, prepareTimeout: 90 * time.Second, readyTimeout: 60 * time.Second, pollInterval: 100 * time.Millisecond,
 		state: State{Runtime: "native-lite", Phase: "stopped", Regions: []string{}}}
 }
 
@@ -65,6 +68,10 @@ func (c *Controller) Snapshot() State {
 	defer c.mu.Unlock()
 	state := c.state
 	state.Regions = append([]string{}, state.Regions...)
+	if state.ProcessExitCode != nil {
+		code := *state.ProcessExitCode
+		state.ProcessExitCode = &code
+	}
 	return state
 }
 
@@ -82,7 +89,7 @@ func (c *Controller) Start(parent context.Context) (result error) {
 	if parent == nil {
 		parent = context.Background()
 	}
-	ctx, cancel := context.WithTimeout(parent, c.readyTimeout)
+	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
 	c.mu.Lock()
 	if c.stopEpoch != stopEpoch {
@@ -96,13 +103,29 @@ func (c *Controller) Start(parent context.Context) (result error) {
 	c.generation++
 	generation := c.generation
 	c.cancel = cancel
-	c.state = State{Runtime: "native-lite", Phase: "starting", Regions: []string{}}
+	stage := "runtime_port"
+	c.state = State{Runtime: "native-lite", Phase: "starting", Stage: stage, Regions: []string{}}
 	c.mu.Unlock()
+	setStage := func(next string) {
+		stage = next
+		c.mu.Lock()
+		c.state.Stage = next
+		c.mu.Unlock()
+	}
+	prepare, finishPrepare := context.WithTimeout(ctx, c.prepareTimeout)
+	defer finishPrepare()
 	var process Process
 	var lease io.Closer
 	var agent *guestclient.Client
 	defer func() {
 		if result != nil {
+			if stage != "runtime_boot" && errors.Is(result, ErrCancelled) && errors.Is(prepare.Err(), context.DeadlineExceeded) && ctx.Err() == nil {
+				result = ErrPrepareTimeout
+			}
+			var exitCode *uint32
+			if errors.Is(result, ErrGuestExited) {
+				exitCode = processExitCode(process)
+			}
 			if process != nil {
 				_ = process.Stop()
 			}
@@ -114,7 +137,7 @@ func (c *Controller) Start(parent context.Context) (result error) {
 			}
 			c.mu.Lock()
 			c.cancel = nil
-			c.state = State{Runtime: "native-lite", Phase: "failed", Code: result.Error(), Regions: []string{}}
+			c.state = State{Runtime: "native-lite", Phase: "failed", Stage: stage, Code: result.Error(), ProcessExitCode: exitCode, GuestBootEvent: processBootEvent(process), Regions: []string{}}
 			c.mu.Unlock()
 		}
 	}()
@@ -128,21 +151,23 @@ func (c *Controller) Start(parent context.Context) (result error) {
 		return ErrPortInUse
 	}
 	_ = listener.Close()
-	bundle, err := LoadBundle(ctx, c.manifestPath)
+	setStage("runtime_bundle")
+	bundle, err := LoadBundle(prepare, c.manifestPath)
 	if err != nil {
 		return err
 	}
 	if c.requireControl && bundle.ControlProtocol != 1 {
 		return ErrBundleInvalid
 	}
-	if ctx.Err() != nil {
+	if prepare.Err() != nil {
 		return ErrCancelled
 	}
-	lease, err = prepareState(ctx, bundle, c.stateDir)
+	setStage("runtime_state")
+	lease, err = prepareState(prepare, bundle, c.stateDir)
 	if err != nil {
 		return err
 	}
-	if err := prepareRuntimeInputs(ctx, bundle, c.stateDir); err != nil {
+	if err := prepareRuntimeInputs(prepare, bundle, c.stateDir); err != nil {
 		return err
 	}
 	probe := c.probe
@@ -157,22 +182,28 @@ func (c *Controller) Start(parent context.Context) (result error) {
 		}
 		probe = agent
 	}
-	if ctx.Err() != nil {
+	if prepare.Err() != nil {
 		return ErrCancelled
 	}
+	finishPrepare()
+	setStage("runtime_boot")
 	process, err = c.start(bundle.command(c.stateDir, c.port))
 	if err != nil {
 		return ErrProcessStart
 	}
+	boot, finishBoot := context.WithTimeout(ctx, c.readyTimeout)
+	defer finishBoot()
 	for {
 		select {
 		case <-process.Done():
 			return ErrGuestExited
 		default:
 		}
-		status, err := probe.Status(ctx)
-		if ctx.Err() != nil {
-			if errors.Is(ctx.Err(), context.Canceled) {
+		attempt, cancelAttempt := context.WithTimeout(boot, 2*time.Second)
+		status, err := probe.Status(attempt)
+		cancelAttempt()
+		if boot.Err() != nil {
+			if ctx.Err() != nil {
 				return ErrCancelled
 			}
 			return ErrGuestNotReady
@@ -198,9 +229,9 @@ func (c *Controller) Start(parent context.Context) (result error) {
 		case <-process.Done():
 			timer.Stop()
 			return ErrGuestExited
-		case <-ctx.Done():
+		case <-boot.Done():
 			timer.Stop()
-			if errors.Is(ctx.Err(), context.Canceled) {
+			if ctx.Err() != nil {
 				return ErrCancelled
 			}
 			return ErrGuestNotReady
@@ -226,7 +257,7 @@ func (c *Controller) watch(process Process, generation uint64) {
 		c.agent = nil
 	}
 	c.lease = nil
-	c.state = State{Runtime: "native-lite", Phase: "failed", Code: ErrGuestExited.Error(), Regions: []string{}}
+	c.state = State{Runtime: "native-lite", Phase: "failed", Stage: "runtime_boot", Code: ErrGuestExited.Error(), ProcessExitCode: processExitCode(process), GuestBootEvent: processBootEvent(process), Regions: []string{}}
 	c.mu.Unlock()
 }
 

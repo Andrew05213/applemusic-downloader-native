@@ -18,6 +18,30 @@ test('diagnostic wire schema rejects unknown stages, codes and identity fields',
  const d=sanitizeDiagnostics({events:[{...event(),token:'SENTINEL'}],lastFailure:event(),body:'SENTINEL'});assert.doesNotMatch(JSON.stringify(d),/SENTINEL/);
 });
 
+test('guest boot marker vocabulary stays in sync and cannot carry serial output',()=>{
+ const vm=require('node:vm'),{guestBootEvents,safeRuntime,sanitizeDiagnostics}=require('../../electron/native-diagnostics');
+ const preload=fs.readFileSync(path.resolve(__dirname,'../../src/preload/native-preload.js'),'utf8');
+ const source=fs.readFileSync(path.resolve(__dirname,'../../apple-music-downloader/internal/nativeruntime/bootlog.go'),'utf8');
+ const init=fs.readFileSync(path.resolve(__dirname,'../../native-runtime/init'),'utf8');
+ const fromGo=[...source.matchAll(/"([a-z_]+)": (?:true|false)/g)].map(match=>match[1]).sort();
+ const fromInit=[...init.matchAll(/(?:\|\| fail |\[amdl-guest\] )([a-z_]+)(?='|\r?$)/gm)].map(match=>match[1]).sort();
+ assert.deepEqual([...guestBootEvents].sort(),fromGo);
+ assert.deepEqual(fromInit,fromGo);
+ let bridge,listener,received;
+ vm.runInNewContext(preload,{require:()=>({contextBridge:{exposeInMainWorld(_,value){bridge=value}},ipcRenderer:{on(_,fn){listener=fn},removeListener(){}}})});
+ bridge.onSession(value=>{received=value});
+ for(const marker of [...guestBootEvents,'PRIVATE_SERIAL_OUTPUT']){
+  const failure={...event(),stage:'runtime_boot',code:'native_guest_exited',guestBootEvent:marker,stderr:'PRIVATE'};
+  const expected=guestBootEvents.has(marker)?marker:undefined;
+  assert.equal(safeRuntime({...failure,phase:'failed'}).guestBootEvent,expected);
+  assert.equal(sanitizeDiagnostics({events:[failure]}).events[0].guestBootEvent,expected);
+  listener(null,{state:'runtime_unavailable',diagnostics:{events:[failure]}});
+  assert.equal(received.diagnostics.events[0].guestBootEvent,expected);
+  assert.doesNotMatch(JSON.stringify(received),/PRIVATE/);
+ }
+ assert.equal(safeRuntime({phase:'failed',stage:'desktop_service',guestBootEvent:'data_mount_failed'}).guestBootEvent,undefined);
+});
+
 test('unexpected failures are fixed codes and disk errors do not block diagnostics',t=>{
  const {DiagnosticJournal}=require('../../electron/native-diagnostics');const directory=fs.mkdtempSync(path.join(os.tmpdir(),'native-diag-failure-'));t.after(()=>fs.rmSync(directory,{recursive:true,force:true}));const file=path.join(directory,'auth-diagnostics.json');
  fs.writeFileSync(file,'SENTINEL_NOT_JSON');const j=new DiagnosticJournal(file);assert.equal(j.snapshot().storageCode,'native_diagnostics_read_failed');j.record('desktop_login_submit','failed');assert.equal(j.snapshot().lastFailure.code,'native_operation_failed');assert.doesNotMatch(fs.readFileSync(file,'utf8'),/SENTINEL/);

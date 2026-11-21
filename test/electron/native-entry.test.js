@@ -32,6 +32,26 @@ test('actual export IPC retains specific finish response code and HTTP 200',asyn
  assert.equal(new DiagnosticJournal(path.join(dir,'auth-diagnostics.json')).snapshot().lastFailure.code,'native_adi_plist_integer_range');
 });
 
+test('guest failure survives status polling, process shutdown and offline export without private fields', async t=>{
+ const vm=require('node:vm');const {DiagnosticJournal}=require('../../electron/native-diagnostics');const dir=fs.mkdtempSync(path.join(os.tmpdir(),'native-runtime-export-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));const destination=path.join(dir,'export.txt');
+ const guest={phase:'failed',stage:'runtime_boot',code:'native_guest_exited',processExitCode:0xc0000135,guestBootEvent:'data_mount_failed'};
+ const f=ipcFixture(async()=>({runtime:{...guest,stderr:'PRIVATE_STDERR'},session:{state:'unverified',token:'PRIVATE_TOKEN'}}),destination);
+ f.context.fixtureJournal=new DiagnosticJournal(path.join(dir,'auth-diagnostics.json'));
+ await vm.runInContext('journal=fixtureJournal; refresh()',f.context);
+ await vm.runInContext('refresh()',f.context);
+ await vm.runInContext('startupWindow=fixtureWindow;fixtureWindow.webContents.mainFrame.url=startupURL;service=undefined;',f.context);
+ await f.handlers.get('native:startup-export-diagnostics')(f.event);
+ const data=fs.readFileSync(destination,'utf8');
+ const out=JSON.parse(data);
+ assert.deepEqual(out.runtime,guest);
+ assert.equal(out.session.code,'native_guest_exited');
+ assert.equal(out.diagnostics.lastFailure.processExitCode,guest.processExitCode);
+ assert.equal(out.diagnostics.lastFailure.guestBootEvent,'data_mount_failed');
+ assert.equal(out.diagnostics.events.filter(event=>event.code==='native_guest_exited').length,1);
+ assert.equal(new DiagnosticJournal(f.context.fixtureJournal.file).snapshot().lastFailure.code,'native_guest_exited');
+ assert.doesNotMatch(data,/PRIVATE/);
+});
+
 test('retired SMS IPC is absent and login rejects its legacy method',async()=>{
  const f=ipcFixture();assert.equal(f.handlers.has('native:sms-send'),false);assert.equal(f.handlers.has('native:sms-code'),false);
  for(const method of ['sms','voice'])await assert.rejects(f.handlers.get('native:login')(f.event,{appleEmail:'fixture@example.invalid',applePassword:'fixture',method}),/native_login_rejected/);
