@@ -49,7 +49,7 @@
     native_login_interaction_unavailable:'验证交互通道不可用，请重新登录或导出诊断。',
     native_login_interaction_unsupported:'Apple 要求的此步骤暂不支持在原生窗口完成，请查看提示说明。',
     native_login_internal_error:'原生认证组件发生异常，请导出诊断。',
-    native_login_token_cache_failed:'账号认证完成，但保存 Music 会话失败，请导出诊断。',
+    native_login_token_cache_failed:'账号认证完成，但获取或保存 Music 会话失败，请导出诊断。',
     native_music_developer_rejected:'目录授权被拒绝（401），不是设备验证码错误；请重新验证会话或导出诊断。',
     native_music_user_rejected:'Music 用户会话被拒绝（403）；请重新登录或导出诊断，不代表设备验证码错误。',
     native_music_rate_limited:'Music 请求过于频繁（429），请稍后重新验证会话。',
@@ -61,6 +61,24 @@
     native_tls_certificate_invalid:'Music 连接证书校验失败，请导出诊断。',
     native_network_connection_failed:'无法连接 Music 服务，请检查网络后重试。',
   };
+  function tokenFailureMessage(detail) {
+    if (!detail) return '';
+    const {stage,reason,httpStatus}=detail;
+    let cause='';
+    if(stage==='storefront'&&reason==='storefront_fetch_failed')cause='未能获取 Apple 账号的商店地区';
+    if(stage==='developer_token'&&reason==='developer_token_fetch_failed')cause='未能获取 Music 开发者令牌';
+    if(stage==='music_user_token'&&reason==='music_user_token_fetch_failed')cause='未能获取 Music User Token';
+    if(stage==='music_token_fallback'&&['cache_read_failed','cache_invalid'].includes(reason))cause='未能获取 Music User Token，且本地缓存不可用';
+    const names=new Map([['storefront_file','商店地区缓存'],['developer_token_file','开发者令牌缓存'],['music_token_file','Music User Token 缓存'],['token_cache_json','Music 会话缓存']]);
+    const name=names.get(stage);
+    if(name&&reason==='cache_read_failed')cause='无法读取'+name;
+    if(name&&reason==='cache_invalid')cause=name+'为空或无效';
+    if(name&&reason==='cache_write_failed')cause='无法写入'+name;
+    if(name&&reason==='cache_replace_failed')cause='无法替换'+name+'文件';
+    if(!cause)return '';
+    const status=Number.isInteger(httpStatus)&&httpStatus>=400&&httpStatus<=599?'（HTTP '+httpStatus+'）':'';
+    return '账号认证后，'+cause+status+'。请导出诊断。';
+  }
   function failure(error) {
     const message = String(error?.message || '');
     if (message.includes('native_runtime_isolated')) return '当前资源包仅供离线验证，不能登录。请使用启用网络的原生资源包。';
@@ -87,7 +105,10 @@
     // An older failure must not replace an error from another stage.
     const leafIsCurrent=lastFailure&&lastFailure.stage===value?.stage&&['native_gsa_provider_unavailable','native_login_failed','native_session_unverified','native_auth_required'].includes(currentCode);
     const errorCode=leafIsCurrent?lastFailure.code:currentCode||lastFailure?.code;
-    $('login-error').textContent = state === 'runtime_unavailable' ? runtimeErrors[currentCode] || '' : errors[errorCode] || '';
+    const tokenDetail=errorCode==='native_login_token_cache_failed'&&state==='needs_login'&&value?.stage==='device_login'&&
+      lastFailure?.stage==='device_login'&&lastFailure?.code===errorCode&&(leafIsCurrent||currentCode===errorCode)
+      ? tokenFailureMessage(lastFailure.tokenDiagnostic) : '';
+    $('login-error').textContent = state === 'runtime_unavailable' ? runtimeErrors[currentCode] || '' : tokenDetail || errors[errorCode] || '';
     motion?.feedback($('login-error'),$('login-error').textContent);
     const codeReady = state === 'needs_2fa';
     $('account-fields').hidden = state !== 'needs_login'; $('code-field').hidden = !codeReady;

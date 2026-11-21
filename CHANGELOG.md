@@ -2,6 +2,12 @@
 
 本文件记录开发中和正式版本的用户可见变化。预发布及更早版本的原始说明见 [Releases](https://github.com/Andrew05213/applemusic-downloader-native/releases)。
 
+## 1.0.5-beta.4 — 2026-11-21
+
+- 测试版，仅通过 GitHub Actions 附件交付。
+- Wrapper Lite 更新至 `a185b9ca`。登录后的地区、开发者令牌、Music User Token 和缓存失败会显示对应提示。
+- 脱敏诊断区分重试与缓存回退，不包含令牌、账号、请求内容或原始子进程输出；仍兼容没有细节的旧版错误。
+
 ## 1.0.5-beta.2 — 2026-11-18
 
 - 界面与后台版本不一致时立即提示；运行文件准备和 QEMU 启动分别计时。默认音乐目录不可访问不再阻塞登录。

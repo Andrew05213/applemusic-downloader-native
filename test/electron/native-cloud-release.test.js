@@ -22,6 +22,15 @@ test('wrapper compatibility branch can verify and compile but cannot publish or 
  assert.match(text,/retention-days: 3/);
  assert.doesNotMatch(text,/contents: write|GH_TOKEN:|secrets:|pull_request_target:|release-native|dist-native|native-cloud-release\.js windows|gh release|tags:/);
 });
+test('beta.4 login preview can only upload verified build attachments from its own branch',()=>{
+ const text=fs.readFileSync(path.join(root,'.github/workflows/preview-105-beta4.yml'),'utf8');
+ assert.match(text,/branches: \['codex\/auth-diagnostics-1\.0\.5-beta\.4'\]/);
+ assert.match(text,/permissions:\s+contents: read/);
+ assert.match(text,/AMDL_CREATE_DRAFT: 'false'/);
+ assert.match(text,/needs: \[verify, guest\]/);
+ assert.match(text,/AppleMusicDownloader-1\.0\.5-beta\.4-Setup\.exe\.sha256/);
+ assert.doesNotMatch(text,/contents: write|pull_request|workflow_dispatch|secrets:|gh release/);
+});
 test('cloud release is an explicit same-run Linux to Windows transfer with least-privilege draft-only publishing',()=>{
  const text=fs.readFileSync(path.join(root,'.github/workflows/release-cloud.yml'),'utf8');
  assert.match(text,/workflow_dispatch:/);assert.doesNotMatch(text,/pull_request:|workflow_run:|pull_request_target:/);

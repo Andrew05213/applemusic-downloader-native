@@ -36,6 +36,31 @@ func TestLiteStdinFixtureProcess(t *testing.T) {
 	if mode == "fail" {
 		os.Exit(7)
 	}
+	if strings.HasPrefix(mode, "token_") {
+		fmt.Fprintln(os.Stderr, "SENTINEL_PRIVATE_TOKEN")
+		if mode != "token_legacy" {
+			fmt.Println(`WRAPPER_TOKEN_EVENT:{"type":"login_token_diagnostic","stage":"music_user_token","reason":"music_user_token_fetch_failed","attempt":1,"usedCache":false,"httpStatus":403}`)
+			fmt.Println(`WRAPPER_TOKEN_EVENT:{"type":"login_token_diagnostic","stage":"music_user_token","reason":"music_user_token_fetch_failed","attempt":2,"usedCache":false,"httpStatus":200,"token":"SENTINEL_PRIVATE_TOKEN"}`)
+		}
+		switch mode {
+		case "token_exhausted":
+			fmt.Println(`WRAPPER_TOKEN_EVENT:{"type":"login_token_diagnostic","stage":"developer_token","reason":"developer_token_fetch_failed","attempt":5,"usedCache":false,"httpStatus":503}`)
+			fmt.Println(`WRAPPER_TOKEN_EVENT:{"type":"login_token_diagnostic","stage":"refresh","reason":"retry_exhausted","attempt":5,"usedCache":false}`)
+		case "token_parent":
+			fmt.Println(`WRAPPER_TOKEN_EVENT:{"type":"login_token_diagnostic","stage":"refresh","reason":"retry_succeeded","attempt":2,"usedCache":false}`)
+			fmt.Println(`WRAPPER_TOKEN_EVENT:{"type":"login_token_diagnostic","stage":"token_cache_json","reason":"cache_replace_failed","attempt":0,"usedCache":false}`)
+		case "token_recovered":
+			fmt.Println(`WRAPPER_TOKEN_EVENT:{"type":"login_token_diagnostic","stage":"music_token_fallback","reason":"cache_fallback_used","attempt":1,"usedCache":true,"httpStatus":403}`)
+			os.Exit(0)
+		case "token_recovered_then_failed":
+			fmt.Println(`WRAPPER_TOKEN_EVENT:{"type":"login_token_diagnostic","stage":"refresh","reason":"retry_succeeded","attempt":2,"usedCache":false}`)
+		case "token_other_terminal":
+			fmt.Println(`AMDL_NATIVE_EVENT:{"type":"login_failure","reason":"store_no_response"}`)
+			os.Exit(1)
+		}
+		fmt.Println(`AMDL_NATIVE_EVENT:{"type":"login_failure","reason":"token_cache_failed"}`)
+		os.Exit(1)
+	}
 	if mode == "answer_rejected" {
 		fmt.Println(`AMDL_NATIVE_EVENT:{"type":"login_event","event":"interaction_answer_rejected"}`)
 		time.Sleep(time.Minute)
@@ -87,6 +112,75 @@ func TestLiteStdinFixtureProcess(t *testing.T) {
 		os.Exit(22)
 	}
 	os.Exit(0)
+}
+
+func TestLiteLoginTokenDiagnosticUsesOnlyThisTerminalAttempt(t *testing.T) {
+	binary, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		mode, stage, reason, code string
+		status                    int
+	}{
+		{"token_exhausted", "developer_token", "developer_token_fetch_failed", "native_login_token_cache_failed", 503},
+		{"token_parent", "token_cache_json", "cache_replace_failed", "native_login_token_cache_failed", 0},
+		{"token_recovered", "", "", "", 0},
+		{"token_recovered_then_failed", "", "", "native_login_token_cache_failed", 0},
+		{"token_legacy", "", "", "native_login_token_cache_failed", 0},
+		{"token_other_terminal", "", "", "native_login_store_no_response", 0},
+	} {
+		t.Run(tc.mode, func(t *testing.T) {
+			r := NewLiteRunner(t.TempDir())
+			r.binary, r.prefix, r.env = binary, []string{"-test.run=^TestLiteStdinFixtureProcess$", "--"}, []string{"AMDL_GUEST_FIXTURE=" + tc.mode}
+			var events []nativeauth.StageEvent
+			ctx := nativeauth.WithReporter(context.Background(), func(e nativeauth.StageEvent) { events = append(events, e) })
+			ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+			defer cancel()
+			err := r.Login(ctx, nativeauth.Credentials{Email: "SENTINEL_ACCOUNT", Password: "SENTINEL:PASS\"WORD"}, nil, func() { t.Error("unexpected challenge") })
+			if len(events) == 0 {
+				t.Fatal("no diagnostics")
+			}
+			last := events[len(events)-1]
+			if tc.code == "" {
+				if err != nil || last.Outcome != "waiting" || last.TokenDiagnostic == nil || !last.TokenDiagnostic.UsedCache {
+					t.Fatalf("cached fallback should not fail login: %+v (%v)", last, err)
+				}
+			} else if !errors.Is(err, nativeauth.ErrLoginFailed) || last.Outcome != "failed" || last.Code != tc.code || last.ExitCode == nil || *last.ExitCode != 1 {
+				t.Fatalf("wrong terminal error: %+v (%v)", last, err)
+			} else if tc.stage == "" && last.TokenDiagnostic != nil {
+				t.Fatal("stale detail attached to a terminal event")
+			} else if tc.stage != "" && (last.TokenDiagnostic == nil || last.TokenDiagnostic.Stage != tc.stage || last.TokenDiagnostic.Reason != tc.reason || last.TokenDiagnostic.HTTPStatus != tc.status) {
+				t.Fatalf("incorrect final token detail: %+v", last.TokenDiagnostic)
+			}
+			encoded, _ := json.Marshal(events)
+			if strings.Contains(string(encoded), "SENTINEL") || strings.Contains(string(encoded), `"httpStatus":200`) {
+				t.Fatalf("invalid event or process output exported: %s", encoded)
+			}
+		})
+	}
+}
+
+func TestLiteTokenDiagnosticsRejectInvalidVocabularyAndFields(t *testing.T) {
+	valid := `{"type":"login_token_diagnostic","stage":"music_user_token","reason":"music_user_token_fetch_failed","attempt":1,"usedCache":false,"httpStatus":200}`
+	for _, input := range []string{
+		strings.Replace(valid, `"attempt":1`, `"attempt":0`, 1),
+		strings.Replace(valid, `"attempt":1`, `"attempt":6`, 1),
+		strings.Replace(valid, `"attempt":1,`, "", 1),
+		strings.Replace(valid, `"usedCache":false`, `"usedCache":true`, 1),
+		strings.Replace(valid, `"usedCache":false`, `"usedCache":null`, 1),
+		strings.Replace(valid, `"httpStatus":200`, `"httpStatus":null`, 1),
+		strings.Replace(valid, `"httpStatus":200`, `"httpStatus":600`, 1),
+		strings.Replace(valid, "music_user_token_fetch_failed", "cache_read_failed", 1),
+		valid + `{}`,
+	} {
+		if _, ok := decodeLiteTokenDiagnostic(liteTokenDiagnosticPrefix + input); ok {
+			t.Fatalf("accepted invalid diagnostic: %s", input)
+		}
+	}
+	if result, ok := decodeLiteTokenDiagnostic(liteTokenDiagnosticPrefix + valid); !ok || result.HTTPStatus != 200 {
+		t.Fatal("missing valid observed HTTP status")
+	}
 }
 
 func TestLiteLoginInteractionPipePreservesIDsAndExcludesPrivateUI(t *testing.T) {

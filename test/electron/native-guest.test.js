@@ -15,8 +15,8 @@ test('native guest inputs pin sources, package snapshot and QEMU publisher diges
   const lock = require('../../native-runtime/inputs.lock.json');
   assert.equal(lock.wrapper.repository, 'https://github.com/Andrew05213/wrapper');
   assert.equal(lock.wrapper.branch, 'work');
-  assert.equal(lock.wrapper.commit, '80dcaa1bc6cc88e41f1d6bb16d0cc9a241d4bca3');
-  assert.equal(lock.wrapper.sha256, '5041380a5488f79060bbfd0e0356ac4241f50e035bcf89a3fc0bd1b372e7dfa7');
+  assert.equal(lock.wrapper.commit, 'a185b9cab2ec40f98672940cbd3ef46e8cdfe531');
+  assert.equal(lock.wrapper.sha256, '1bd7bc807a1f0981214cdb7b35a7efea4865ee610e680c3adcee389cc4c5e42d');
   assert.equal(lock.wrapper.caBundleSHA256, '427c064216761a1e72a8b30f0d954d08cb6e4435a82091fb865afd20c8497285');
   assert.equal(lock.wrapper.url, 'https://codeload.github.com/Andrew05213/wrapper/tar.gz/'+lock.wrapper.commit);
   assert.equal(lock.wrapper.cacheName, 'wrapper-andrew05213-'+lock.wrapper.commit.slice(0,8)+'.tar.gz');

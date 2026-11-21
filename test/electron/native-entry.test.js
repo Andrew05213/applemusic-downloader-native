@@ -32,6 +32,37 @@ test('actual export IPC retains specific finish response code and HTTP 200',asyn
  assert.equal(new DiagnosticJournal(path.join(dir,'auth-diagnostics.json')).snapshot().lastFailure.code,'native_adi_plist_integer_range');
 });
 
+test('actual export retains redacted token diagnostic after closing login and reloading journal',async t=>{
+ const vm=require('node:vm');const {DiagnosticJournal}=require('../../electron/native-diagnostics');
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'native-token-export-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+ const destination=path.join(dir,'export.txt'),journalFile=path.join(dir,'auth-diagnostics.json');
+ const f=ipcFixture(async target=>target==='/api/native/state'
+  ?{runtime:{phase:'ready',authState:'needs_login'},session:{state:'needs_login'}}
+  :{state:'needs_login',code:'native_auth_cancelled'},destination);
+ const base={traceId:'c'.repeat(32),attempt:4,at:Date.now(),stage:'device_login'};
+ const detail={stage:'developer_token',reason:'developer_token_fetch_failed',attempt:5,usedCache:false,httpStatus:200};
+ const failed={...base,seq:8,outcome:'failed',code:'native_login_token_cache_failed',exitCode:1,
+  tokenDiagnostic:{...detail,token:'SENTINEL_TOKEN',body:'SENTINEL_BODY'}};
+ f.context.fixtureWindow.close=()=>{};
+ f.context.fixtureJournal=new DiagnosticJournal(journalFile);
+ f.context.fixtureFailure={state:'needs_login',stage:'device_login',code:'native_login_failed',diagnostics:{events:[
+  {...base,seq:6,outcome:'waiting',tokenDiagnostic:{...detail,httpStatus:800}},
+  {...base,seq:7,outcome:'waiting',tokenDiagnostic:{stage:'music_token_fallback',reason:'cache_fallback_used',attempt:2,usedCache:true,httpStatus:403}},
+  failed,
+ ],lastFailure:failed}};
+ vm.runInContext('journal=fixtureJournal; observe(fixtureFailure);',f.context);
+ await f.handlers.get('native:cancel-login')(f.event);
+ f.context.fixtureJournal=new DiagnosticJournal(journalFile);
+ vm.runInContext('journal=fixtureJournal;',f.context);
+ await f.handlers.get('native:export-diagnostics')(f.event);
+ const raw=fs.readFileSync(destination,'utf8'),out=JSON.parse(raw);
+ assert.equal(out.diagnostics.lastFailure.code,'native_login_token_cache_failed');
+ assert.deepEqual(out.diagnostics.lastFailure.tokenDiagnostic,detail);
+ assert.equal(out.diagnostics.events.some(e=>e.seq===6&&e.traceId===base.traceId),false);
+ assert.equal(out.diagnostics.events.find(e=>e.seq===7&&e.traceId===base.traceId).tokenDiagnostic.usedCache,true);
+ assert.doesNotMatch(raw,/SENTINEL/);
+});
+
 test('guest failure survives status polling, process shutdown and offline export without private fields', async t=>{
  const vm=require('node:vm');const {DiagnosticJournal}=require('../../electron/native-diagnostics');const dir=fs.mkdtempSync(path.join(os.tmpdir(),'native-runtime-export-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));const destination=path.join(dir,'export.txt');
  const guest={phase:'failed',stage:'runtime_boot',code:'native_guest_exited',processExitCode:0xc0000135,guestBootEvent:'data_mount_failed'};
