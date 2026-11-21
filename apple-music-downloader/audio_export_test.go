@@ -3,10 +3,12 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"testing"
 )
 
@@ -81,6 +83,33 @@ func TestBundledAudioExportRoundTrip(t *testing.T) {
 				}
 				if skip, err := existingFileDecisionWithValidator(ExistingPolicySkip, out, func(path string) error { return copy.validate(ctx, path) }); err != nil || !skip || !isMediaOutputPath(out) {
 					t.Fatalf("export not recognized: %v", err)
+				}
+				// Cut both at a real frame boundary (a decodable prefix) and in a
+				// frame. ffprobe can still identify the codec of either broken file.
+				index, err := copy.command(ctx, "ffprobe.exe", "-v", "error", "-select_streams", "a:0", "-show_entries", "packet=pos", "-of", "json", out).Output()
+				var packets struct{ Packets []struct{ Pos string } }
+				if err != nil || json.Unmarshal(index, &packets) != nil || len(packets.Packets) < 4 {
+					t.Fatalf("missing packet index: %v", err)
+				}
+				cut, err := strconv.Atoi(packets.Packets[len(packets.Packets)/2].Pos)
+				if err != nil {
+					t.Fatal(err)
+				}
+				original, err := os.ReadFile(out)
+				if err != nil {
+					t.Fatal(err)
+				}
+				for _, end := range []int{cut, cut + 7} {
+					short := filepath.Join(dir, "truncated."+format)
+					if err := os.WriteFile(short, original[:end], 0600); err != nil {
+						t.Fatal(err)
+					}
+					if s, err := copy.probe(ctx, short); err != nil || s.Codec != format {
+						t.Fatalf("fixture should be identifiable as %s", format)
+					}
+					if skip, err := existingFileDecisionWithValidator(ExistingPolicySkip, short, func(path string) error { return copy.validate(ctx, path) }); skip || err == nil {
+						t.Fatalf("truncated %s accepted at byte %d", format, end)
+					}
 				}
 				if format == QualityFLAC && (!bytes.Equal(srcPCM, result) || info.Bits != tc.bits || info.Rate != tc.rate || info.Channels != 2) {
 					t.Fatal("FLAC changed PCM or stream properties")

@@ -99,7 +99,7 @@ func (t audioExport) validate(ctx context.Context, file string) error {
 	if s.Codec != t.format || (s.Codec == QualityMP3 && s.BitRate != "320000") {
 		return errAudioFormat
 	}
-	return nil
+	return t.validatePayload(ctx, file, s.Channels)
 }
 func (t audioExport) convert(ctx context.Context, src, dst string) error {
 	src, err := filepath.Abs(src)
