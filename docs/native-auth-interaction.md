@@ -1,7 +1,7 @@
 # Native Apple authentication interaction
 
 The desktop integration pins Wrapper commit
-`80dcaa1bc6cc88e41f1d6bb16d0cc9a241d4bca3` in
+`a185b9cab2ec40f98672940cbd3ef46e8cdfe531` in
 `native-runtime/inputs.lock.json`. Its archive digest is verified before applying
 the desktop patches. Upstream authentication policy and SDK ownership remain in
 Wrapper; the downloader only transports requests and explicit user answers.

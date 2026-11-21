@@ -15,10 +15,12 @@ type ownedProcess struct {
 	once sync.Once
 	mu   sync.Mutex
 	err  error
+	boot *bootLog
 }
 
 func (p *ownedProcess) Done() <-chan struct{} { return p.done }
 func (p *ownedProcess) Err() error            { p.mu.Lock(); defer p.mu.Unlock(); return p.err }
+func (p *ownedProcess) BootEvent() string     { return p.boot.result() }
 func (p *ownedProcess) Stop() error {
 	p.once.Do(func() { _ = syscall.Kill(-p.cmd.Process.Pid, syscall.SIGKILL) })
 	<-p.done
@@ -29,10 +31,15 @@ func startProcess(command Command) (Process, error) {
 	cmd.Dir = command.Cwd
 	cmd.Env = []string{}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	var boot *bootLog
+	if command.captureBoot {
+		boot = &bootLog{}
+		cmd.Stdout = boot
+	}
 	if err := cmd.Start(); err != nil {
 		return nil, ErrProcessStart
 	}
-	p := &ownedProcess{cmd: cmd, done: make(chan struct{})}
+	p := &ownedProcess{cmd: cmd, done: make(chan struct{}), boot: boot}
 	go func() {
 		err := cmd.Wait()
 		p.mu.Lock()

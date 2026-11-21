@@ -11,12 +11,14 @@ const { VERSION } = require('../../electron/native-version');
 const { NativeCache, catalogTarget, artworkHandler } = require('../../electron/native-cache');
 protocol?.registerSchemesAsPrivileged?.([{scheme:'amdl-artwork',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
 let cache;
-const {DiagnosticJournal}=require('../../electron/native-diagnostics');
+const {DiagnosticJournal, runtimeCodes, safeRuntime}=require('../../electron/native-diagnostics');
 const { NativeStartupCoordinator } = require('../../electron/native-startup');
 
 let owner; let login; let service; let timer; let closing = false; let polling = false;
 let state = { state: 'checking' };
 let journal;
+let lastRuntime;
+let retiringService;
 let startup; let startupWindow; let mainLoaded; let mainRevealed = false;
 let directoryPickerPending=false;const revealingJobs=new Set();
 const actionStages={'native:login':'desktop_login_submit','native:two-factor':'desktop_code','native:recheck':'desktop_recheck'};
@@ -55,26 +57,61 @@ function observe(input) {
   if (owner && !owner.isDestroyed()) owner.webContents.send('native:session-state', state);
 }
 async function refresh() {
-  if (polling || closing || !service || service.failed || service.closed) return;
+  if (polling || closing || !service || service === retiringService || service.failed || service.closed) return;
+  const currentService = service;
   polling = true;
-  try { const current = await service.api('/api/native/state'); observe(current.runtime.phase === 'failed' ? { state: 'runtime_unavailable' } : current.session); }
-  catch { journal?.record('desktop_service','failed','native_runtime_unavailable');observe({ state: 'runtime_unavailable' }); }
+  try {
+    const current = await currentService.api('/api/native/state');
+    if (closing || service !== currentService || currentService === retiringService || currentService.closed) return;
+    const runtime = safeRuntime(current.runtime);
+    if (!runtime || (!current.session && runtime.phase !== 'failed')) throw new Error('native_api_response_invalid');
+    if (runtime.phase === 'failed') runtimeFailed(runtime);
+    else { trackRuntime(runtime); observe(current.session); }
+  }
+  catch (error) {
+    if (!closing && service === currentService && currentService !== retiringService && !currentService.closed) runtimeFailed({stage:'desktop_api',code:error?.message});
+  }
   finally { polling = false; }
+}
+function trackRuntime(runtime) {
+  const {phase, stage, code, processExitCode, guestBootEvent} = runtime;
+  if (phase !== lastRuntime?.phase || stage !== lastRuntime?.stage || code !== lastRuntime?.code || processExitCode !== lastRuntime?.processExitCode || guestBootEvent !== lastRuntime?.guestBootEvent) {
+    if (phase === 'failed') journal?.record(stage || 'desktop_service', 'failed', code, {processExitCode,guestBootEvent});
+    else if (phase === 'starting' && stage) journal?.record(stage, 'begin');
+    else if (phase === 'ready') journal?.record('runtime_boot', 'ok');
+  }
+  lastRuntime = runtime;
+}
+function runtimeFailed(details) {
+  const runtime = safeRuntime({ ...details, phase:'failed' });
+  runtime.code ||= 'native_runtime_unavailable';
+  trackRuntime(runtime);
+  observe({state:'runtime_unavailable',stage:runtime.stage,code:runtime.code});
 }
 async function start() {
   const args = process.argv; const index = args.indexOf('--native-manifest');
   const manifest = index >= 0 ? path.resolve(args[index + 1] || '') : path.join(process.resourcesPath, 'native-runtime/bundle.json');
   const data = path.join(app.getPath('userData'), 'native-v2');
-  const output = path.join(app.getPath('music'), 'Apple Music Downloads 2.0 Test');
   const executable = app.isPackaged ? path.join(process.resourcesPath, 'bin/amdl-service.exe') : path.join(__dirname, '../../electron/bin/amdl-service.exe');
   const toolDirectory = app.isPackaged ? path.join(process.resourcesPath, 'bin') : path.join(__dirname, '../../electron/bin');
-  const guestPort = await unusedPort();
-  if (closing) return;
-  service = new NativeService({ executable, manifest, dataDirectory: data, outputDirectory: output, guestPort, toolDirectory });
-  const started = service;
-  service.on('closed', () => { if (!closing && service === started) observe({ state: 'runtime_unavailable' }); });
-  try { await service.ready; }
-  catch(error) { journal?.record('desktop_service','failed',error?.message); throw error; }
+  trackRuntime({phase:'starting',stage:'desktop_service'});
+  let started;
+  try {
+    let music;
+    try { music = app.getPath('music'); } catch { /* Windows may not resolve the known folder. */ }
+    if (typeof music !== 'string' || !path.isAbsolute(music)) music = path.join(app.getPath('home'), 'Music');
+    const output = path.join(music, 'Apple Music Downloads 2.0 Test');
+    const guestPort = await unusedPort().catch(() => { throw Error('native_api_unavailable'); });
+    if (closing) return;
+    service = started = new NativeService({ executable, manifest, dataDirectory: data, outputDirectory: output, guestPort, toolDirectory });
+    started.on('closed', processExitCode => {
+      if (!closing && service === started && started !== retiringService && started.origin) runtimeFailed({stage:'desktop_service',code:'native_service_closed',processExitCode});
+    });
+    await started.ready;
+  } catch(error) {
+    if (!closing) runtimeFailed({stage:'desktop_service',code:error?.message,processExitCode:started?.exitCode});
+    throw error;
+  }
   if(closing)return; if(owner&&!owner.isDestroyed())owner.webContents.send('native:backend-ready'); await refresh();
 }
 function bindIPC() {
@@ -82,6 +119,7 @@ function bindIPC() {
     ['native:startup-state', () => startup.snapshot()],
     ['native:startup-enter', () => { startup.finish(); return true; }],
     ['native:startup-quit', () => { app.quit(); return true; }],
+    ['native:startup-export-diagnostics', () => exportDiagnostics(startupWindow)],
   ]) ipcMain.handle(name, event => {
     if (!owns(event, startupWindow, startupURL)) throw new Error('native_sender_rejected');
     return action();
@@ -148,21 +186,45 @@ function bindIPC() {
   handle('native:recheck', () => {
     if (rechecking) return rechecking;
     rechecking = (async () => {
-      if (service?.failed && !service.closed) await service.close();
+      if (service && !service.closed && (service.failed || (state.state === 'runtime_unavailable' && (state.stage === 'desktop_api' || state.code === 'native_port_in_use')))) {
+        const previous = service;
+        retiringService = previous;
+        try { await previous.close(); } finally { retiringService = undefined; }
+      }
+      if (closing) return state;
       if (!service || service.closed) await start();
-      else await service.api(state.state === 'runtime_unavailable' ? '/api/native/retry' : '/api/native/recheck', { method: 'POST' });
+      else if (state.state === 'runtime_unavailable') {
+        const currentService = service;
+        try { await currentService.api('/api/native/retry', { method: 'POST' }); }
+        catch (error) {
+          if (!closing && service === currentService && !currentService.closed) {
+            runtimeFailed(safeRuntime(error?.runtime) || {stage:'desktop_api',code:error?.message});
+          }
+          throw new Error(state.code || 'native_runtime_unavailable');
+        }
+      } else await service.api('/api/native/recheck', { method: 'POST' });
       await refresh(); return state;
     })().finally(() => { rechecking = null; });
     return rechecking;
   });
-  handle('native:export-diagnostics', async () => {
-    const result = await dialog.showSaveDialog(owner, { defaultPath: 'AMDL-native-diagnostics.txt', filters: [{ name: '诊断日志', extensions: ['txt'] }] });
-    if (result.canceled || !result.filePath) return false;
-    const snapshot = await service.api('/api/native/state').catch(() => ({ session: state }));
-    journal?.observe(snapshot.session);
-    const safe = { schemaVersion:2,exportedAt:new Date().toISOString(),version: VERSION, session: safeSession(snapshot.session), runtime: snapshot.runtime ? { phase: snapshot.runtime.phase, code: snapshot.runtime.code, authState: snapshot.runtime.authState } : { phase: 'unavailable' },diagnostics:journal?.snapshot()||{events:[]} };
-    fs.writeFileSync(result.filePath, JSON.stringify(safe, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 }); return true;
-  });
+  handle('native:export-diagnostics', event => exportDiagnostics(owns(event,login?.window,loginURL) ? login.window : owner));
+}
+async function exportDiagnostics(window) {
+  const result = await dialog.showSaveDialog(window, { defaultPath: 'AMDL-native-diagnostics.txt', filters: [{ name: '诊断日志', extensions: ['txt'] }] });
+  if (result.canceled || !result.filePath) return false;
+  const currentService = service;
+  const snapshot = currentService && currentService !== retiringService && !currentService.closed && !currentService.failed && currentService.origin !== ''
+    ? await currentService.api('/api/native/state', {}, 2000).catch(() => undefined) : undefined;
+  const runtime = service === currentService && currentService !== retiringService && !currentService?.closed ? safeRuntime(snapshot?.runtime) : undefined;
+  if (runtime?.phase === 'failed') {
+    runtime.code ||= 'native_runtime_unavailable';
+    trackRuntime(runtime);
+  }
+  if (runtime) journal?.observe(snapshot.session);
+  const safe = { schemaVersion:2,exportedAt:new Date().toISOString(),version: VERSION,
+    session: safeSession(runtime && runtime.phase !== 'failed' ? snapshot.session : state),
+    runtime: runtime || lastRuntime || {phase:'unavailable'}, diagnostics:journal?.snapshot()||{events:[]} };
+  fs.writeFileSync(result.filePath, JSON.stringify(safe, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 }); return true;
 }
 app.whenReady().then(async () => {
   app.setName('Apple Music Downloader Native');
@@ -201,7 +263,7 @@ app.whenReady().then(async () => {
   await boot.loadURL(startupURL);
   if (closing || boot.isDestroyed()) return;
   boot.show();
-  try { await start(); } catch { observe({ state: 'runtime_unavailable' }); }
+  try { await start(); } catch { /* start already persisted and presented the failure. */ }
   if (!closing) timer = setInterval(refresh, 2000);
 }).catch(() => app.quit());
 app.on('window-all-closed', () => app.quit());

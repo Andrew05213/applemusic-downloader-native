@@ -1,6 +1,19 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'../..');
+test('cumulative beta.5 retains audio-tool packaging and only creates CI attachments',()=>{
+ const text=fs.readFileSync(path.join(root,'.github/workflows/preview-105-beta5.yml'),'utf8');
+ assert.match(text,/branches: \['codex\/cumulative-1\.0\.5-beta\.5'\]/);
+ assert.match(text,/permissions:\s+contents: read/);
+ assert.match(text,/AMDL_CREATE_DRAFT: 'false'/);
+ assert.match(text,/needs: \[verify, guest\]/);
+ assert.match(text,/AppleMusicDownloader-1\.0\.5-beta\.5-Setup\.exe\.sha256/);
+ assert.doesNotMatch(text,/contents: write|pull_request|workflow_dispatch|secrets:|gh release/);
+ const build=fs.readFileSync(path.join(root,'electron/build-native-service.js'),'utf8');
+ const audit=fs.readFileSync(path.join(root,'electron/verify-native-package.js'),'utf8');
+ assert.match(build,/native-audio-tools.*\.prepare\(/);
+ assert.match(audit,/native-audio-tools.*\.verify\(.*bin\/audio-tools/);
+});
 test('wrapper compatibility branch can verify and compile but cannot publish or build an installer',()=>{
  const text=fs.readFileSync(path.join(root,'.github/workflows/wrapper-compat.yml'),'utf8');
  assert.match(text,/branches: \['codex\/wrapper-80dc-compat'\]/);
