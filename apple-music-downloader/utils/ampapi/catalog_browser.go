@@ -112,10 +112,8 @@ type browseRawResource struct {
 		Previews []struct {
 			URL string `json:"url"`
 		} `json:"previews"`
-		PlayParams struct {
-			ID string `json:"id"`
-		} `json:"playParams"`
-		Artwork struct {
+		PlayParams TrackPlayParams `json:"playParams"`
+		Artwork    struct {
 			URL string `json:"url"`
 		} `json:"artwork"`
 	} `json:"attributes"`

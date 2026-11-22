@@ -11,7 +11,7 @@ const { VERSION } = require('../../electron/native-version');
 const { NativeCache, catalogTarget, artworkHandler } = require('../../electron/native-cache');
 protocol?.registerSchemesAsPrivileged?.([{scheme:'amdl-artwork',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
 let cache;
-const {DiagnosticJournal, runtimeCodes, safeRuntime}=require('../../electron/native-diagnostics');
+const {DiagnosticJournal, runtimeCodes, safeRuntime, safeDownloadTasks}=require('../../electron/native-diagnostics');
 const { NativeStartupCoordinator } = require('../../electron/native-startup');
 
 let owner; let login; let service; let timer; let closing = false; let polling = false;
@@ -213,9 +213,12 @@ async function exportDiagnostics(window) {
   const result = await dialog.showSaveDialog(window, { defaultPath: 'AMDL-native-diagnostics.txt', filters: [{ name: '诊断日志', extensions: ['txt'] }] });
   if (result.canceled || !result.filePath) return false;
   const currentService = service;
-  const snapshot = currentService && currentService !== retiringService && !currentService.closed && !currentService.failed && currentService.origin !== ''
-    ? await currentService.api('/api/native/state', {}, 2000).catch(() => undefined) : undefined;
-  const runtime = service === currentService && currentService !== retiringService && !currentService?.closed ? safeRuntime(snapshot?.runtime) : undefined;
+  const usable = () => currentService && service === currentService && currentService !== retiringService && !currentService.closed && !currentService.failed && currentService.origin !== '';
+  const [snapshot, recentJobs] = usable() ? await Promise.all([
+    currentService.api('/api/native/state', {}, 2000).catch(() => undefined),
+    currentService.api('/api/v1/jobs?limit=8', {}, 2000).catch(() => undefined)
+  ]) : [];
+  const runtime = usable() ? safeRuntime(snapshot?.runtime) : undefined;
   if (runtime?.phase === 'failed') {
     runtime.code ||= 'native_runtime_unavailable';
     trackRuntime(runtime);
@@ -223,7 +226,8 @@ async function exportDiagnostics(window) {
   if (runtime) journal?.observe(snapshot.session);
   const safe = { schemaVersion:2,exportedAt:new Date().toISOString(),version: VERSION,
     session: safeSession(runtime && runtime.phase !== 'failed' ? snapshot.session : state),
-    runtime: runtime || lastRuntime || {phase:'unavailable'}, diagnostics:journal?.snapshot()||{events:[]} };
+    runtime: runtime || lastRuntime || {phase:'unavailable'}, diagnostics:journal?.snapshot()||{events:[]},
+    downloadTasks: safeDownloadTasks(usable() ? recentJobs : undefined) };
   fs.writeFileSync(result.filePath, JSON.stringify(safe, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 }); return true;
 }
 app.whenReady().then(async () => {

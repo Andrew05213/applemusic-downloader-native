@@ -63,6 +63,35 @@ test('actual export retains redacted token diagnostic after closing login and re
  assert.doesNotMatch(raw,/SENTINEL/);
 });
 
+test('actual export includes bounded download reasons, never private job fields', async t=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'native-job-export-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+ const destination=path.join(dir,'export.txt');
+ const items=Array.from({length:70},()=>({status:'unavailable',errorCode:'catalog_track_missing',errorMessage:'PRIVATE',name:'PRIVATE',sourceId:'i.PRIVATE',relativePath:'PRIVATE'}));
+ items[1]={status:'failed',errorCode:'PRIVATE'};items[2]={status:'skipped',errorCode:'duplicate_track'};
+ const job={status:'partial',total:70,failed:1,unavailable:68,skipped:1,url:'PRIVATE',id:'PRIVATE',title:'PRIVATE',items};
+ const f=ipcFixture(async target=>target==='/api/v1/jobs?limit=8'?{jobs:[job]}:{runtime:{phase:'ready'},session:{state:'authenticated'}},destination);
+ await f.handlers.get('native:export-diagnostics')(f.event);
+ const raw=fs.readFileSync(destination,'utf8'), out=JSON.parse(raw);
+ assert.equal(out.downloadTasks.available,true);
+ const [entry]=out.downloadTasks.jobs;
+ assert.deepEqual(entry.reasons,{catalog_track_missing:68,unknown:1,duplicate_track:1});
+ assert.equal(entry.unavailable,68);assert.equal(entry.items.length,64);assert.equal(entry.omittedItems,6);
+ assert.deepEqual(entry.items[1],{position:2,status:'failed',reason:'unknown'});
+ assert.doesNotMatch(raw,/PRIVATE/);
+});
+
+test('task read failure does not erase the rest of the export or imply zero failed tracks',async t=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'native-job-unavailable-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+ const destination=path.join(dir,'export.txt');
+ const f=ipcFixture(async target=>{
+   if(target==='/api/v1/jobs?limit=8')throw new Error('PRIVATE');
+   return {runtime:{phase:'ready'},session:{state:'authenticated'}};
+ },destination);
+ await f.handlers.get('native:export-diagnostics')(f.event);
+ const raw=fs.readFileSync(destination,'utf8'),out=JSON.parse(raw);
+ assert.deepEqual(out.downloadTasks,{available:false});assert.equal(out.runtime.phase,'ready');assert.doesNotMatch(raw,/PRIVATE/);
+});
+
 test('guest failure survives status polling, process shutdown and offline export without private fields', async t=>{
  const vm=require('node:vm');const {DiagnosticJournal}=require('../../electron/native-diagnostics');const dir=fs.mkdtempSync(path.join(os.tmpdir(),'native-runtime-export-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));const destination=path.join(dir,'export.txt');
  const guest={phase:'failed',stage:'runtime_boot',code:'native_guest_exited',processExitCode:0xc0000135,guestBootEvent:'data_mount_failed'};
@@ -75,6 +104,7 @@ test('guest failure survives status polling, process shutdown and offline export
  const data=fs.readFileSync(destination,'utf8');
  const out=JSON.parse(data);
  assert.deepEqual(out.runtime,guest);
+ assert.deepEqual(out.downloadTasks,{available:false});
  assert.equal(out.session.code,'native_guest_exited');
  assert.equal(out.diagnostics.lastFailure.processExitCode,guest.processExitCode);
  assert.equal(out.diagnostics.lastFailure.guestBootEvent,'data_mount_failed');

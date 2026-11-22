@@ -24,7 +24,7 @@ func TestPersonalBrowserUsesScopedHeadersAndLibraryCatalogIdentity(t *testing.T)
 			}
 			fmt.Fprint(w, `{"data":[{"id":"p.private","type":"library-playlists","attributes":{"name":"Private"},"relationships":{"tracks":{"data":[{"id":"i.first","type":"library-songs","attributes":{"name":"Track"},"relationships":{"catalog":{"data":[{"id":"123","type":"songs"}]}}},{"id":"i.upload","type":"library-songs","attributes":{"name":"Upload"}}],"next":"/v1/me/library/playlists/p.private/tracks?offset=100"}}}]}`)
 		case "/v1/me/library/playlists/p.private/tracks":
-			fmt.Fprint(w, `{"data":[{"id":"i.second","type":"library-songs","attributes":{"name":"Second","playParams":{"id":"456"}}}]}`)
+			fmt.Fprint(w, `{"data":[{"id":"i.second","type":"library-songs","attributes":{"name":"Second","playParams":{"id":"i.second","kind":"song","isLibrary":true,"catalogId":"456"}}},{"id":"i.local","type":"library-songs","attributes":{"name":"Upload","playParams":{"id":"789","isLibrary":true,"reportingId":"222"}}}]}`)
 		case "/v1/me/recommendations":
 			if r.URL.Query().Get("include") != "contents" {
 				t.Error("missing contents")
@@ -51,7 +51,7 @@ func TestPersonalBrowserUsesScopedHeadersAndLibraryCatalogIdentity(t *testing.T)
 	}
 	input.Offset = 100
 	page, err := c.BrowseCatalog(context.Background(), input)
-	if err != nil || page.Tracks[0].ID != "456" {
+	if err != nil || len(page.Tracks) != 2 || page.Tracks[0].ID != "456" || page.Tracks[0].SourceID != "i.second" || !page.Tracks[0].Downloadable || page.Tracks[1].Downloadable || page.Tracks[1].URL != "" {
 		t.Fatalf("page %+v %v", page, err)
 	}
 	input.Mode, input.Offset = "home", 0

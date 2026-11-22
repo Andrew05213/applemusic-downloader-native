@@ -87,4 +87,30 @@ class DiagnosticJournal{
  }
  snapshot(limit=256){return {...sanitizeDiagnostics(this.data,limit),...(this.storageCode?{storageCode:this.storageCode}:{})};}
 }
-module.exports={STAGES,CODES,OUTCOMES,APPLE_CODES,safeEvent,sanitizeDiagnostics,DiagnosticJournal,runtimeCodes,safeRuntime,guestBootEvents};
+// A shareable task snapshot must never contain titles, source IDs, paths or raw errors.
+const downloadReasons = new Set(('catalog_track_missing track_source_missing track_type_unsupported duplicate_track playlist_no_downloadable_tracks track_unavailable playlist_access_denied playlist_auth_required playlist_not_found playlist_pagination_failed session_verification_pending session_rejected resource_forbidden resource_not_found catalog_token_failed disk_full permission_denied decryption_failed download_result_missing credentials_failed metadata_failed manifest_failed manifest_queue_timeout_transient manifest_empty_transient manifest_response_invalid quality_unavailable media_failed output_failed lyrics_failed tagging_failed muxing_failed publish_failed validation_failed license_failed interrupted').split(' '));
+const downloadStates = new Set(['queued','running','cancelling','succeeded','partial','failed','cancelled','interrupted']);
+function safeDownloadReason(code) {
+  if (downloadReasons.has(code)) return code;
+  if (typeof code === 'string' && /^(metadata|manifest|media)_(timeout_|dns_|connection_)?transient$/.test(code)) return code;
+  return 'unknown';
+}
+function safeDownloadTasks(input) {
+  if (!Array.isArray(input?.jobs)) return {available:false};
+  return {available:true, jobs:input.jobs.slice(0,8).map(job=>{
+    const counts = {}, reasons = {}, items = [];
+    for (const key of ['total','succeeded','failed','skipped','unavailable']) {
+      if (Number.isSafeInteger(job?.[key]) && job[key]>=0) counts[key]=job[key];
+    }
+    let affected=0;
+    for (const [index,item] of (Array.isArray(job?.items)?job.items:[]).entries()) {
+      if (!['failed','unavailable','interrupted'].includes(item?.status) && !(item?.status==='skipped' && item.errorCode)) continue;
+      const reason=safeDownloadReason(item.errorCode);
+      reasons[reason]=(reasons[reason]||0)+1;
+      affected++;
+      if (items.length<64) items.push({position:index+1,status:item.status,reason});
+    }
+    return {status:downloadStates.has(job?.status)?job.status:'unknown',...counts,...(job?.errorCode?{reason:safeDownloadReason(job.errorCode)}:{}),reasons,items,omittedItems:affected-items.length};
+  })};
+}
+module.exports={STAGES,CODES,OUTCOMES,APPLE_CODES,safeEvent,sanitizeDiagnostics,DiagnosticJournal,runtimeCodes,safeRuntime,guestBootEvents,safeDownloadTasks};

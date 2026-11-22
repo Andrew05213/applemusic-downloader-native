@@ -320,22 +320,19 @@ func normalizePlaylistTracks(playlist ampapi.PlaylistRespData, storefront ...str
 		}
 		catalogType := catalogTypeForPlaylistTrack(data.Type)
 		catalogID := ""
-		if len(data.Relationships.Catalog.Data) > 0 {
-			relation := data.Relationships.Catalog.Data[0]
-			if relation.Type == catalogType && isValidCatalogTrackID(strings.TrimSpace(relation.ID)) {
-				catalogID = strings.TrimSpace(relation.ID)
+		for _, relation := range data.Relationships.Catalog.Data {
+			if id := strings.TrimSpace(relation.ID); relation.Type == catalogType && ampapi.ValidCatalogNumericID(id) {
+				catalogID = id
+				break
 			}
 		}
 		if catalogID == "" {
-			playParams := data.Attributes.PlayParams
-			if (playParams.Kind == "" || playParams.Kind == catalogPlayParamKind(catalogType)) && isValidCatalogTrackID(strings.TrimSpace(playParams.ID)) {
-				catalogID = strings.TrimSpace(playParams.ID)
-			}
+			catalogID = data.Attributes.PlayParams.CatalogTrackID(catalogType)
 		}
-		if catalogID == "" && (data.Type == "songs" || data.Type == "music-videos") && isValidCatalogTrackID(sourceID) {
+		if catalogID == "" && data.Type == catalogType && ampapi.ValidCatalogNumericID(sourceID) {
 			catalogID = sourceID
 		}
-		if !isValidCatalogTrackID(catalogID) {
+		if catalogID == "" {
 			unavailable = append(unavailable, PlaylistUnavailableTrack{SourceID: sourceID, Name: name, ErrorCode: "catalog_track_missing"})
 			continue
 		}
@@ -369,8 +366,7 @@ func catalogPlayParamKind(catalogType string) string {
 func rewritePlaylistTrackAsCatalog(data ampapi.TrackRespData, catalogID, catalogType, storefront string) ampapi.TrackRespData {
 	data.ID = catalogID
 	data.Type = catalogType
-	data.Attributes.PlayParams.ID = catalogID
-	data.Attributes.PlayParams.Kind = catalogPlayParamKind(catalogType)
+	data.Attributes.PlayParams = ampapi.TrackPlayParams{ID: catalogID, Kind: catalogPlayParamKind(catalogType)}
 	pathType := "song"
 	if catalogType == "music-videos" {
 		pathType = "music-video"
@@ -382,18 +378,6 @@ func rewritePlaylistTrackAsCatalog(data ampapi.TrackRespData, catalogID, catalog
 		data.Href = fmt.Sprintf("v1/catalog/%s/%s", pathType+"s", url.PathEscape(catalogID))
 	}
 	return data
-}
-
-func isValidCatalogTrackID(value string) bool {
-	if value == "" || len(value) > 20 {
-		return false
-	}
-	for _, character := range value {
-		if character < '0' || character > '9' {
-			return false
-		}
-	}
-	return true
 }
 
 func (a *Playlist) GetArtwork() string {
