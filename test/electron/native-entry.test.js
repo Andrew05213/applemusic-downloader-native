@@ -92,6 +92,15 @@ test('task read failure does not erase the rest of the export or imply zero fail
  assert.deepEqual(out.downloadTasks,{available:false});assert.equal(out.runtime.phase,'ready');assert.doesNotMatch(raw,/PRIVATE/);
 });
 
+test('timings include successful tracks, use only aggregate numbers and reject malformed metrics',()=>{
+ const {safeDownloadTasks}=require('../../electron/native-diagnostics');
+ const metrics={readMs:9,queueMs:50,replyMs:21,muxWriteMs:3,requests:9,queuedRequests:6,fragments:2};
+ const item={name:'SENTINEL',sourceId:'SENTINEL',status:'succeeded',timing:{...metrics,secret:'SENTINEL'}};
+ const [{trackTimings,omittedTimings}]=safeDownloadTasks({jobs:[{items:[item,{...item,timing:{...metrics,requests:-1}},...Array(1024).fill(item)]}]}).jobs;
+ assert.deepEqual(trackTimings[0],{position:1,...metrics});assert.equal(trackTimings[1].position,3);
+ assert.equal(trackTimings.length,1024);assert.equal(omittedTimings,1);assert.doesNotMatch(JSON.stringify(trackTimings),/SENTINEL/);
+});
+
 test('guest failure survives status polling, process shutdown and offline export without private fields', async t=>{
  const vm=require('node:vm');const {DiagnosticJournal}=require('../../electron/native-diagnostics');const dir=fs.mkdtempSync(path.join(os.tmpdir(),'native-runtime-export-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));const destination=path.join(dir,'export.txt');
  const guest={phase:'failed',stage:'runtime_boot',code:'native_guest_exited',processExitCode:0xc0000135,guestBootEvent:'data_mount_failed'};

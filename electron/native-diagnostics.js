@@ -102,15 +102,22 @@ function safeDownloadTasks(input) {
     for (const key of ['total','succeeded','failed','skipped','unavailable']) {
       if (Number.isSafeInteger(job?.[key]) && job[key]>=0) counts[key]=job[key];
     }
-    let affected=0;
+    let affected=0, timed=0;
+    const trackTimings=[];
     for (const [index,item] of (Array.isArray(job?.items)?job.items:[]).entries()) {
+      const timing=item?.timing;
+      const keys=['fragments','requests','queuedRequests','readMs','queueMs','replyMs','muxWriteMs'];
+      if(timing && keys.every(k=>Number.isSafeInteger(timing[k]) && timing[k]>=0) && timing.queuedRequests<=timing.requests) {
+        timed++;
+        if(trackTimings.length<1024) trackTimings.push({position:index+1,...Object.fromEntries(keys.map(k=>[k,timing[k]]))});
+      }
       if (!['failed','unavailable','interrupted'].includes(item?.status) && !(item?.status==='skipped' && item.errorCode)) continue;
       const reason=safeDownloadReason(item.errorCode);
       reasons[reason]=(reasons[reason]||0)+1;
       affected++;
       if (items.length<64) items.push({position:index+1,status:item.status,reason});
     }
-    return {status:downloadStates.has(job?.status)?job.status:'unknown',...counts,...(job?.errorCode?{reason:safeDownloadReason(job.errorCode)}:{}),reasons,items,omittedItems:affected-items.length};
+    return {status:downloadStates.has(job?.status)?job.status:'unknown',...counts,...(job?.errorCode?{reason:safeDownloadReason(job.errorCode)}:{}),reasons,items,omittedItems:affected-items.length,...(timed?{trackTimings,omittedTimings:timed-trackTimings.length}:{})};
   })};
 }
 module.exports={STAGES,CODES,OUTCOMES,APPLE_CODES,safeEvent,sanitizeDiagnostics,DiagnosticJournal,runtimeCodes,safeRuntime,guestBootEvents,safeDownloadTasks};

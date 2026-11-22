@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/Andrew05213/applemusic_downloader/internal/nativeauth"
+	"github.com/Andrew05213/applemusic_downloader/internal/transfer"
 	"github.com/Andrew05213/applemusic_downloader/internal/wrapperlite"
 )
 
@@ -74,17 +75,48 @@ func (c *Client) request(ctx context.Context, method, path string, body []byte, 
 	if pausable && c.downloadPaused.Load() && ctx.Err() == nil {
 		return nil, nativeauth.ErrUnverified
 	}
-	if serialized {
+	var meter *transfer.Meter
+	if method == "POST" && strings.HasPrefix(path, "/decrypt?") {
+		meter = transfer.MeterFrom(ctx)
+	}
+	// Try the existing gate once: only a failed immediate acquisition counts as queued.
+	acquired := false
+	if meter != nil {
+		meter.Request()
+		select {
+		case c.mediaGate <- struct{}{}:
+			acquired = true
+		default:
+		}
+	}
+	if serialized && !acquired {
+		var queuedAt time.Time
+		if meter != nil {
+			meter.Queued()
+			queuedAt = time.Now()
+		}
 		wait := time.NewTimer(2 * time.Minute)
 		defer wait.Stop()
 		select {
 		case c.mediaGate <- struct{}{}:
-			defer func() { <-c.mediaGate }()
+			acquired = true
 		case <-ctx.Done():
+			if meter != nil {
+				meter.Wait(time.Since(queuedAt))
+			}
 			return nil, ctx.Err()
 		case <-wait.C:
+			if meter != nil {
+				meter.Wait(time.Since(queuedAt))
+			}
 			return nil, &MediaRequestError{Code: "native_media_queue_timeout"}
 		}
+		if meter != nil {
+			meter.Wait(time.Since(queuedAt))
+		}
+	}
+	if acquired {
+		defer func() { <-c.mediaGate }()
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -104,6 +136,10 @@ func (c *Client) request(ctx context.Context, method, path string, body []byte, 
 	if stream != "" {
 		req.Header.Set("X-AMDL-Stream", stream)
 		req.Header.Set("Content-Type", "application/octet-stream")
+	}
+	if meter != nil {
+		start := time.Now()
+		defer func() { meter.Reply(time.Since(start)) }()
 	}
 	response, err := c.http.Do(req)
 	if err != nil {

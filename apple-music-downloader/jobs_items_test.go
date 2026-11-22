@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/Andrew05213/applemusic_downloader/internal/transfer"
 	"path/filepath"
 	"sort"
 	"testing"
@@ -38,8 +39,8 @@ func TestJobStorePersistsItemsAndRetriesOnlyFailedOrInterrupted(t *testing.T) {
 		Succeeded: 1,
 		Failed:    1,
 		Items: []JobItemInput{
-			{SourceID: "track-succeeded", Name: "Succeeded", Status: JobItemStatusSucceeded},
-			{SourceID: "track-failed", Name: "Failed", Status: JobItemStatusFailed, ErrorCode: "network", ErrorMessage: "Authorization: Bearer track-secret"},
+			{SourceID: "track-succeeded", Name: "Succeeded", Status: JobItemStatusSucceeded, Timing: &transfer.TrackTiming{Fragments: 3, ReadMS: 17, Requests: 6, Queued: 2, QueueMS: 22, ReplyMS: 31, MuxMS: 9}},
+			{SourceID: "track-failed", Name: "Failed", Status: JobItemStatusFailed, ErrorCode: "network", ErrorMessage: "Authorization: Bearer track-secret", Timing: &transfer.TrackTiming{Requests: 1, Queued: 1, QueueMS: 10}},
 			{SourceID: "track-interrupted", Name: "Interrupted", Status: JobItemStatusInterrupted},
 		},
 	}, "", "")
@@ -64,6 +65,9 @@ func TestJobStorePersistsItemsAndRetriesOnlyFailedOrInterrupted(t *testing.T) {
 		t.Fatalf("persisted job = %#v", persisted)
 	}
 	itemsBySource := indexItemsBySourceID(persisted.Items)
+	if timing := itemsBySource["track-succeeded"].Timing; timing == nil || timing.QueueMS != 22 || timing.ReplyMS != 31 || timing.Fragments != 3 {
+		t.Fatalf("lost timing after reopen: %+v", timing)
+	}
 	if itemsBySource["track-succeeded"].Status != JobItemStatusSucceeded || itemsBySource["track-failed"].Status != JobItemStatusFailed || itemsBySource["track-interrupted"].Status != JobItemStatusInterrupted {
 		t.Fatalf("persisted item states = %#v", persisted.Items)
 	}
@@ -83,6 +87,9 @@ func TestJobStorePersistsItemsAndRetriesOnlyFailedOrInterrupted(t *testing.T) {
 		t.Fatalf("retry status = %q, want queued", retried.Status)
 	}
 	itemsBySource = indexItemsBySourceID(retried.Items)
+	if itemsBySource["track-succeeded"].Timing == nil || itemsBySource["track-failed"].Timing != nil {
+		t.Fatal("retry must retain successful timing and reset failed attempt timing")
+	}
 	if itemsBySource["track-succeeded"].Status != JobItemStatusSucceeded || itemsBySource["track-failed"].Status != JobItemStatusQueued || itemsBySource["track-interrupted"].Status != JobItemStatusQueued {
 		t.Fatalf("item states after retry = %#v", retried.Items)
 	}

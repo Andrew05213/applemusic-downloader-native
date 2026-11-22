@@ -15,6 +15,7 @@ import (
 
 	runtimeconfig "github.com/Andrew05213/applemusic_downloader/internal/config"
 	"github.com/Andrew05213/applemusic_downloader/internal/service"
+	"github.com/Andrew05213/applemusic_downloader/internal/transfer"
 )
 
 // JobStatus is the durable lifecycle of a download request. Interrupted is
@@ -184,30 +185,32 @@ func (s JobItemStatus) valid() bool {
 // SourceID is normally an Apple Music track ID, not a request URL. The store
 // uses it as a stable per-job key so retries retain the same opaque item ID.
 type JobItem struct {
-	ID           string        `json:"id"`
-	JobID        string        `json:"jobId"`
-	SourceID     string        `json:"sourceId"`
-	Name         string        `json:"name,omitempty"`
-	Status       JobItemStatus `json:"status"`
-	Attempt      int           `json:"attempt"`
-	ErrorCode    string        `json:"errorCode,omitempty"`
-	ErrorMessage string        `json:"errorMessage,omitempty"`
-	RelativePath string        `json:"relativePath,omitempty"`
-	CreatedAt    time.Time     `json:"createdAt"`
-	UpdatedAt    time.Time     `json:"updatedAt"`
+	Timing       *transfer.TrackTiming `json:"timing,omitempty"`
+	ID           string                `json:"id"`
+	JobID        string                `json:"jobId"`
+	SourceID     string                `json:"sourceId"`
+	Name         string                `json:"name,omitempty"`
+	Status       JobItemStatus         `json:"status"`
+	Attempt      int                   `json:"attempt"`
+	ErrorCode    string                `json:"errorCode,omitempty"`
+	ErrorMessage string                `json:"errorMessage,omitempty"`
+	RelativePath string                `json:"relativePath,omitempty"`
+	CreatedAt    time.Time             `json:"createdAt"`
+	UpdatedAt    time.Time             `json:"updatedAt"`
 }
 
 // JobItemInput is supplied by a downloader execution or an EventTypeItem
 // event. It intentionally has no credential fields; callers identify a track
 // by its Apple source ID and can attach a relative output path once produced.
 type JobItemInput struct {
-	Attempt      int           `json:"attempt,omitempty"`
-	SourceID     string        `json:"sourceId"`
-	Name         string        `json:"name,omitempty"`
-	Status       JobItemStatus `json:"status"`
-	ErrorCode    string        `json:"errorCode,omitempty"`
-	ErrorMessage string        `json:"errorMessage,omitempty"`
-	RelativePath string        `json:"relativePath,omitempty"`
+	Timing       *transfer.TrackTiming `json:"timing,omitempty"`
+	Attempt      int                   `json:"attempt,omitempty"`
+	SourceID     string                `json:"sourceId"`
+	Name         string                `json:"name,omitempty"`
+	Status       JobItemStatus         `json:"status"`
+	ErrorCode    string                `json:"errorCode,omitempty"`
+	ErrorMessage string                `json:"errorMessage,omitempty"`
+	RelativePath string                `json:"relativePath,omitempty"`
 }
 
 type JobFileInput struct {

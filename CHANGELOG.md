@@ -2,6 +2,10 @@
 
 本文件记录开发中和正式版本的用户可见变化。预发布及更早版本的原始说明见 [Releases](https://github.com/Andrew05213/applemusic-downloader-native/releases)。
 
+## 1.0.5-beta.6 — 2026-11-22
+
+在 beta.5 的基础上，原生分片下载现在按曲目记录读取、客户端排队、等待服务回包和封装写入的耗时。新版本运行任务后，可在脱敏诊断的 `downloadTasks.jobs[].trackTimings` 查看请求数、排队次数及累计毫秒数。旧任务不补录，本次未调整并发数或调度策略。
+
 ## 1.0.5-beta.5 — 2026-11-21
 
 累积测试构建，以 beta.3 的发布源码（`7eceb89`）为基础，仅通过 GitHub Actions 附件交付。

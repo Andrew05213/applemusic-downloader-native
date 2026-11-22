@@ -496,10 +496,20 @@ func downloadAndDecryptFileContext(ctx context.Context, conn io.ReadWriter, in i
 	)
 	bar.Add64(int64(offset))
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
+	meter := transfer.MeterFrom(ctx)
+	var muxStart time.Time
+	// Include final flush, index finalization and file writes, including early errors.
+	defer func() {
+		if !muxStart.IsZero() {
+			meter.Mux(time.Since(muxStart))
+		}
+	}()
 	for i := 0; ; i++ {
 		var frag *mp4.Fragment
 		rawoffset := offset
+		readStart := time.Now()
 		frag, offset, err = ReadNextFragment(inBuf, offset)
+		meter.Fragment(time.Since(readStart), frag != nil && err == nil)
 		rawoffset = offset - rawoffset
 		if err != nil {
 			return err
@@ -547,6 +557,7 @@ func downloadAndDecryptFileContext(ctx context.Context, conn io.ReadWriter, in i
 		if err != nil {
 			return fmt.Errorf("decryptFragment: %w", err)
 		}
+		muxStart = time.Now()
 		if err := finalizer.Fragment(frag.Moof); err != nil {
 			return err
 		}
@@ -558,9 +569,12 @@ func downloadAndDecryptFileContext(ctx context.Context, conn io.ReadWriter, in i
 			return err
 		}
 		writtenOffset += frag.Size()
+		meter.Mux(time.Since(muxStart))
+		muxStart = time.Time{}
 		transfer.Processed(ctx, int64(offset), totalLen)
 		bar.Add64(int64(rawoffset))
 	}
+	muxStart = time.Now()
 	err = outBuf.Flush()
 	if err != nil {
 		return err

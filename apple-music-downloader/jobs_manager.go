@@ -707,6 +707,8 @@ func jobItemInputFromEvent(data any) (JobItemInput, bool) {
 		return *item, true
 	case JobItem:
 		return JobItemInput{
+			Timing:       item.Timing,
+			Attempt:      item.Attempt,
 			SourceID:     item.SourceID,
 			Name:         item.Name,
 			Status:       item.Status,

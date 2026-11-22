@@ -1,8 +1,8 @@
-name: Native Preview 1.0.5-beta.5
+name: Native Preview 1.0.5-beta.6
 
 on:
   push:
-    branches: ['codex/cumulative-1.0.5-beta.5']
+    branches: ['codex/preview-1.0.5-beta.6']
 
 # This branch workflow builds and audits artifacts only. Releases are created
 # separately after confirming the output digests and target commit.
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: native-cumulative-105-beta5
+  group: native-preview-105-beta6
   cancel-in-progress: true
 
 env:
@@ -84,10 +84,10 @@ jobs:
       - name: Upload only verified installer, checksum and build result
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: native-beta5-installer
+          name: native-beta6-installer
           path: |
-            .artifacts/installers/**/AppleMusicDownloader-1.0.5-beta.5-Setup.exe
-            .artifacts/installers/**/AppleMusicDownloader-1.0.5-beta.5-Setup.exe.sha256
+            .artifacts/installers/**/AppleMusicDownloader-1.0.5-beta.6-Setup.exe
+            .artifacts/installers/**/AppleMusicDownloader-1.0.5-beta.6-Setup.exe.sha256
             .artifacts/cloud-release-result.json
           retention-days: 7
           if-no-files-found: error
