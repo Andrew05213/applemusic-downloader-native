@@ -4,6 +4,12 @@ const path = require('node:path');
 const fs = require('node:fs');
 const net = require('node:net');
 const { pathToFileURL } = require('node:url');
+const { NativeStartupCoordinator, startupTrace } = require('../../electron/native-startup');
+let bootTrace;
+// Fixture processes must never write to the real user's profile, even on error.
+if (process.argv && !process.argv.includes('--native-fixture-profile') && app.getPath) {
+  try { bootTrace = startupTrace(path.join(app.getPath('appData'), 'AppleMusicDownloader-v2-test')); } catch {}
+}
 const { NativeService, allowedAPI } = require('../../electron/native-service');
 const { NativeLoginCoordinator, safeSession } = require('../../electron/native-login');
 const authInteraction = require('../../electron/native-interaction');
@@ -11,8 +17,12 @@ const { VERSION } = require('../../electron/native-version');
 const { NativeCache, catalogTarget, artworkHandler } = require('../../electron/native-cache');
 protocol?.registerSchemesAsPrivileged?.([{scheme:'amdl-artwork',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
 let cache;
-const {DiagnosticJournal, runtimeCodes, safeRuntime, safeDownloadTasks}=require('../../electron/native-diagnostics');
-const { NativeStartupCoordinator } = require('../../electron/native-startup');
+const {DiagnosticJournal, runtimeCodes, safeRuntime, safeDownloadTasks, safeLiteProcessing}=require('../../electron/native-diagnostics');
+function startupFailed() {
+  const stage = bootTrace?.fail() || 'entry';
+  try { dialog.showErrorBox('下载器未能启动', '启动阶段：' + stage + '。请提供本次启动时间以便排查。'); }
+  finally { app.quit(); }
+}
 
 let owner; let login; let service; let timer; let closing = false; let polling = false;
 let state = { state: 'checking' };
@@ -44,6 +54,7 @@ async function revealMain() {
   const boot = startupWindow; startupWindow = null;
   if (boot && !boot.isDestroyed()) boot.close();
   owner.show(); owner.focus();
+  bootTrace?.mark('main_visible');
   login?.observe(state);
   if (state.state === 'needs_2fa') login?.open();
 }
@@ -134,7 +145,7 @@ function bindIPC() {
   handle('native:playback-cancel',(event,base)=>{if(!owns(event,owner,nativeURL)||typeof base!=='string'||!/^\/api\/native\/playback\/[a-f0-9]{32}$/.test(base))throw Error('native_sender_rejected');service.cancelPlaybackChunks(base);return true;});
   handle('native:open-login', () => { login.open(); return true; });
   handle('native:api', (event, target, options = {}) => {
-    if (!owns(event, owner, nativeURL) || !allowedAPI(options.method || 'GET', target) || JSON.stringify(options.body || {}).length > 32768 || target.startsWith('/api/native/interaction') || target.startsWith('/api/native/login') || target.startsWith('/api/native/two-factor') || target.startsWith('/api/native/download-directory') || /^\/api\/native\/jobs\//.test(target)) throw new Error('native_api_rejected');
+    if (!owns(event, owner, nativeURL) || !allowedAPI(options.method || 'GET', target) || JSON.stringify(options.body || {}).length > 32768 || target.startsWith('/api/native/processing') || target.startsWith('/api/native/interaction') || target.startsWith('/api/native/login') || target.startsWith('/api/native/two-factor') || target.startsWith('/api/native/download-directory') || /^\/api\/native\/jobs\//.test(target)) throw new Error('native_api_rejected');
     if((options.method||'GET')==='GET'&&catalogTarget(target)&&cache)return cache.json(target,()=>service.api(target,options));
     return service.api(target, options);
   });
@@ -214,9 +225,10 @@ async function exportDiagnostics(window) {
   if (result.canceled || !result.filePath) return false;
   const currentService = service;
   const usable = () => currentService && service === currentService && currentService !== retiringService && !currentService.closed && !currentService.failed && currentService.origin !== '';
-  const [snapshot, recentJobs] = usable() ? await Promise.all([
+  const [snapshot, recentJobs, processing] = usable() ? await Promise.all([
     currentService.api('/api/native/state', {}, 2000).catch(() => undefined),
-    currentService.api('/api/v1/jobs?limit=8', {}, 2000).catch(() => undefined)
+    currentService.api('/api/v1/jobs?limit=8', {}, 2000).catch(() => undefined),
+    currentService.api('/api/native/processing', {}, 2000).catch(() => undefined)
   ]) : [];
   const runtime = usable() ? safeRuntime(snapshot?.runtime) : undefined;
   if (runtime?.phase === 'failed') {
@@ -227,6 +239,7 @@ async function exportDiagnostics(window) {
   const safe = { schemaVersion:2,exportedAt:new Date().toISOString(),version: VERSION,
     session: safeSession(runtime && runtime.phase !== 'failed' ? snapshot.session : state),
     runtime: runtime || lastRuntime || {phase:'unavailable'}, diagnostics:journal?.snapshot()||{events:[]},
+    liteProcessing: safeLiteProcessing(usable() ? processing : undefined),
     downloadTasks: safeDownloadTasks(usable() ? recentJobs : undefined) };
   fs.writeFileSync(result.filePath, JSON.stringify(safe, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 }); return true;
 }
@@ -237,13 +250,18 @@ app.whenReady().then(async () => {
   if(profileIndex>=0){const fixtureProfile=process.argv[profileIndex+1];const selected=process.argv.indexOf('--native-manifest');const bundle=selected>=0?JSON.parse(fs.readFileSync(process.argv[selected+1],'utf8')):null;if(!path.isAbsolute(fixtureProfile||'')||!fs.existsSync(path.join(fixtureProfile,'.native-fixture'))||bundle?.isolated!==true||bundle.controlProtocol!==1)throw new Error('native_fixture_profile_invalid');app.setPath('userData',fixtureProfile);}
   // Compatibility identity: keep beta sessions, task bindings and preferences.
   else app.setPath('userData', path.join(app.getPath('appData'), 'AppleMusicDownloader-v2-test'));
+  if (!bootTrace) bootTrace=startupTrace(app.getPath('userData'));
+  bootTrace.mark('ready');
   journal=new DiagnosticJournal(path.join(app.getPath('userData'),'auth-diagnostics.json'));
-  if(!app.requestSingleInstanceLock()){app.quit();return;}
+  bootTrace.mark('single_instance');
+  if(!app.requestSingleInstanceLock()){bootTrace.mark('other_instance');app.quit();return;}
   app.on('second-instance',()=>{const win=mainRevealed?owner:startupWindow;if(win&&!win.isDestroyed()){if(win.isMinimized())win.restore();win.show();win.focus();}});
   const uiSession = session.fromPartition('persist:amdl-v2-native-ui');
+  bootTrace.mark('cache');
   cache=new NativeCache(path.join(app.getPath('userData'),'ui-cache'));await cache.ready;await cache.clear('personal');
   uiSession.protocol.handle('amdl-artwork',artworkHandler(cache,(...args)=>electronNet.fetch(...args)));
   uiSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
+  bootTrace.mark('windows');
   owner = new BrowserWindow({ icon:appIcon, show: false, width: 1440, height: 900, minWidth: 760, minHeight: 560, ...(process.platform==='win32'?{titleBarStyle:'hidden',titleBarOverlay:{color:'#29292b',symbolColor:'#c1c1ca',height:60}}:{}), backgroundColor: '#202020', webPreferences: { preload, session: uiSession, sandbox: true, contextIsolation: true, nodeIntegration: false, autoplayPolicy: 'no-user-gesture-required' } });
   owner.setTitle('Apple Music Downloader Native · '+VERSION);
   owner.setMenuBarVisibility(false); isolated(owner, nativeURL);
@@ -254,7 +272,7 @@ app.whenReady().then(async () => {
   }, onDismiss: () => service?.api('/api/native/cancel-login', { method: 'POST' }).then(observe).catch(() => {}) });
   uiSession.webRequest.onBeforeSendHeaders((details, callback) => callback({ requestHeaders: service?.mediaHeaders(details, ownerID) || details.requestHeaders }));
   startup = new NativeStartupCoordinator({
-    onFinish: () => { void revealMain().catch(() => app.quit()); },
+    onFinish: () => { void revealMain().catch(startupFailed); },
     onChange: value => { if (startupWindow && !startupWindow.isDestroyed()) startupWindow.webContents.send('native:startup-state', value); },
   });
   startupWindow = new BrowserWindow({ icon:appIcon, show: false, width: 1100, height: 720, minWidth: 760, minHeight: 560, center: true, fullscreen: false, frame: true, title: 'Music 下载器', backgroundColor: '#1c1c1e', webPreferences: { preload: path.join(__dirname, '../preload/native-startup-preload.js'), session: uiSession, sandbox: true, contextIsolation: true, nodeIntegration: false } });
@@ -262,14 +280,16 @@ app.whenReady().then(async () => {
   boot.setMenuBarVisibility(false); isolated(boot, startupURL);
   boot.once('closed', () => { if (startupWindow !== boot) return; startupWindow = null; if (!mainRevealed && !closing) app.quit(); });
   bindIPC();
+  bootTrace.mark('load_pages');
   mainLoaded = owner.loadURL(nativeURL);
   mainLoaded.catch(() => startup.fail());
   await boot.loadURL(startupURL);
   if (closing || boot.isDestroyed()) return;
   boot.show();
+  bootTrace.mark('splash_visible');
   try { await start(); } catch { /* start already persisted and presented the failure. */ }
   if (!closing) timer = setInterval(refresh, 2000);
-}).catch(() => app.quit());
+}).catch(startupFailed);
 app.on('window-all-closed', () => app.quit());
 app.on('before-quit', (event) => {
   if (closing) return;

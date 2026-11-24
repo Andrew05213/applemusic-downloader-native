@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/Andrew05213/applemusic_downloader/internal/nativeauth"
+	"github.com/Andrew05213/applemusic_downloader/internal/processing"
 	"github.com/Andrew05213/applemusic_downloader/internal/transfer"
 	"github.com/Andrew05213/applemusic_downloader/internal/wrapperlite"
 )
@@ -183,6 +184,24 @@ func (c *Client) request(ctx context.Context, method, path string, body []byte, 
 		return nil, ErrProtocol
 	}
 	return result, nil
+}
+func (c *Client) Processing(ctx context.Context) (processing.Snapshot, error) {
+	var s processing.Snapshot
+	raw, err := c.request(ctx, "GET", "/diagnostics/processing", nil, "", 65536)
+	if err != nil {
+		return s, err
+	}
+	if json.Unmarshal(raw, &s) != nil || s.Streams == nil || uint64(len(s.Streams)) != min(s.Seen, uint64(processing.Limit)) {
+		return processing.Snapshot{}, ErrProtocol
+	}
+	for _, v := range s.Streams {
+		switch v.End {
+		case "close", "idle", "failure", "shutdown":
+		default:
+			return processing.Snapshot{}, ErrProtocol
+		}
+	}
+	return s, nil
 }
 func snapshot(raw []byte) (nativeauth.Snapshot, error) {
 	var legacy struct {

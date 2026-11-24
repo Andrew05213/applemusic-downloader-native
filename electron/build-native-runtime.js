@@ -117,7 +117,7 @@ function buildGuest(options = {}) {
   run('go', ['build', '-mod=readonly', '-trimpath', '-buildvcs=false', '-ldflags=-s -w -buildid=', '-o', agentBinary, './cmd/amdl-guest'],
     { cwd: path.join(root, 'apple-music-downloader'), env: { ...process.env, GOOS: 'linux', GOARCH: 'amd64', CGO_ENABLED: '0' } });
   const agentSources = {};
-  for (const directory of ['internal/nativeauth', 'internal/guestagent', 'cmd/amdl-guest']) {
+  for (const directory of ['internal/nativeauth', 'internal/guestagent','internal/processing', 'cmd/amdl-guest']) {
     for (const name of fs.readdirSync(path.join(root, 'apple-music-downloader', directory)).sort()) {
       if (name.endsWith('.go') && !name.endsWith('_test.go')) agentSources[directory + '/' + name] = digest(path.join(root, 'apple-music-downloader', directory, name));
     }

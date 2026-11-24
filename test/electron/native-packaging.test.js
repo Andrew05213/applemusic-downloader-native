@@ -77,7 +77,7 @@ function freshnessFixture(t){
   sessionPatchSHA256:'lite-session.patch',nativeLoginSHA256:'native_login.h',nativeServiceSHA256:'native_service.h',
   storeBridgeSHA256:'native_store_bridge.h',storeBridgePatchSHA256:'lite-store-bridge.patch',networkCheckSHA256:'check-wrapper-network.py',extractionToolsLockSHA256:'build-tools.lock.json'};
  for(const file of Object.values(sourceFields))write(path.join(repository,'native-runtime',file),'fixture '+file);
- const sources={};for(const part of ['internal/nativeauth','internal/guestagent','cmd/amdl-guest']){
+ const sources={};for(const part of ['internal/nativeauth','internal/guestagent','internal/processing','cmd/amdl-guest']){
   const name=part+'/fixture.go';write(path.join(repository,'apple-music-downloader',name),'package fixture\n');sources[name]=hash(path.join(repository,'apple-music-downloader',name));
   write(path.join(repository,'apple-music-downloader',part,'excluded_test.go'),'not a production source');
  }

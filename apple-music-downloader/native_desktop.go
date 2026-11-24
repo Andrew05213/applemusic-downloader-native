@@ -220,6 +220,16 @@ func (n *nativeDesktop) routes(capability string) *mux.Router {
 		writeJSON(w, 200, map[string]any{"runtime": n.control.Snapshot(), "session": n.session(r.Context()), "downloadDirectory": n.downloadDirectory(r.Context()), "native": true})
 	}).Methods("GET")
 	router.HandleFunc("/api/native/download-directory", n.setDownloadDirectory).Methods(http.MethodPut)
+	router.HandleFunc("/api/native/processing", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		if agent, err := n.control.Agent(); err == nil {
+			if s, err := agent.Processing(r.Context()); err == nil {
+				writeJSON(w, 200, s)
+				return
+			}
+		}
+		writeAPIError(w, 503, "processing_unavailable", "处理耗时暂不可用", "请检查服务状态")
+	}).Methods(http.MethodGet)
 	router.HandleFunc("/api/native/interaction", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
 		q, err := n.control.Interaction(r.Context())

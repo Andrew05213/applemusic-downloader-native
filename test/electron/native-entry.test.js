@@ -10,6 +10,21 @@ function ipcFixture(apiOverride,savePath) {
  frame.url=vm.runInContext('loginURL',context);return {handlers,requests,event:{sender:webContents,senderFrame:frame},context};
 }
 
+test('export includes only numeric Lite phase summaries, separate from jobs',async t=>{
+ const d=fs.mkdtempSync(path.join(os.tmpdir(),'lite-metrics-'));t.after(()=>fs.rmSync(d,{recursive:true,force:true}));
+ const file=path.join(d,'export.txt'),g={requests:2,bytes:128,completed_bytes:128,wait_ns:1,create_ns:2,copy_ns:3,sdk_ns:4,held_ns:10,bytes_per_second:20,raw:'PRIVATE'};
+ const data={seen:1,streams:[{end:'close',first:g,reuse:g,streamID:'PRIVATE'}]};
+ const f=ipcFixture(async target=>target==='/api/native/processing'?data:{jobs:[]},file);
+ await f.handlers.get('native:export-diagnostics')(f.event);
+ const raw=fs.readFileSync(file,'utf8');assert.doesNotMatch(raw,/PRIVATE/);
+ const s=JSON.parse(raw).liteProcessing;assert.equal(s.available,true);assert.equal(s.streams[0].first.sdk_ns,4);assert.equal(s.omitted,0);
+ const {safeLiteProcessing}=require('../../electron/native-diagnostics');
+ assert.equal(safeLiteProcessing({seen:0,streams:[]}).available,true);
+ assert.equal(safeLiteProcessing(undefined).available,false);
+ assert.equal(safeLiteProcessing({seen:1,streams:[]}).available,false);
+ assert.equal(safeLiteProcessing({seen:1,streams:[{end:'close',first:{},reuse:g}]}).available,false);
+});
+
 test('actual export IPC retains the last failure after cancel and guest reset',async t=>{
  const vm=require('node:vm');const {DiagnosticJournal}=require('../../electron/native-diagnostics');const dir=fs.mkdtempSync(path.join(os.tmpdir(),'native-export-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));const destination=path.join(dir,'export.txt');
  const f=ipcFixture(async target=>target==='/api/native/state'?{runtime:{phase:'ready',authState:'needs_login'},session:{state:'needs_login'}}:{state:'needs_login',code:'native_auth_cancelled'},destination);

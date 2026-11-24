@@ -4,7 +4,8 @@ const root=path.resolve(__dirname,'../..');
 test('native preview retains audio-tool packaging and only creates CI attachments',()=>{
  const version=require('../../package.json').version;
  const text=fs.readFileSync(path.join(root,'.github/workflows/preview-105-beta6.yml'),'utf8');
- assert.ok(text.includes("branches: ['codex/preview-"+version+"']"));
+ assert.ok(text.includes("branches: ['codex/preview-"+version+"', 'codex/lite-processing-diagnostics']"));
+ assert.ok(text.includes("if: github.ref == 'refs/heads/codex/preview-"+version+"'"));
  assert.match(text,/permissions:\s+contents: read/);
  assert.match(text,/AMDL_CREATE_DRAFT: 'false'/);
  assert.match(text,/needs: \[verify, guest\]/);

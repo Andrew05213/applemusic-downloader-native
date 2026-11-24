@@ -39,4 +39,23 @@ class NativeStartupCoordinator {
   dispose() { this.disposed = true; this.clearTimer(); }
 }
 
-module.exports = { NativeStartupCoordinator };
+// Local, bounded breadcrumbs. Never store argv, URLs, exception messages or stacks.
+function startupTrace(directory) {
+  const fs = require('node:fs'), path = require('node:path');
+  const file = path.join(directory, 'desktop-startup.log');
+  const allowed = new Set(['entry','ready','single_instance','other_instance','cache','windows','load_pages','splash_visible','main_visible']);
+  let stage = 'entry';
+  function write(outcome) {
+    try {
+      fs.mkdirSync(directory, { recursive: true });
+      if (fs.existsSync(file) && fs.statSync(file).size >= 16384) fs.renameSync(file, file + '.previous');
+      fs.appendFileSync(file, JSON.stringify({at:new Date().toISOString(),pid:process.pid,stage,outcome})+'\n', {mode:0o600});
+    } catch { /* Diagnostics must never prevent launch. */ }
+  }
+  write('begin');
+  return {
+    mark(next) { if (allowed.has(next)) { stage = next; write('reached'); } },
+    fail() { write('failed'); return stage; },
+  };
+}
+module.exports = { NativeStartupCoordinator, startupTrace };

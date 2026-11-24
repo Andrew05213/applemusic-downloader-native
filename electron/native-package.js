@@ -12,7 +12,7 @@ const hash=file=>crypto.createHash('sha256').update(fs.readFileSync(file)).diges
 const SOURCE_FIELDS={patchSHA256:'lite-native.patch',recipeSHA256:'Dockerfile',initSHA256:'init',assemblySHA256:'build-guest.sh',
  sessionPatchSHA256:'lite-session.patch',nativeLoginSHA256:'native_login.h',nativeServiceSHA256:'native_service.h',
  storeBridgeSHA256:'native_store_bridge.h',storeBridgePatchSHA256:'lite-store-bridge.patch',networkCheckSHA256:'check-wrapper-network.py',extractionToolsLockSHA256:'build-tools.lock.json'};
-const AGENT_DIRECTORIES=['internal/nativeauth','internal/guestagent','cmd/amdl-guest'];
+const AGENT_DIRECTORIES=['internal/nativeauth','internal/guestagent','internal/processing','cmd/amdl-guest'];
 
 // A wrapper pin alone cannot distinguish an old guest from the current
 // device-only guest. Compare its native and complete production Go inputs before

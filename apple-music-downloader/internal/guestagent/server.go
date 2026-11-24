@@ -15,6 +15,8 @@ import (
 
 type MediaProxy func(http.ResponseWriter, *http.Request) error
 type Server struct {
+	// Optional, wired before serving. No raw child logs enter the HTTP API.
+	Processing *ProcessingHistory
 	ctx        context.Context
 	capability string
 	session    *nativeauth.Manager
@@ -77,6 +79,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch {
+	case r.URL.Path == "/diagnostics/processing" && r.Method == http.MethodGet && r.URL.RawQuery == "" && s.Processing != nil:
+		w.Header().Set("Cache-Control", "no-store")
+		respond(w, 200, s.Processing.Snapshot())
 	case r.URL.Path == "/status" && r.Method == http.MethodGet:
 		state := s.session.Snapshot()
 		regions := []string{}

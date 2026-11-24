@@ -3,11 +3,11 @@
   "sourceDateEpoch": 1786320000,
   "wrapper": {
     "repository": "https://github.com/Andrew05213/wrapper",
-    "branch": "work",
-    "commit": "a185b9cab2ec40f98672940cbd3ef46e8cdfe531",
-    "url": "https://codeload.github.com/Andrew05213/wrapper/tar.gz/a185b9cab2ec40f98672940cbd3ef46e8cdfe531",
-    "cacheName": "wrapper-andrew05213-a185b9ca.tar.gz",
-    "sha256": "1bd7bc807a1f0981214cdb7b35a7efea4865ee610e680c3adcee389cc4c5e42d",
+    "branch": "perf/lite-native-stream-metrics",
+    "commit": "cf49336933543cb0e2ca6bd63acdfce3ee7aaa0b",
+    "url": "https://codeload.github.com/Andrew05213/wrapper/tar.gz/cf49336933543cb0e2ca6bd63acdfce3ee7aaa0b",
+    "cacheName": "wrapper-andrew05213-cf493369.tar.gz",
+    "sha256": "94b0b21671476e8e4877d5b6bb9e4b56a9492c3d2a2db114fc66dec3a4bf64b2",
     "caBundleSHA256": "427c064216761a1e72a8b30f0d954d08cb6e4435a82091fb865afd20c8497285"
   },
   "qemu": {

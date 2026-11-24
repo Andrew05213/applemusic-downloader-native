@@ -120,4 +120,21 @@ function safeDownloadTasks(input) {
     return {status:downloadStates.has(job?.status)?job.status:'unknown',...counts,...(job?.errorCode?{reason:safeDownloadReason(job.errorCode)}:{}),reasons,items,omittedItems:affected-items.length,...(timed?{trackTimings,omittedTimings:timed-trackTimings.length}:{})};
   })};
 }
-module.exports={STAGES,CODES,OUTCOMES,APPLE_CODES,safeEvent,sanitizeDiagnostics,DiagnosticJournal,runtimeCodes,safeRuntime,guestBootEvents,safeDownloadTasks};
+function safeLiteProcessing(input) {
+  const valid = n => Number.isSafeInteger(n) && n >= 0;
+  if (!valid(input?.seen) || !Array.isArray(input.streams) || input.streams.length !== Math.min(64,input.seen)) return {available:false};
+  const keys = ['requests','bytes','completed_bytes','wait_ns','create_ns','copy_ns','sdk_ns','held_ns','bytes_per_second'];
+  const streams = [];
+  for (const s of input.streams) {
+    if (!['close','idle','failure','shutdown'].includes(s?.end)) return {available:false};
+    const item = {end:s.end};
+    for (const group of ['first','reuse']) {
+      const g=s[group];
+      if (!keys.every(k=>valid(g?.[k])) || g.completed_bytes>g.bytes) return {available:false};
+      item[group]=Object.fromEntries(keys.map(k=>[k,g[k]]));
+    }
+    streams.push(item);
+  }
+  return {available:true,scope:'current_guest',seen:input.seen,omitted:input.seen-streams.length,streams};
+}
+module.exports={STAGES,CODES,OUTCOMES,APPLE_CODES,safeEvent,sanitizeDiagnostics,DiagnosticJournal,runtimeCodes,safeRuntime,guestBootEvents,safeDownloadTasks,safeLiteProcessing};

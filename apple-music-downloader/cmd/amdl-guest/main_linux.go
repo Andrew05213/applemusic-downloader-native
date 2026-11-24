@@ -47,6 +47,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	handler.Processing = &runner.Processing
 	server := &http.Server{Addr: "0.0.0.0:12340", Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 35 * time.Second, WriteTimeout: 90 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 8192}
 	done := make(chan error, 1)
 	go func() { done <- server.ListenAndServe() }()

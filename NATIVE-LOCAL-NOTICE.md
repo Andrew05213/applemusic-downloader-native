@@ -21,8 +21,8 @@ consistent bit-depth descriptions, complete audio sample tables, cover/lyrics/ta
 preservation and weighted download progress. It does not silently repair old
 downloads; choose overwrite or a different directory when downloading them again.
 
-The bundled Wrapper Lite source uses Andrew05213/wrapper (work), pinned to
-a185b9cab2ec40f98672940cbd3ef46e8cdfe531. Published 1.0.4 binaries
+This diagnostic build uses Andrew05213/wrapper (PR #1), pinned to
+cf49336933543cb0e2ca6bd63acdfce3ee7aaa0b. Published 1.0.4 binaries
 retain their original b2bebc3 pin. It is derived from
 WorldObservationLog/wrapper; its upstream MIT notice is retained.
 QEMU notice texts and runtime provenance are retained. Linux/BusyBox complete

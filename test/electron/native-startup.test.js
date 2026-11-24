@@ -72,6 +72,21 @@ test('startup resources enter the exact native package whitelist', () => {
   }
 });
 
+test('early desktop trace is bounded, does not contain raw errors, and cannot break startup', t => {
+  const {startupTrace} = require('../../electron/native-startup');
+  const dir = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'amdl-startup-'));
+  t.after(() => fs.rmSync(dir, {recursive:true,force:true}));
+  const file = path.join(dir,'desktop-startup.log');
+  fs.writeFileSync(file, 'a'.repeat(16384));
+  const journal = startupTrace(dir);
+  journal.mark('windows'); journal.mark('PRIVATE_PATH'); assert.equal(journal.fail(new Error('PRIVATE_ERROR')), 'windows');
+  const rows = fs.readFileSync(file,'utf8').trim().split('\n').map(JSON.parse);
+  assert.deepEqual(rows.map(r=>[r.stage,r.outcome]), [['entry','begin'],['windows','reached'],['windows','failed']]);
+  assert.ok(rows.every(r=>Object.keys(r).sort().join(',')==='at,outcome,pid,stage'));
+  assert.equal(fs.statSync(file+'.previous').size,16384);
+  assert.doesNotThrow(()=>startupTrace(file).mark('windows'));
+});
+
 test('startup defaults to a movable normal window, not fullscreen or frameless', () => {
   const source = fs.readFileSync(path.resolve(__dirname, '../../src/main/native-main.js'), 'utf8');
   const options = source.match(/startupWindow = new BrowserWindow\(\{([^\n]+)\}\);/)[1];

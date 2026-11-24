@@ -21,6 +21,7 @@ import (
 )
 
 type LiteRunner struct {
+	Processing             ProcessingHistory
 	mu                     sync.Mutex
 	base, binary, endpoint string
 	client                 *http.Client
@@ -82,7 +83,7 @@ func (r *LiteRunner) StartService(ctx context.Context) error {
 	}
 	cmd := r.command("--native-service", "--base-dir", r.base, "--host", "127.0.0.1", "--port", "12341")
 	cmd.Stdout = io.Discard
-	cmd.Stderr = io.Discard
+	cmd.Stderr = &summaryWriter{history: &r.Processing}
 	if cmd.Start() != nil {
 		return nativeauth.ErrUnverified
 	}
