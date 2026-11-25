@@ -36,13 +36,13 @@ if(!process.versions.electron){
   const win=new BrowserWindow({show:false,width:1440,height:900,...(process.platform==='win32'?{titleBarStyle:'hidden',titleBarOverlay:{color:'#29292b',symbolColor:'#c1c1ca',height:60}}:{}),webPreferences:{session:partition,preload:path.join(root,'src/preload/native-preload.js'),sandbox:true,contextIsolation:true,nodeIntegration:false,backgroundThrottling:false}});
   const owned=event=>event.sender===win.webContents;
   const bind=(name,action)=>ipcMain.handle(name,(event,...args)=>{assert.ok(owned(event));return action(...args);});
-  bind('native:state',()=>({state:'authenticated',region:'us'}));
+  bind('native:state',()=>({state:'authenticated',region:'us',runtimeReady:true}));
   bind('native:api',(target,options={})=>{requests.push(target);return (options.method||'GET')==='GET'?cache.json(target,()=>serve(target)):serve(target);});
   bind('native:cache-info',()=>cache.info());bind('native:cache-limit',limit=>cache.setLimit(limit));bind('native:cache-clear',()=>cache.clear());bind('native:catalog-refresh',()=>cache.clear('catalog'));bind('native:catalog-prefetch',target=>cache.json(target,()=>serve(target)).then(()=>true));
   const evaluate=source=>win.webContents.executeJavaScript(source,true);
   const wait=async source=>{const start=Date.now();while(!await evaluate(source)){if(Date.now()-start>10000)throw Error('fixture wait failed: '+source);await new Promise(r=>setTimeout(r,30));}};
   const painted=async()=>{await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');await new Promise(resolve=>setTimeout(resolve,250));};
-  await win.loadURL(pathToFileURL(path.join(root,'src/renderer/native-index.html')).href);win.webContents.send('native:backend-ready');
+  await win.loadURL(pathToFileURL(path.join(root,'src/renderer/native-index.html')).href);
   await wait(`document.querySelectorAll('.catalog-card').length===2&&[...document.querySelectorAll('.catalog-card img')].every(img=>img.naturalWidth>0)&&document.querySelector('#monitor-speed').textContent==='2.0 MiB/s'`);
   await painted();await fs.promises.writeFile(path.join(output,'home.png'),(await win.webContents.capturePage()).toPNG());
   await evaluate(`document.querySelector('[data-feed="discover"]').click()`);await wait(`document.querySelector('#page-title').textContent==='新发现'&&document.querySelectorAll('.discover-cover-shelf .catalog-card').length===2`);

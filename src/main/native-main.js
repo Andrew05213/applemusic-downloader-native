@@ -16,6 +16,8 @@ const { NativeStartupCoordinator } = require('../../electron/native-startup');
 
 let owner; let login; let service; let timer; let closing = false; let polling = false;
 let state = { state: 'checking' };
+let runtimeReady = false;
+const desktopState = () => ({ ...state, runtimeReady });
 let journal;
 let startup; let startupWindow; let mainLoaded; let mainRevealed = false;
 let directoryPickerPending=false;const revealingJobs=new Set();
@@ -48,17 +50,29 @@ async function revealMain() {
 function observe(input) {
   const previousState=state.state;
   state = safeSession(input); journal?.observe(state);
+  if (state.state === 'runtime_unavailable') runtimeReady = false;
   if(previousState==='authenticated'&&state.state==='needs_login')void cache?.clear('personal').catch(()=>{});
   if(journal)state=safeSession({...state,diagnostics:journal.snapshot(128)});
   if (mainRevealed) login?.observe(state);
   else startup?.observe(state);
-  if (owner && !owner.isDestroyed()) owner.webContents.send('native:session-state', state);
+  if (owner && !owner.isDestroyed()) owner.webContents.send('native:session-state', desktopState());
 }
 async function refresh() {
   if (polling || closing || !service || service.failed || service.closed) return;
+  const currentService = service;
   polling = true;
-  try { const current = await service.api('/api/native/state'); observe(current.runtime.phase === 'failed' ? { state: 'runtime_unavailable' } : current.session); }
-  catch { journal?.record('desktop_service','failed','native_runtime_unavailable');observe({ state: 'runtime_unavailable' }); }
+  try {
+    const current = await currentService.api('/api/native/state');
+    if (closing || service !== currentService || currentService.closed) return;
+    runtimeReady = current.runtime.phase === 'ready';
+    observe(current.runtime.phase === 'failed' ? { state: 'runtime_unavailable' } : current.session);
+  }
+  catch {
+    if (!closing && service === currentService && !currentService.closed) {
+      journal?.record('desktop_service','failed','native_runtime_unavailable');
+      observe({ state: 'runtime_unavailable' });
+    }
+  }
   finally { polling = false; }
 }
 async function start() {
@@ -75,7 +89,7 @@ async function start() {
   service.on('closed', () => { if (!closing && service === started) observe({ state: 'runtime_unavailable' }); });
   try { await service.ready; }
   catch(error) { journal?.record('desktop_service','failed',error?.message); throw error; }
-  if(closing)return; if(owner&&!owner.isDestroyed())owner.webContents.send('native:backend-ready'); await refresh();
+  if (!closing) await refresh();
 }
 function bindIPC() {
   for (const [name, action] of [
@@ -91,14 +105,16 @@ function bindIPC() {
     const stage=actionStages[name];if(stage)journal?.record(stage,'begin');
     try { const result=await action(event, ...args);if(stage)journal?.record(stage,'ok');return result; } catch(error) { if(stage)journal?.record(stage,'failed',error?.message);throw new Error(/^[a-z][a-z0-9_]{0,79}$/.test(error?.message)?error.message:'native_operation_failed'); }
   });
-  handle('native:state', () => state);
+  handle('native:state', desktopState);
   handle('native:playback-chunk',(event,target)=>{if(!owns(event,owner,nativeURL))throw Error('native_sender_rejected');return service.playbackChunk(target);});
   handle('native:playback-cancel',(event,base)=>{if(!owns(event,owner,nativeURL)||typeof base!=='string'||!/^\/api\/native\/playback\/[a-f0-9]{32}$/.test(base))throw Error('native_sender_rejected');service.cancelPlaybackChunks(base);return true;});
   handle('native:open-login', () => { login.open(); return true; });
   handle('native:api', (event, target, options = {}) => {
     if (!owns(event, owner, nativeURL) || !allowedAPI(options.method || 'GET', target) || JSON.stringify(options.body || {}).length > 32768 || target.startsWith('/api/native/interaction') || target.startsWith('/api/native/login') || target.startsWith('/api/native/two-factor') || target.startsWith('/api/native/download-directory') || /^\/api\/native\/jobs\//.test(target)) throw new Error('native_api_rejected');
-    if((options.method||'GET')==='GET'&&catalogTarget(target)&&cache)return cache.json(target,()=>service.api(target,options));
-    return service.api(target, options);
+    const request = { method: options.method, body: options.body };
+    if (options.catalogScope === 'sidebar') request.catalogScope = 'sidebar';
+    if((request.method||'GET')==='GET'&&catalogTarget(target)&&cache)return cache.json(target,()=>service.api(target,request));
+    return service.api(target, request);
   });
   handle('native:choose-download-directory',async event=>{
     if(!owns(event,owner,nativeURL))throw new Error('native_sender_rejected');
@@ -124,7 +140,7 @@ function bindIPC() {
     ['native:cache-limit',limit=>cache.setLimit(limit)],
     ['native:cache-clear',()=>cache.clear()],
     ['native:catalog-refresh',()=>cache.clear('catalog')],
-    ['native:catalog-prefetch',async target=>{if(!catalogTarget(target)||!allowedAPI('GET',target))throw new Error('native_api_rejected');if(!(await cache.info()).limitMB)return false;await cache.json(target,()=>service.api(target));return true;}],
+    ['native:catalog-prefetch',async target=>{if(!catalogTarget(target)||!allowedAPI('GET',target))throw new Error('native_api_rejected');if(!(await cache.info()).limitMB)return false;await cache.json(target,()=>service.api(target,{catalogScope:'prefetch'}));return true;}],
   ])handle(name,(event,...args)=>{if(!owns(event,owner,nativeURL))throw new Error('native_sender_rejected');return action(...args);});
   handle('native:login', async (event, input) => {
     if (!owns(event, login.window, loginURL) || typeof input?.appleEmail !== 'string' || typeof input.applePassword !== 'string' || input.appleEmail.length > 512 || input.applePassword.length > 4096 || (input.method !== undefined && input.method !== 'device')) throw new Error('native_login_rejected');
