@@ -8,6 +8,7 @@ fail() {
   /bin/busybox poweroff -f
   exit 1
 }
+echo '[amdl-guest] init_start'
 /bin/busybox mkdir -p /dev /proc /sys /run /data
 /bin/busybox mount -t devtmpfs devtmpfs /dev || fail dev_mount_failed
 /bin/busybox mount -t proc proc /proc || fail proc_mount_failed
@@ -17,26 +18,33 @@ fail() {
 for module in e1000 virtio_pci virtio_blk crc32c_generic ext4 qemu_fw_cfg; do
   /bin/busybox modprobe "$module" || fail module_load_failed
 done
+echo '[amdl-guest] modules_ready'
 /bin/busybox ip link set lo up || fail loopback_failed
 /bin/busybox ip link set eth0 up || fail network_device_missing
 /bin/busybox ip addr add 10.0.2.15/24 dev eth0 || fail network_address_failed
 /bin/busybox ip route add default via 10.0.2.2 dev eth0 || fail network_route_failed
+echo '[amdl-guest] network_ready'
 for attempt in 1 2 3 4 5 6 7 8 9 10; do
   test -b /dev/vda && break
   /bin/busybox sleep 1
 done
+test -b /dev/vda || fail state_device_missing
 /bin/busybox mount -t ext4 /dev/vda /data || fail data_mount_failed
+echo '[amdl-guest] state_mounted'
 test -r /usr/local/android/cert.pem || fail ca_bundle_missing
-echo '[amdl-guest] service_start'
 bootstrap=/sys/firmware/qemu_fw_cfg/by_name/opt/amdl/control/raw
 test -r "$bootstrap" || fail control_capability_missing
-/bin/busybox cp "$bootstrap" /run/control.secret
-/bin/busybox chmod 600 /run/control.secret
+/bin/busybox cp "$bootstrap" /run/control.secret || fail control_capability_copy_failed
+/bin/busybox chmod 600 /run/control.secret || fail control_capability_permissions_failed
+if test -r /sys/firmware/qemu_fw_cfg/by_name/opt/amdl/lite-batch/raw; then
+  export AMDL_EXPERIMENTAL_LITE_BATCH=1
+fi
+echo '[amdl-guest] service_start'
 set +e
 /bin/amdl-guest --base-dir /data --capability-file /run/control.secret
 code=$?
 /bin/busybox sync
-echo "[amdl-guest] service_exit=$code"
+echo '[amdl-guest] service_exited'
 /bin/busybox umount /data
 /bin/busybox poweroff -f
 exit "$code"

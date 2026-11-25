@@ -59,6 +59,14 @@ async function main(){
   evidence.automaticLoginElapsedMs=Date.now()-startedAt;
   assert.equal(app.windows().some(win=>win.url().endsWith('/native-startup.html')),false);
   assert.equal(await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(win=>win.webContents.getURL().endsWith('/native-index.html')).isVisible()),true);
+  const milestones=fs.readFileSync(path.join(profile,'desktop-startup.log'),'utf8').trim().split('\n').map(line=>JSON.parse(line));
+  // The Windows launcher tracked by Playwright need not be the Electron main process.
+  const mainPid=await app.evaluate(()=>process.pid);
+  assert.ok(Number.isSafeInteger(mainPid)&&mainPid>0);
+  const own=milestones.filter(event=>event.pid===mainPid);
+  assert.deepEqual(own.map(event=>event.stage),['entry','ready','single_instance','cache','windows','load_pages','splash_visible','main_visible']);
+  assert.ok(own.every(event=>event.outcome!=='failed'));
+  evidence.visibleMainAndStartupTraceVerified=true;
   await owner.getByRole('button',{name:'设置与状态',exact:true}).click();await owner.getByRole('button',{name:'登录',exact:true}).click();
   assert.equal(app.windows().filter(win=>win.url().endsWith('/native-login.html')).length,1);
   assert.equal(await owner.locator('iframe,webview').count(),0);assert.equal(await owner.locator('#concurrency').inputValue(),'3');

@@ -36,7 +36,7 @@ function smoke(executable,bundle,log){
  const manifest=fixtureBundle(bundle,path.join(root,'bundle'));
  const env={...process.env};delete env.AMDL_STREAM_OUTPUT;
  const evidence=loggedNode([path.join(root,'electron/native-build-environment.js'),path.join(root,'test/native/native-electron-live.cjs'),executable,manifest,'--packaged'],log,env,240000);
- if(evidence.passed!==true||evidence.localVersion!==VERSION||evidence.packagedIdentityVerified!==true||evidence.realAccountsUsed!==0||evidence.mediaRequestsAttempted!==0)throw Error('native_cloud_smoke_failed');
+ if(evidence.passed!==true||evidence.localVersion!==VERSION||evidence.packagedIdentityVerified!==true||evidence.visibleMainAndStartupTraceVerified!==true||evidence.realAccountsUsed!==0||evidence.mediaRequestsAttempted!==0)throw Error('native_cloud_smoke_failed');
  return evidence;
 }
 function linux(){
@@ -66,6 +66,7 @@ function windows(){
  const notes=path.join(logDirectory,'release-notes.md');
  fs.writeFileSync(notes,'# Apple Music Downloader Native '+VERSION+'\n\n'+body+'\n\n## 本次云端构建验证\n\nLinux/Windows CI、源码编译、安装包解包审计和实际打包程序的隔离 UI 验证通过。自动化未使用真实 Apple 账号。\n\n源码：`'+commit+'`。\n\n[构建记录](https://github.com/'+repo+'/actions/runs/'+process.env.GITHUB_RUN_ID+')\n\n安装包 SHA-256：\n\n```text\n'+built.installerSHA256+'\n```\n',{flag:'wx'});
  const result={passed:true,version:VERSION,commit,guestReceiptSHA256:digest,installerSHA256:built.installerSHA256,installerBytes:fs.statSync(installer).size,checksumFileSHA256:hash(installer+'.sha256'),filesCompared:audit.filesCompared,packagedSmokePassed:evidence.passed,draftCreated:false};
+ result.visibleMainAndStartupTraceVerified=evidence.visibleMainAndStartupTraceVerified;
  if(create){
   releaseRepository();if(sourceIdentity()!==commit)throw Error('native_release_source_changed');ensureTagAvailable(repo,tag);
   run('gh',['release','create',tag,installer,installer+'.sha256','--repo',repo,'--target',commit,'--draft','--prerelease','--latest=false','--title','Apple Music Downloader Native '+VERSION,'--notes-file',notes]);

@@ -358,6 +358,15 @@ func (s *JobStore) migrate(ctx context.Context) error {
 			return fmt.Errorf("migrate job database: %w", err)
 		}
 	}
+	var timingColumn int
+	if err := s.db.QueryRowContext(ctx, `SELECT count(*) FROM pragma_table_info('job_items') WHERE name='timing'`).Scan(&timingColumn); err != nil {
+		return err
+	}
+	if timingColumn == 0 {
+		if _, err := s.db.ExecContext(ctx, `ALTER TABLE job_items ADD COLUMN timing TEXT NOT NULL DEFAULT ''`); err != nil {
+			return err
+		}
+	}
 	if err := s.ensureJobDeletedAtColumn(ctx); err != nil {
 		return err
 	}
@@ -1001,6 +1010,7 @@ func (s *JobStore) Retry(ctx context.Context, id string) (Job, error) {
 				items[index].Status = JobItemStatusQueued
 				items[index].Attempt++
 				items[index].ErrorCode = ""
+				items[index].Timing = nil
 				items[index].ErrorMessage = ""
 				items[index].UpdatedAt = now
 				retriedItems = append(retriedItems, items[index])
@@ -1010,7 +1020,7 @@ func (s *JobStore) Retry(ctx context.Context, id string) (Job, error) {
 			return Job{}, ErrJobNotRetryable
 		}
 		if _, err := tx.ExecContext(ctx, `UPDATE job_items SET
-			status = ?, attempt = attempt + 1, error_code = '', error_message = '', updated_at = ?
+			status = ?, attempt = attempt + 1, error_code = '', error_message = '', timing = '', updated_at = ?
 			WHERE job_id = ? AND status IN (?, ?)`, JobItemStatusQueued, unixNano(now), id, JobItemStatusFailed, JobItemStatusInterrupted); err != nil {
 			return Job{}, err
 		}
@@ -1817,6 +1827,7 @@ func upsertJobItemTx(ctx context.Context, tx *sql.Tx, jobID string, input JobIte
 		}
 		item := JobItem{
 			ID:           id,
+			Timing:       input.Timing,
 			JobID:        jobID,
 			SourceID:     input.SourceID,
 			Name:         input.Name,
@@ -1829,9 +1840,9 @@ func upsertJobItemTx(ctx context.Context, tx *sql.Tx, jobID string, input JobIte
 			UpdatedAt:    now,
 		}
 		if _, err := tx.ExecContext(ctx, `INSERT INTO job_items(
-			id, job_id, source_id, name, status, attempt, error_code, error_message, relative_path, created_at, updated_at
-		) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			item.ID, item.JobID, item.SourceID, item.Name, item.Status, item.Attempt, item.ErrorCode, item.ErrorMessage, item.RelativePath, unixNano(item.CreatedAt), unixNano(item.UpdatedAt)); err != nil {
+			id, job_id, source_id, name, status, attempt, error_code, error_message, relative_path, created_at, updated_at, timing
+		) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			item.ID, item.JobID, item.SourceID, item.Name, item.Status, item.Attempt, item.ErrorCode, item.ErrorMessage, item.RelativePath, unixNano(item.CreatedAt), unixNano(item.UpdatedAt), encodeTiming(item)); err != nil {
 			return JobItem{}, err
 		}
 		return item, nil
@@ -1846,6 +1857,7 @@ func upsertJobItemTx(ctx context.Context, tx *sql.Tx, jobID string, input JobIte
 		input.RelativePath = existing.RelativePath
 	}
 	existing.Name = input.Name
+	existing.Timing = input.Timing
 	existing.Status = input.Status
 	existing.ErrorCode = input.ErrorCode
 	existing.ErrorMessage = input.ErrorMessage
@@ -1853,8 +1865,8 @@ func upsertJobItemTx(ctx context.Context, tx *sql.Tx, jobID string, input JobIte
 	existing.UpdatedAt = now
 	existing.Attempt = max(existing.Attempt, input.Attempt)
 	if _, err := tx.ExecContext(ctx, `UPDATE job_items SET
-		name = ?, status = ?, error_code = ?, error_message = ?, relative_path = ?, updated_at = ?, attempt = ? WHERE id = ?`,
-		existing.Name, existing.Status, existing.ErrorCode, existing.ErrorMessage, existing.RelativePath, unixNano(existing.UpdatedAt), existing.Attempt, existing.ID); err != nil {
+		name = ?, status = ?, error_code = ?, error_message = ?, relative_path = ?, updated_at = ?, attempt = ?, timing = ? WHERE id = ?`,
+		existing.Name, existing.Status, existing.ErrorCode, existing.ErrorMessage, existing.RelativePath, unixNano(existing.UpdatedAt), existing.Attempt, encodeTiming(existing), existing.ID); err != nil {
 		return JobItem{}, err
 	}
 	return existing, nil
@@ -1950,7 +1962,15 @@ func normalizeJobItemInput(input JobItemInput) (JobItemInput, error) {
 
 const jobSelect = `SELECT id, url, quality, existing_policy, status, attempt, total, succeeded, failed, skipped, unavailable, error_code, error_message, created_at, updated_at, started_at, finished_at, title, output_directory FROM jobs`
 
-const jobItemSelect = `SELECT id, job_id, source_id, name, status, attempt, error_code, error_message, relative_path, created_at, updated_at FROM job_items`
+const jobItemSelect = `SELECT id, job_id, source_id, name, status, attempt, error_code, error_message, relative_path, created_at, updated_at, timing FROM job_items`
+
+func encodeTiming(item JobItem) string {
+	if item.Timing == nil {
+		return ""
+	}
+	payload, _ := json.Marshal(item.Timing)
+	return string(payload)
+}
 
 type rowScanner interface{ Scan(...any) error }
 
@@ -1986,13 +2006,19 @@ func scanJob(scanner rowScanner) (Job, error) {
 
 func scanJobItem(scanner rowScanner) (JobItem, error) {
 	var item JobItem
+	var timing string
 	var status string
 	var createdAt, updatedAt int64
 	if err := scanner.Scan(
 		&item.ID, &item.JobID, &item.SourceID, &item.Name, &status, &item.Attempt,
-		&item.ErrorCode, &item.ErrorMessage, &item.RelativePath, &createdAt, &updatedAt,
+		&item.ErrorCode, &item.ErrorMessage, &item.RelativePath, &createdAt, &updatedAt, &timing,
 	); err != nil {
 		return JobItem{}, err
+	}
+	if timing != "" {
+		if err := json.Unmarshal([]byte(timing), &item.Timing); err != nil {
+			item.Timing = nil
+		}
 	}
 	item.Status = JobItemStatus(status)
 	item.CreatedAt = fromUnixNano(createdAt)

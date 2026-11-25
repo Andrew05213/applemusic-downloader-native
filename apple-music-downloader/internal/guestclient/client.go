@@ -16,6 +16,9 @@ import (
 	"time"
 
 	"github.com/Andrew05213/applemusic_downloader/internal/nativeauth"
+	"github.com/Andrew05213/applemusic_downloader/internal/nativebatch"
+	"github.com/Andrew05213/applemusic_downloader/internal/processing"
+	"github.com/Andrew05213/applemusic_downloader/internal/transfer"
 	"github.com/Andrew05213/applemusic_downloader/internal/wrapperlite"
 )
 
@@ -33,6 +36,8 @@ type Client struct {
 	http                 *http.Client
 	port                 int
 	mediaGate            chan struct{}
+	batchGate            chan struct{}
+	batchCapability      atomic.Int32
 	pauseDownload        bool
 	downloadPaused       atomic.Bool
 }
@@ -60,6 +65,7 @@ func NewDownloadClient(port int, capability string) (*Client, error) {
 		return nil, err
 	}
 	client.pauseDownload = true
+	client.batchGate = make(chan struct{}, 3)
 	return client, nil
 }
 
@@ -70,21 +76,64 @@ func (c *Client) request(ctx context.Context, method, path string, body []byte, 
 	// Lite serializes these operations on one playback mutex. Admit them before
 	// starting the HTTP timeout, not after they are queued inside that mutex.
 	serialized := path == "/decrypt" || strings.HasPrefix(path, "/decrypt?") || strings.HasPrefix(path, "/m3u8?") || path == "/license"
-	pausable := c.pauseDownload && serialized && method != http.MethodDelete
+	batch := method == http.MethodPost && strings.HasPrefix(path, nativebatch.Path+"?")
+	pausable := c.pauseDownload && (serialized || batch) && method != http.MethodDelete
+	gate := c.mediaGate
+	if batch {
+		if c.batchGate == nil || !nativebatch.ValidRequest(body) {
+			return nil, ErrProtocol
+		}
+		gate = c.batchGate
+	}
 	if pausable && c.downloadPaused.Load() && ctx.Err() == nil {
 		return nil, nativeauth.ErrUnverified
 	}
-	if serialized {
+	var meter *transfer.Meter
+	if batch || method == http.MethodPost && strings.HasPrefix(path, "/decrypt?") {
+		meter = transfer.MeterFrom(ctx)
+	}
+	// Try the existing gate once: only a failed immediate acquisition counts as queued.
+	acquired := false
+	if meter != nil {
+		blocks := int64(1)
+		if batch {
+			blocks = int64(body[1])
+		}
+		meter.Request(blocks)
+		select {
+		case gate <- struct{}{}:
+			acquired = true
+		default:
+		}
+	}
+	if (serialized || batch) && !acquired {
+		var queuedAt time.Time
+		if meter != nil {
+			meter.Queued()
+			queuedAt = time.Now()
+		}
 		wait := time.NewTimer(2 * time.Minute)
 		defer wait.Stop()
 		select {
-		case c.mediaGate <- struct{}{}:
-			defer func() { <-c.mediaGate }()
+		case gate <- struct{}{}:
+			acquired = true
 		case <-ctx.Done():
+			if meter != nil {
+				meter.Wait(time.Since(queuedAt))
+			}
 			return nil, ctx.Err()
 		case <-wait.C:
+			if meter != nil {
+				meter.Wait(time.Since(queuedAt))
+			}
 			return nil, &MediaRequestError{Code: "native_media_queue_timeout"}
 		}
+		if meter != nil {
+			meter.Wait(time.Since(queuedAt))
+		}
+	}
+	if acquired {
+		defer func() { <-gate }()
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -104,6 +153,16 @@ func (c *Client) request(ctx context.Context, method, path string, body []byte, 
 	if stream != "" {
 		req.Header.Set("X-AMDL-Stream", stream)
 		req.Header.Set("Content-Type", "application/octet-stream")
+	}
+	if batch {
+		req.Header.Set("Content-Type", nativebatch.ContentType)
+		// The batch is stateful. Do not make its body available for replay.
+		req.GetBody = nil
+	}
+	if meter != nil {
+		meter.Send(batch)
+		start := time.Now()
+		defer func() { meter.Reply(time.Since(start)) }()
 	}
 	response, err := c.http.Do(req)
 	if err != nil {
@@ -136,6 +195,9 @@ func (c *Client) request(ctx context.Context, method, path string, body []byte, 
 		}
 		return nil, &MediaRequestError{Code: "native_media_http_failed", Status: response.StatusCode}
 	}
+	if batch && (response.StatusCode != http.StatusOK || response.Header.Get("Content-Type") != nativebatch.ContentType) {
+		return nil, ErrProtocol
+	}
 	result, err := io.ReadAll(io.LimitReader(response.Body, limit+1))
 	if err != nil {
 		if ctx.Err() != nil {
@@ -147,6 +209,24 @@ func (c *Client) request(ctx context.Context, method, path string, body []byte, 
 		return nil, ErrProtocol
 	}
 	return result, nil
+}
+func (c *Client) Processing(ctx context.Context) (processing.Snapshot, error) {
+	var s processing.Snapshot
+	raw, err := c.request(ctx, "GET", "/diagnostics/processing", nil, "", 65536)
+	if err != nil {
+		return s, err
+	}
+	if json.Unmarshal(raw, &s) != nil || s.Streams == nil || uint64(len(s.Streams)) != min(s.Seen, uint64(processing.Limit)) {
+		return processing.Snapshot{}, ErrProtocol
+	}
+	for _, v := range s.Streams {
+		switch v.End {
+		case "close", "idle", "failure", "shutdown":
+		default:
+			return processing.Snapshot{}, ErrProtocol
+		}
+	}
+	return s, nil
 }
 func snapshot(raw []byte) (nativeauth.Snapshot, error) {
 	var legacy struct {

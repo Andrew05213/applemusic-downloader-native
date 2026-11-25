@@ -78,7 +78,7 @@ func (e *Engine) execute(ctx context.Context, job Job, sink JobEventSink) (JobRe
 	attempts := make(map[string]int)
 	for _, item := range job.Items {
 		attempts[item.SourceID] = item.Attempt
-		items[item.SourceID] = JobItemInput{SourceID: item.SourceID, Name: item.Name, Status: item.Status, ErrorCode: item.ErrorCode, ErrorMessage: item.ErrorMessage, RelativePath: item.RelativePath, Attempt: item.Attempt}
+		items[item.SourceID] = JobItemInput{SourceID: item.SourceID, Name: item.Name, Status: item.Status, ErrorCode: item.ErrorCode, ErrorMessage: item.ErrorMessage, RelativePath: item.RelativePath, Attempt: item.Attempt, Timing: item.Timing}
 	}
 	merge := func(input JobItemInput) JobItemInput {
 		if attempts[input.SourceID] < 1 {

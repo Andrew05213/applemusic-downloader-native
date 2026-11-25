@@ -39,23 +39,24 @@ func KnownDeviceLoginEvent(event string) bool {
 }
 
 type StageEvent struct {
-	TraceID                string `json:"traceId"`
-	Seq                    uint64 `json:"seq"`
-	Attempt                uint64 `json:"attempt"`
-	At                     int64  `json:"at"`
-	Stage                  string `json:"stage"`
-	Outcome                string `json:"outcome"`
-	Code                   string `json:"code,omitempty"`
-	HTTPStatus             int    `json:"httpStatus,omitempty"`
-	AppleErrorCode         string `json:"appleErrorCode,omitempty"`
-	ExitCode               *uint8 `json:"exitCode,omitempty"`
-	ExitSignal             uint8  `json:"exitSignal,omitempty"`
-	StoreResponseType      *uint8 `json:"storeResponseType,omitempty"`
-	StoreErrorCode         *int32 `json:"storeErrorCode,omitempty"`
-	StoreExternalErrorCode *int64 `json:"storeExternalErrorCode,omitempty"`
-	StoreProtocolErrorCode *int64 `json:"storeProtocolErrorCode,omitempty"`
-	StoreAuthStatus        *int32 `json:"storeAuthStatus,omitempty"`
-	LoginEvent             string `json:"loginEvent,omitempty"`
+	TraceID                string                `json:"traceId"`
+	Seq                    uint64                `json:"seq"`
+	Attempt                uint64                `json:"attempt"`
+	At                     int64                 `json:"at"`
+	Stage                  string                `json:"stage"`
+	Outcome                string                `json:"outcome"`
+	Code                   string                `json:"code,omitempty"`
+	HTTPStatus             int                   `json:"httpStatus,omitempty"`
+	AppleErrorCode         string                `json:"appleErrorCode,omitempty"`
+	ExitCode               *uint8                `json:"exitCode,omitempty"`
+	ExitSignal             uint8                 `json:"exitSignal,omitempty"`
+	StoreResponseType      *uint8                `json:"storeResponseType,omitempty"`
+	StoreErrorCode         *int32                `json:"storeErrorCode,omitempty"`
+	StoreExternalErrorCode *int64                `json:"storeExternalErrorCode,omitempty"`
+	StoreProtocolErrorCode *int64                `json:"storeProtocolErrorCode,omitempty"`
+	StoreAuthStatus        *int32                `json:"storeAuthStatus,omitempty"`
+	LoginEvent             string                `json:"loginEvent,omitempty"`
+	TokenDiagnostic        *LoginTokenDiagnostic `json:"tokenDiagnostic,omitempty"`
 }
 type Diagnostics struct {
 	Events      []StageEvent `json:"events"`
@@ -112,6 +113,9 @@ func KnownCode(code string) bool {
 	return knownLegacyAuthCode(code)
 }
 func validEventFields(e StageEvent) bool {
+	if !validLoginTokenEvent(e) {
+		return false
+	}
 	if !KnownStage(e.Stage) || (e.Code != "" && !KnownCode(e.Code)) || (e.HTTPStatus != 0 && (e.HTTPStatus < 100 || e.HTTPStatus > 599)) || (e.AppleErrorCode != "" && !KnownAppleErrorCode(e.AppleErrorCode)) {
 		return false
 	}
@@ -172,8 +176,18 @@ func cloneDiagnostics(d *Diagnostics) *Diagnostics {
 	}
 	c := *d
 	c.Events = append([]StageEvent{}, d.Events...)
+	for i := range c.Events {
+		if c.Events[i].TokenDiagnostic != nil {
+			detail := *c.Events[i].TokenDiagnostic
+			c.Events[i].TokenDiagnostic = &detail
+		}
+	}
 	if d.LastFailure != nil {
 		e := *d.LastFailure
+		if e.TokenDiagnostic != nil {
+			detail := *e.TokenDiagnostic
+			e.TokenDiagnostic = &detail
+		}
 		c.LastFailure = &e
 	}
 	return &c

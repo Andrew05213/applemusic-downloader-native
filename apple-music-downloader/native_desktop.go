@@ -220,6 +220,16 @@ func (n *nativeDesktop) routes(capability string) *mux.Router {
 		writeJSON(w, 200, map[string]any{"runtime": n.control.Snapshot(), "session": n.session(r.Context()), "downloadDirectory": n.downloadDirectory(r.Context()), "native": true})
 	}).Methods("GET")
 	router.HandleFunc("/api/native/download-directory", n.setDownloadDirectory).Methods(http.MethodPut)
+	router.HandleFunc("/api/native/processing", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		if agent, err := n.control.Agent(); err == nil {
+			if s, err := agent.Processing(r.Context()); err == nil {
+				writeJSON(w, 200, s)
+				return
+			}
+		}
+		writeAPIError(w, 503, "processing_unavailable", "处理耗时暂不可用", "请检查服务状态")
+	}).Methods(http.MethodGet)
 	router.HandleFunc("/api/native/interaction", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
 		q, err := n.control.Interaction(r.Context())
@@ -278,7 +288,16 @@ func (n *nativeDesktop) routes(capability string) *mux.Router {
 				}
 			}
 			if err != nil {
-				writeAPIError(w, 503, "native_session_operation_failed", "暂时无法完成此操作", "检查服务后重试")
+				failure := apiError{Code: "native_session_operation_failed", Message: "暂时无法完成此操作", Action: "检查服务后重试"}
+				if action == "retry" {
+					// Include the same typed runtime state used by status polling.
+					writeJSON(w, http.StatusServiceUnavailable, struct {
+						Error   apiError            `json:"error"`
+						Runtime nativeruntime.State `json:"runtime"`
+					}{failure, n.control.Snapshot()})
+				} else {
+					writeJSON(w, http.StatusServiceUnavailable, apiErrorEnvelope{Error: failure})
+				}
 				return
 			}
 			writeJSON(w, 200, state)
@@ -295,7 +314,14 @@ func (n *nativeDesktop) routes(capability string) *mux.Router {
 // WSL state or browser sessions. Its parent sends one local API capability.
 func runNativeDesktop(args []string, input io.Reader, output io.Writer) int {
 	if err := serveNativeDesktop(args, input, output); err != nil {
-		_ = json.NewEncoder(output).Encode(map[string]any{"nativeServer": false, "code": "native_server_failed"})
+		code := "native_server_failed"
+		switch err.Error() {
+		case "native_arguments_invalid", "native_parent_required", "native_parent_invalid", "native_parent_unavailable",
+			"native_bundle_missing", "native_bundle_invalid", "native_directory_unavailable",
+			"native_job_store_unavailable", "native_queue_unavailable", "native_queue_in_use", "native_api_unavailable":
+			code = err.Error()
+		}
+		_ = json.NewEncoder(output).Encode(map[string]any{"nativeServer": false, "code": code})
 		return 1
 	}
 	return 0
@@ -333,12 +359,17 @@ func serveNativeDesktop(args []string, input io.Reader, output io.Writer) error 
 	// hashing/copying. Controller.Start performs the single full validation
 	// before executing any guest; this descriptor exposes no executable paths.
 	bundle, err := nativeruntime.ReadBundleInfo(ctx, *manifest)
+	if errors.Is(err, nativeruntime.ErrBundleMissing) {
+		return err
+	}
 	if err != nil || bundle.ControlProtocol != 1 {
 		return errors.New("native_bundle_invalid")
 	}
 	Config = runtimeconfig.Defaults()
 	resolvedConfigPath = ""
-	if os.MkdirAll(*data, 0700) != nil || os.MkdirAll(*destination, 0755) != nil {
+	// The output location can be redirected or offline. The download worker
+	// creates its selected directory on demand; startup only needs app data.
+	if os.MkdirAll(*data, 0700) != nil {
 		return errors.New("native_directory_unavailable")
 	}
 	_ = os.Setenv("AMDL_DOWNLOAD_DIR", *destination)
@@ -352,13 +383,16 @@ func serveNativeDesktop(args []string, input io.Reader, output io.Writer) error 
 	}
 	if err = store.initializeNativeDirectories(ctx, *destination); err != nil {
 		_ = store.Close()
-		return errors.New("native_directory_unavailable")
+		return errors.New("native_job_store_unavailable")
 	}
 	engine, _ := NewEngine(native.executor(*destination), 2)
 	engine.waitForSession = native.waitForDownloadSession
 	native.manager, err = newServerJobManager(ctx, store, engine)
 	if err != nil {
 		_ = store.Close()
+		if errors.Is(err, errWorkerLeaseHeld) {
+			return errors.New("native_queue_in_use")
+		}
 		return errors.New("native_queue_unavailable")
 	}
 	defer closeServerResources(cancel, native.manager, store.Close)

@@ -449,6 +449,11 @@
     } finally {resolvingJobName=false;}
   }
   const downloadFailures = {
+    catalog_track_missing:'资料库有这首曲目，但未返回对应的 Apple Music 目录 ID。',
+    track_source_missing:'歌单条目缺少曲目标识，无法识别这首曲目。',
+    track_type_unsupported:'此歌单条目不是支持下载的歌曲或音乐视频。',
+    duplicate_track:'歌单中已有同一目录曲目，本条已跳过。',
+    playlist_no_downloadable_tracks:'未找到可下载的曲目，具体原因见下方各条目。',
     session_verification_pending:'Music 会话未完成复验。可重试未完成曲目。',
     license_failed:'解密许可获取失败。请重新验证会话，并检查该资源的地区与订阅权限。',
     session_rejected:'授权被拒绝（HTTP 401）。请到设置中重新验证或登录。',
@@ -643,7 +648,7 @@
     card.querySelector('.job-failure').textContent=['failed','partial','interrupted'].includes(job.status)?(job.errorCode&&job.errorCode!=='execution_failed'?downloadFailure(job):failedItems.length?downloadFailure(failedItems[0]):downloadFailure(job)):'';
     if (card.itemsSignature !== signature) {
       const scroll = items.scrollTop; items.replaceChildren();
-      for (const item of job.items || []) {const paused=waitingForSession&&item.status==='interrupted'&&item.errorCode==='session_verification_pending';const row=node('li',(item.name||item.sourceId)+' · '+(paused?'等待会话恢复':statusNames[item.status]||item.status));if(['failed','unavailable','interrupted'].includes(item.status))row.append(node('p',paused?'恢复后自动续跑未完成的曲目。':downloadFailure(item),'job-item-failure'));items.append(row);}
+      for (const item of job.items || []) {const paused=waitingForSession&&item.status==='interrupted'&&item.errorCode==='session_verification_pending';const row=node('li',(item.name||item.sourceId)+' · '+(paused?'等待会话恢复':statusNames[item.status]||item.status));if(['failed','unavailable','interrupted'].includes(item.status)||(item.status==='skipped'&&item.errorCode==='duplicate_track'))row.append(node('p',paused?'恢复后自动续跑未完成的曲目。':downloadFailure(item),'job-item-failure'));items.append(row);}
       items.hidden = !job.items?.length; items.scrollTop = scroll; card.itemsSignature = signature;
     }
     // Preserve the actual button nodes across polling, including pointer-down

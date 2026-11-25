@@ -1,6 +1,6 @@
 # Apple Music Downloader Native installation notes
 
-Version: 1.0.5-beta.3. Windows prerelease. Third-party rights and corresponding-source review remain incomplete.
+Version: 1.0.5-beta.6. Windows preview build; not the current stable release. Third-party rights and corresponding-source review remain incomplete.
 
 Original project-authored code and modifications the maintainer has the right
 to license are licensed under Apache-2.0; see the included LICENSE and NOTICE.
@@ -21,8 +21,8 @@ consistent bit-depth descriptions, complete audio sample tables, cover/lyrics/ta
 preservation and weighted download progress. It does not silently repair old
 downloads; choose overwrite or a different directory when downloading them again.
 
-The bundled Wrapper Lite source uses Andrew05213/wrapper (work), pinned to
-80dcaa1bc6cc88e41f1d6bb16d0cc9a241d4bca3. Published 1.0.4 binaries
+This diagnostic build uses Andrew05213/wrapper (PR #1), pinned to
+cf49336933543cb0e2ca6bd63acdfce3ee7aaa0b. Published 1.0.4 binaries
 retain their original b2bebc3 pin. It is derived from
 WorldObservationLog/wrapper; its upstream MIT notice is retained.
 QEMU notice texts and runtime provenance are retained. Linux/BusyBox complete

@@ -985,6 +985,10 @@ func ripTrackContext(ctx context.Context, track *task.Track, token string, media
 	}
 	ctx, finishTransferItem := transfer.BeginItem(ctx, itemSourceID)
 	defer finishTransferItem()
+	var meter *transfer.Meter
+	if nativeDownloadClient != nil {
+		ctx, meter = transfer.WithMeter(ctx)
+	}
 	// Track downloads run concurrently. Keep all per-track accounting local and
 	// merge it once at the end so workers never race on the process-wide summary.
 	counter := structs.Counter{}
@@ -999,7 +1003,7 @@ func ripTrackContext(ctx context.Context, track *task.Track, token string, media
 			status = JobItemStatusInterrupted
 		}
 		transfer.Complete(ctx, string(status))
-		item := JobItemInput{SourceID: itemSourceID, Name: name, Status: status}
+		item := JobItemInput{SourceID: itemSourceID, Name: name, Status: status, Timing: meter.Snapshot()}
 		if status == JobItemStatusFailed || status == JobItemStatusInterrupted {
 			item.ErrorCode, item.ErrorMessage = downloadItemDiagnostic(stage, failureErr)
 		} else if status == JobItemStatusUnavailable {

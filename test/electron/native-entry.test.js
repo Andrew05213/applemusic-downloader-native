@@ -10,6 +10,21 @@ function ipcFixture(apiOverride,savePath) {
  frame.url=vm.runInContext('loginURL',context);return {handlers,requests,event:{sender:webContents,senderFrame:frame},context};
 }
 
+test('export includes only numeric Lite phase summaries, separate from jobs',async t=>{
+ const d=fs.mkdtempSync(path.join(os.tmpdir(),'lite-metrics-'));t.after(()=>fs.rmSync(d,{recursive:true,force:true}));
+ const file=path.join(d,'export.txt'),g={requests:2,bytes:128,completed_bytes:128,wait_ns:1,create_ns:2,copy_ns:3,sdk_ns:4,held_ns:10,bytes_per_second:20,raw:'PRIVATE'};
+ const data={seen:1,streams:[{end:'close',first:{...g,sdk_calls:2},reuse:g,transport_requests:1,streamID:'PRIVATE'}]};
+ const f=ipcFixture(async target=>target==='/api/native/processing'?data:{jobs:[]},file);
+ await f.handlers.get('native:export-diagnostics')(f.event);
+ const raw=fs.readFileSync(file,'utf8');assert.doesNotMatch(raw,/PRIVATE/);
+ const s=JSON.parse(raw).liteProcessing;assert.equal(s.available,true);assert.equal(s.streams[0].first.sdk_ns,4);assert.equal(s.streams[0].first.sdk_calls,2);assert.equal(s.streams[0].transport_requests,1);assert.equal(s.omitted,0);
+ const {safeLiteProcessing}=require('../../electron/native-diagnostics');
+ assert.equal(safeLiteProcessing({seen:0,streams:[]}).available,true);
+ assert.equal(safeLiteProcessing(undefined).available,false);
+ assert.equal(safeLiteProcessing({seen:1,streams:[]}).available,false);
+ assert.equal(safeLiteProcessing({seen:1,streams:[{end:'close',first:{},reuse:g}]}).available,false);
+});
+
 test('actual export IPC retains the last failure after cancel and guest reset',async t=>{
  const vm=require('node:vm');const {DiagnosticJournal}=require('../../electron/native-diagnostics');const dir=fs.mkdtempSync(path.join(os.tmpdir(),'native-export-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));const destination=path.join(dir,'export.txt');
  const f=ipcFixture(async target=>target==='/api/native/state'?{runtime:{phase:'ready',authState:'needs_login'},session:{state:'needs_login'}}:{state:'needs_login',code:'native_auth_cancelled'},destination);
@@ -30,6 +45,96 @@ test('actual export IPC retains specific finish response code and HTTP 200',asyn
  await f.handlers.get('native:cancel-login')(f.event);await f.handlers.get('native:export-diagnostics')(f.event);
  const out=JSON.parse(fs.readFileSync(destination));assert.equal(out.diagnostics.lastFailure.stage,'adi_provision_finish');assert.equal(out.diagnostics.lastFailure.code,'native_adi_plist_integer_range');assert.equal(out.diagnostics.lastFailure.httpStatus,200);assert.doesNotMatch(fs.readFileSync(destination,'utf8'),/SENTINEL/);
  assert.equal(new DiagnosticJournal(path.join(dir,'auth-diagnostics.json')).snapshot().lastFailure.code,'native_adi_plist_integer_range');
+});
+
+test('actual export retains redacted token diagnostic after closing login and reloading journal',async t=>{
+ const vm=require('node:vm');const {DiagnosticJournal}=require('../../electron/native-diagnostics');
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'native-token-export-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+ const destination=path.join(dir,'export.txt'),journalFile=path.join(dir,'auth-diagnostics.json');
+ const f=ipcFixture(async target=>target==='/api/native/state'
+  ?{runtime:{phase:'ready',authState:'needs_login'},session:{state:'needs_login'}}
+  :{state:'needs_login',code:'native_auth_cancelled'},destination);
+ const base={traceId:'c'.repeat(32),attempt:4,at:Date.now(),stage:'device_login'};
+ const detail={stage:'developer_token',reason:'developer_token_fetch_failed',attempt:5,usedCache:false,httpStatus:200};
+ const failed={...base,seq:8,outcome:'failed',code:'native_login_token_cache_failed',exitCode:1,
+  tokenDiagnostic:{...detail,token:'SENTINEL_TOKEN',body:'SENTINEL_BODY'}};
+ f.context.fixtureWindow.close=()=>{};
+ f.context.fixtureJournal=new DiagnosticJournal(journalFile);
+ f.context.fixtureFailure={state:'needs_login',stage:'device_login',code:'native_login_failed',diagnostics:{events:[
+  {...base,seq:6,outcome:'waiting',tokenDiagnostic:{...detail,httpStatus:800}},
+  {...base,seq:7,outcome:'waiting',tokenDiagnostic:{stage:'music_token_fallback',reason:'cache_fallback_used',attempt:2,usedCache:true,httpStatus:403}},
+  failed,
+ ],lastFailure:failed}};
+ vm.runInContext('journal=fixtureJournal; observe(fixtureFailure);',f.context);
+ await f.handlers.get('native:cancel-login')(f.event);
+ f.context.fixtureJournal=new DiagnosticJournal(journalFile);
+ vm.runInContext('journal=fixtureJournal;',f.context);
+ await f.handlers.get('native:export-diagnostics')(f.event);
+ const raw=fs.readFileSync(destination,'utf8'),out=JSON.parse(raw);
+ assert.equal(out.diagnostics.lastFailure.code,'native_login_token_cache_failed');
+ assert.deepEqual(out.diagnostics.lastFailure.tokenDiagnostic,detail);
+ assert.equal(out.diagnostics.events.some(e=>e.seq===6&&e.traceId===base.traceId),false);
+ assert.equal(out.diagnostics.events.find(e=>e.seq===7&&e.traceId===base.traceId).tokenDiagnostic.usedCache,true);
+ assert.doesNotMatch(raw,/SENTINEL/);
+});
+
+test('actual export includes bounded download reasons, never private job fields', async t=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'native-job-export-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+ const destination=path.join(dir,'export.txt');
+ const items=Array.from({length:70},()=>({status:'unavailable',errorCode:'catalog_track_missing',errorMessage:'PRIVATE',name:'PRIVATE',sourceId:'i.PRIVATE',relativePath:'PRIVATE'}));
+ items[1]={status:'failed',errorCode:'PRIVATE'};items[2]={status:'skipped',errorCode:'duplicate_track'};
+ const job={status:'partial',total:70,failed:1,unavailable:68,skipped:1,url:'PRIVATE',id:'PRIVATE',title:'PRIVATE',items};
+ const f=ipcFixture(async target=>target==='/api/v1/jobs?limit=8'?{jobs:[job]}:{runtime:{phase:'ready'},session:{state:'authenticated'}},destination);
+ await f.handlers.get('native:export-diagnostics')(f.event);
+ const raw=fs.readFileSync(destination,'utf8'), out=JSON.parse(raw);
+ assert.equal(out.downloadTasks.available,true);
+ const [entry]=out.downloadTasks.jobs;
+ assert.deepEqual(entry.reasons,{catalog_track_missing:68,unknown:1,duplicate_track:1});
+ assert.equal(entry.unavailable,68);assert.equal(entry.items.length,64);assert.equal(entry.omittedItems,6);
+ assert.deepEqual(entry.items[1],{position:2,status:'failed',reason:'unknown'});
+ assert.doesNotMatch(raw,/PRIVATE/);
+});
+
+test('task read failure does not erase the rest of the export or imply zero failed tracks',async t=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'native-job-unavailable-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+ const destination=path.join(dir,'export.txt');
+ const f=ipcFixture(async target=>{
+   if(target==='/api/v1/jobs?limit=8')throw new Error('PRIVATE');
+   return {runtime:{phase:'ready'},session:{state:'authenticated'}};
+ },destination);
+ await f.handlers.get('native:export-diagnostics')(f.event);
+ const raw=fs.readFileSync(destination,'utf8'),out=JSON.parse(raw);
+ assert.deepEqual(out.downloadTasks,{available:false});assert.equal(out.runtime.phase,'ready');assert.doesNotMatch(raw,/PRIVATE/);
+});
+
+test('timings include successful tracks, use only aggregate numbers and reject malformed metrics',()=>{
+ const {safeDownloadTasks}=require('../../electron/native-diagnostics');
+ const metrics={readMs:9,queueMs:50,replyMs:21,muxWriteMs:3,requests:9,queuedRequests:6,fragments:2,transportRequests:6,batchRequests:1};
+ const item={name:'SENTINEL',sourceId:'SENTINEL',status:'succeeded',timing:{...metrics,secret:'SENTINEL'}};
+ const [{trackTimings,omittedTimings}]=safeDownloadTasks({jobs:[{items:[item,{...item,timing:{...metrics,requests:-1}},...Array(1024).fill(item)]}]}).jobs;
+ assert.deepEqual(trackTimings[0],{position:1,...metrics});assert.equal(trackTimings[1].position,3);
+ assert.equal(trackTimings.length,1024);assert.equal(omittedTimings,1);assert.doesNotMatch(JSON.stringify(trackTimings),/SENTINEL/);
+});
+
+test('guest failure survives status polling, process shutdown and offline export without private fields', async t=>{
+ const vm=require('node:vm');const {DiagnosticJournal}=require('../../electron/native-diagnostics');const dir=fs.mkdtempSync(path.join(os.tmpdir(),'native-runtime-export-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));const destination=path.join(dir,'export.txt');
+ const guest={phase:'failed',stage:'runtime_boot',code:'native_guest_exited',processExitCode:0xc0000135,guestBootEvent:'data_mount_failed'};
+ const f=ipcFixture(async()=>({runtime:{...guest,stderr:'PRIVATE_STDERR'},session:{state:'unverified',token:'PRIVATE_TOKEN'}}),destination);
+ f.context.fixtureJournal=new DiagnosticJournal(path.join(dir,'auth-diagnostics.json'));
+ await vm.runInContext('journal=fixtureJournal; refresh()',f.context);
+ await vm.runInContext('refresh()',f.context);
+ await vm.runInContext('startupWindow=fixtureWindow;fixtureWindow.webContents.mainFrame.url=startupURL;service=undefined;',f.context);
+ await f.handlers.get('native:startup-export-diagnostics')(f.event);
+ const data=fs.readFileSync(destination,'utf8');
+ const out=JSON.parse(data);
+ assert.deepEqual(out.runtime,guest);
+ assert.deepEqual(out.downloadTasks,{available:false});
+ assert.equal(out.session.code,'native_guest_exited');
+ assert.equal(out.diagnostics.lastFailure.processExitCode,guest.processExitCode);
+ assert.equal(out.diagnostics.lastFailure.guestBootEvent,'data_mount_failed');
+ assert.equal(out.diagnostics.events.filter(event=>event.code==='native_guest_exited').length,1);
+ assert.equal(new DiagnosticJournal(f.context.fixtureJournal.file).snapshot().lastFailure.code,'native_guest_exited');
+ assert.doesNotMatch(data,/PRIVATE/);
 });
 
 test('retired SMS IPC is absent and login rejects its legacy method',async()=>{

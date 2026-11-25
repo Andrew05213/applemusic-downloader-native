@@ -135,6 +135,12 @@ func (r activityReadCloser) Read(p []byte) (int, error) {
 }
 
 func mediaTransferError(ctx context.Context, err error) error {
+	var requestErr *batchRequestError
+	if errors.As(err, &requestErr) {
+		// A simultaneous CDN idle deadline must not turn an uncertain batch
+		// outcome into the automatic retry path for network timeouts.
+		return err
+	}
 	if errors.Is(context.Cause(ctx), errMediaReadIdle) {
 		return fmt.Errorf("%w: %w", ErrMediaTransferStalled, context.DeadlineExceeded)
 	}
@@ -315,21 +321,24 @@ func RunContext(ctx context.Context, adamId string, playlistUrl string, outfile 
 	totalLen := mediaResponse.ContentLength
 	// connect to decryptor
 	transfer.Phase(ctx, "decrypting")
-	addr := Config.DecryptM3u8Port
-	conn, err := dialDecryptor(ctx, addr)
-	if err != nil {
-		return err
+	var decoder io.ReadWriter
+	if downloadBatchFrom(ctx) == nil {
+		conn, err := dialDecryptor(ctx, Config.DecryptM3u8Port)
+		if err != nil {
+			return err
+		}
+		timeout := decryptorIOTimeout
+		if native, ok := ctx.Value(decryptorContextKey{}).(decryptorOverride); ok {
+			timeout = native.timeout
+		}
+		boundedConn := deadlineConn{Conn: conn, timeout: timeout}
+		defer Close(boundedConn)
+		stopClosingConn := closeConnOnCancel(ctx, conn)
+		defer stopClosingConn()
+		decoder = boundedConn
 	}
-	timeout := decryptorIOTimeout
-	if native, ok := ctx.Value(decryptorContextKey{}).(decryptorOverride); ok {
-		timeout = native.timeout
-	}
-	boundedConn := deadlineConn{Conn: conn, timeout: timeout}
-	defer Close(boundedConn)
-	stopClosingConn := closeConnOnCancel(ctx, conn)
-	defer stopClosingConn()
 
-	err = downloadAndDecryptFileContext(ctx, boundedConn, body, outfile, adamId, segments, totalLen, Config)
+	err = downloadAndDecryptFileContext(ctx, decoder, body, outfile, adamId, segments, totalLen, Config)
 	if err != nil {
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -495,11 +504,26 @@ func downloadAndDecryptFileContext(ctx context.Context, conn io.ReadWriter, in i
 		}),
 	)
 	bar.Add64(int64(offset))
-	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
+	batch := downloadBatchFrom(ctx)
+	var rw *bufio.ReadWriter
+	if batch == nil {
+		rw = bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
+	}
+	var currentID, currentURI string
+	meter := transfer.MeterFrom(ctx)
+	var muxStart time.Time
+	// Include final flush, index finalization and file writes, including early errors.
+	defer func() {
+		if !muxStart.IsZero() {
+			meter.Mux(time.Since(muxStart))
+		}
+	}()
 	for i := 0; ; i++ {
 		var frag *mp4.Fragment
 		rawoffset := offset
+		readStart := time.Now()
 		frag, offset, err = ReadNextFragment(inBuf, offset)
+		meter.Fragment(time.Since(readStart), frag != nil && err == nil)
 		rawoffset = offset - rawoffset
 		if err != nil {
 			return err
@@ -524,29 +548,33 @@ func downloadAndDecryptFileContext(ctx context.Context, conn io.ReadWriter, in i
 		}
 		key := segment.Key
 		if key != nil {
-			if i != 0 {
-				if err := SwitchKeys(rw); err != nil {
-					return err
-				}
-			}
+			currentID, currentURI = adamId, key.URI
 			if key.URI == prefetchKey {
-				if err := SendString(rw, "0"); err != nil {
-					return err
-				}
-			} else {
-				if err := SendString(rw, adamId); err != nil {
-					return err
-				}
+				currentID = "0"
 			}
-			if err := SendString(rw, key.URI); err != nil {
-				return err
+			if rw != nil {
+				if i != 0 {
+					if err := SwitchKeys(rw); err != nil {
+						return err
+					}
+				}
+				if err := SendString(rw, currentID); err != nil {
+					return err
+				}
+				if err := SendString(rw, currentURI); err != nil {
+					return err
+				}
 			}
 		}
-		// flushes the buffer
-		err = DecryptFragment(frag, tracks, rw)
+		if batch != nil {
+			err = decryptDownloadFragment(ctx, frag, tracks, currentID, currentURI, batch)
+		} else {
+			err = DecryptFragment(frag, tracks, rw)
+		}
 		if err != nil {
 			return fmt.Errorf("decryptFragment: %w", err)
 		}
+		muxStart = time.Now()
 		if err := finalizer.Fragment(frag.Moof); err != nil {
 			return err
 		}
@@ -558,9 +586,12 @@ func downloadAndDecryptFileContext(ctx context.Context, conn io.ReadWriter, in i
 			return err
 		}
 		writtenOffset += frag.Size()
+		meter.Mux(time.Since(muxStart))
+		muxStart = time.Time{}
 		transfer.Processed(ctx, int64(offset), totalLen)
 		bar.Add64(int64(rawoffset))
 	}
+	muxStart = time.Now()
 	err = outBuf.Flush()
 	if err != nil {
 		return err
@@ -899,7 +930,7 @@ func cbcsDecryptRaw(data []byte, conn *bufio.ReadWriter, decryptBlockLen, skipBl
 }
 
 // Decrypt a cbcs-encrypted sample in-place
-func cbcsDecryptSample(sample []byte, conn *bufio.ReadWriter,
+func cbcsDecryptSample(sample []byte, decrypt func([]byte, int, int) error,
 	subSamplePatterns []mp4.SubSamplePattern, tenc *mp4.TencBox) error {
 
 	decryptBlockLen := int(tenc.DefaultCryptByteBlock) * 16
@@ -908,7 +939,7 @@ func cbcsDecryptSample(sample []byte, conn *bufio.ReadWriter,
 
 	// Full sample encryption
 	if len(subSamplePatterns) == 0 {
-		return cbcsDecryptRaw(sample, conn, decryptBlockLen, skipBlockLen)
+		return decrypt(sample, decryptBlockLen, skipBlockLen)
 	}
 
 	// Has subsamples
@@ -921,8 +952,10 @@ func cbcsDecryptSample(sample []byte, conn *bufio.ReadWriter,
 			continue
 		}
 
-		err := cbcsDecryptRaw(sample[pos:pos+ss.BytesOfProtectedData],
-			conn, decryptBlockLen, skipBlockLen)
+		if pos > uint32(len(sample)) || ss.BytesOfProtectedData > uint32(len(sample))-pos {
+			return errors.New("protected subsample exceeds sample")
+		}
+		err := decrypt(sample[pos:pos+ss.BytesOfProtectedData], decryptBlockLen, skipBlockLen)
 		if err != nil {
 			return err
 		}
@@ -933,15 +966,18 @@ func cbcsDecryptSample(sample []byte, conn *bufio.ReadWriter,
 }
 
 // Decrypt an array of cbcs-encrypted samples in-place
-func cbcsDecryptSamples(samples []mp4.FullSample, conn *bufio.ReadWriter,
+func cbcsDecryptSamples(samples []mp4.FullSample, decrypt func([]byte, int, int) error,
 	tenc *mp4.TencBox, senc *mp4.SencBox) error {
 
 	for i := range samples {
 		var subSamplePatterns []mp4.SubSamplePattern
 		if len(senc.SubSamples) != 0 {
+			if i >= len(senc.SubSamples) {
+				return errors.New("missing sample encryption pattern")
+			}
 			subSamplePatterns = senc.SubSamples[i]
 		}
-		err := cbcsDecryptSample(samples[i].Data, conn, subSamplePatterns, tenc)
+		err := cbcsDecryptSample(samples[i].Data, decrypt, subSamplePatterns, tenc)
 		if err != nil {
 			return err
 		}
@@ -950,6 +986,12 @@ func cbcsDecryptSamples(samples []mp4.FullSample, conn *bufio.ReadWriter,
 }
 
 func DecryptFragment(frag *mp4.Fragment, tracks map[uint32]mp4.DecryptTrackInfo, conn *bufio.ReadWriter) error {
+	return decryptFragment(frag, tracks, func(data []byte, crypt, skip int) error {
+		return cbcsDecryptRaw(data, conn, crypt, skip)
+	})
+}
+
+func decryptFragment(frag *mp4.Fragment, tracks map[uint32]mp4.DecryptTrackInfo, decrypt func([]byte, int, int) error) error {
 	moof := frag.Moof
 	var bytesRemoved uint64 = 0
 	var sxxxBytesRemoved uint64
@@ -997,7 +1039,7 @@ func DecryptFragment(frag *mp4.Fragment, tracks map[uint32]mp4.DecryptTrackInfo,
 			return err
 		}
 
-		err = cbcsDecryptSamples(samples, conn, ti.Sinf.Schi.Tenc, senc)
+		err = cbcsDecryptSamples(samples, decrypt, ti.Sinf.Schi.Tenc, senc)
 		if err != nil {
 			return err
 		}

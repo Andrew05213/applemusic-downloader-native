@@ -1,10 +1,12 @@
 'use strict';
 const { contextBridge, ipcRenderer } = require('electron');
-const copy = value => ({ phase: ['loading', 'failed', 'complete'].includes(value?.phase) ? value.phase : 'failed' });
+const copy = value => ({ phase: ['loading', 'failed', 'complete'].includes(value?.phase) ? value.phase : 'failed',
+  ...(value?.phase === 'failed' && ['version_mismatch', 'local_service'].includes(value.reason) ? {reason:value.reason} : {}) });
 contextBridge.exposeInMainWorld('nativeStartup', Object.freeze({
   getState: () => ipcRenderer.invoke('native:startup-state').then(copy),
   enter: () => ipcRenderer.invoke('native:startup-enter'),
   quit: () => ipcRenderer.invoke('native:startup-quit'),
+  exportDiagnostics: () => ipcRenderer.invoke('native:startup-export-diagnostics'),
   onState: callback => {
     if (typeof callback !== 'function') return () => {};
     const listener = (_event, value) => callback(copy(value));

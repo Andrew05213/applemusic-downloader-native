@@ -17,9 +17,11 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/Andrew05213/applemusic_downloader/internal/nativebatch"
 )
 
-const WrapperCommit = "80dcaa1bc6cc88e41f1d6bb16d0cc9a241d4bca3"
+const WrapperCommit = "a8fb29e78e078b4d73c07995af62410b1802fd31"
 
 var (
 	ErrBundleMissing  = errors.New("native_bundle_missing")
@@ -28,6 +30,7 @@ var (
 	ErrInvalidState   = errors.New("native_state_invalid")
 	ErrStateInUse     = errors.New("native_state_in_use")
 	ErrCancelled      = errors.New("native_operation_cancelled")
+	ErrPrepareTimeout = errors.New("native_runtime_prepare_timeout")
 	ErrGuestNotReady  = errors.New("native_guest_not_ready")
 	ErrGuestExited    = errors.New("native_guest_exited")
 	ErrProcessStart   = errors.New("native_process_start_failed")
@@ -280,16 +283,19 @@ func (b *Bundle) command(stateDir string, port int) Command {
 	if b.Isolated {
 		network += ",restrict=on"
 	}
-	command := Command{Path: asset(b.QEMU), Cwd: stateDir, Args: []string{
+	command := Command{Path: asset(b.QEMU), Cwd: stateDir, captureBoot: true, Args: []string{
 		"-L", inputs + "/firmware", "-accel", "tcg,tb-size=64", "-cpu", "max", "-m", "512", "-smp", "2",
 		"-kernel", inputs + "/kernel", "-initrd", inputs + "/initrd",
 		"-append", "console=ttyS0 quiet net.ifnames=0 biosdevname=0 lite_args_b64=" + base64.StdEncoding.EncodeToString([]byte(guestArgs)),
-		"-display", "none", "-serial", "null", "-monitor", "none", "-no-reboot",
+		"-display", "none", "-serial", "stdio", "-monitor", "none", "-no-reboot",
 		"-nic", network,
 		"-drive", "file=data.img,format=raw,if=virtio",
 	}}
 	if b.ControlProtocol == 1 {
 		command.Args = append(command.Args, "-fw_cfg", "name=opt/amdl/control,file=control.secret")
+		if os.Getenv(nativebatch.Environment) == "1" {
+			command.Args = append(command.Args, "-fw_cfg", "name=opt/amdl/lite-batch,string=1")
+		}
 	}
 	return command
 }

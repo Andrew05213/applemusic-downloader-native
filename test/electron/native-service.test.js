@@ -54,6 +54,56 @@ test('oversized bootstrap output fails closed before any receipt can be accepted
   child.emit('close', 0); await service.completion;
 });
 
+test('old backend fails immediately instead of waiting for the startup deadline', async () => {
+  const {child,service,receipt} = pendingService();
+  const failure = assert.rejects(service.ready, /^Error: native_service_version_mismatch$/);
+  child.stdout.write(JSON.stringify({nativeServer:true,version:'0.0.0',port:12345})+'\n');
+  await failure;
+  receipt();
+  assert.equal(service.origin, '');
+  assert.equal(child.stdin.writableEnded, true);
+  child.emit('close', 0);
+  await service.completion;
+});
+
+test('bootstrap preserves fixed failure receipts but does not surface arbitrary process output', async () => {
+  for (const [code, expected] of [['native_job_store_unavailable','native_job_store_unavailable'],['PRIVATE_STDOUT_SENTINEL','native_service_unavailable']]) {
+    const {child,service} = pendingService();
+    const failure = assert.rejects(service.ready, {message:expected});
+    child.stderr.write('PRIVATE_STDERR_SENTINEL');
+    child.stdout.write(JSON.stringify({nativeServer:false,code})+'\n');
+    await failure;
+    child.emit('close', -1073741515);
+    await service.completion;
+    assert.equal(service.exitCode, 0xc0000135);
+  }
+});
+
+test('state polling classifies connection failures and bounds unresponsive requests', async t => {
+  const {child,service,receipt}=pendingService();
+  t.after(()=>child.emit('close',0));
+  receipt();
+  await service.ready;
+  const response=t.mock.method(globalThis,'fetch',async()=>{throw new TypeError('private network details')});
+  await assert.rejects(service.api('/api/native/state'),{message:'native_api_connection_failed'});
+  response.mock.mockImplementation(async(_url,{signal})=>new Promise((_,reject)=>signal.addEventListener('abort',()=>reject(signal.reason),{once:true})));
+  await assert.rejects(service.api('/api/native/state',{},5),{message:'native_api_timeout'});
+});
+
+test('runtime retry keeps the failure snapshot on the error without accepting HTTP 503 as success', async t => {
+  const {child,service,receipt}=pendingService();
+  t.after(()=>child.emit('close',0));
+  receipt();
+  await service.ready;
+  const runtime={phase:'failed',stage:'runtime_bundle',code:'native_bundle_invalid'};
+  t.mock.method(globalThis,'fetch',async()=>Response.json({error:{code:'native_session_operation_failed'},runtime},{status:503}));
+  await assert.rejects(service.api('/api/native/retry',{method:'POST'}), error => {
+    assert.equal(error.message,'native_session_operation_failed');
+    assert.deepEqual(error.runtime,runtime);
+    return true;
+  });
+});
+
 test('native service uses fixed argv, stdin capability, private headers and complete receipts', async (t) => {
   let token; let call;
   const server = http.createServer((req, res) => {

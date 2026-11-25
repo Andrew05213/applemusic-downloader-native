@@ -1,5 +1,37 @@
 package ampapi
 
+import "strings"
+
+// TrackPlayParams keeps Apple Music's library identity separate from its catalog identity.
+type TrackPlayParams struct {
+	ID        string `json:"id"`
+	Kind      string `json:"kind,omitempty"`
+	CatalogID string `json:"catalogId,omitempty"`
+	IsLibrary bool   `json:"isLibrary,omitempty"`
+}
+
+func (p TrackPlayParams) CatalogTrackID(resourceType string) string {
+	expected := ""
+	switch resourceType {
+	case BrowseKindSongs:
+		expected = "song"
+	case BrowseKindMusicVideos:
+		expected = "music-video"
+	default:
+		return ""
+	}
+	if p.Kind != "" && p.Kind != expected {
+		return ""
+	}
+	if id := strings.TrimSpace(p.CatalogID); ValidCatalogNumericID(id) {
+		return id
+	}
+	if id := strings.TrimSpace(p.ID); !p.IsLibrary && ValidCatalogNumericID(id) {
+		return id
+	}
+	return ""
+}
+
 type TrackResp struct {
 	Href string          `json:"href"`
 	Next string          `json:"next"`
@@ -32,24 +64,21 @@ type TrackRespData struct {
 		ExtendedAssetUrls struct {
 			EnhancedHls string `json:"enhancedHls"`
 		} `json:"extendedAssetUrls"`
-		HasTimeSyncedLyrics  bool     `json:"hasTimeSyncedLyrics"`
-		IsMasteredForItunes  bool     `json:"isMasteredForItunes"`
-		IsAppleDigitalMaster bool     `json:"isAppleDigitalMaster"`
-		ContentRating        string   `json:"contentRating"`
-		DurationInMillis     int      `json:"durationInMillis"`
-		ReleaseDate          string   `json:"releaseDate"`
-		Name                 string   `json:"name"`
-		Isrc                 string   `json:"isrc"`
-		AudioTraits          []string `json:"audioTraits"`
-		HasLyrics            bool     `json:"hasLyrics"`
-		AlbumName            string   `json:"albumName"`
-		PlayParams           struct {
-			ID   string `json:"id"`
-			Kind string `json:"kind"`
-		} `json:"playParams"`
-		TrackNumber  int    `json:"trackNumber"`
-		AudioLocale  string `json:"audioLocale"`
-		ComposerName string `json:"composerName"`
+		HasTimeSyncedLyrics  bool            `json:"hasTimeSyncedLyrics"`
+		IsMasteredForItunes  bool            `json:"isMasteredForItunes"`
+		IsAppleDigitalMaster bool            `json:"isAppleDigitalMaster"`
+		ContentRating        string          `json:"contentRating"`
+		DurationInMillis     int             `json:"durationInMillis"`
+		ReleaseDate          string          `json:"releaseDate"`
+		Name                 string          `json:"name"`
+		Isrc                 string          `json:"isrc"`
+		AudioTraits          []string        `json:"audioTraits"`
+		HasLyrics            bool            `json:"hasLyrics"`
+		AlbumName            string          `json:"albumName"`
+		PlayParams           TrackPlayParams `json:"playParams"`
+		TrackNumber          int             `json:"trackNumber"`
+		AudioLocale          string          `json:"audioLocale"`
+		ComposerName         string          `json:"composerName"`
 	} `json:"attributes"`
 	Relationships struct {
 		Catalog struct {

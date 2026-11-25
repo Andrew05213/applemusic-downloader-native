@@ -15,6 +15,7 @@ import (
 
 	"github.com/Andrew05213/applemusic_downloader/internal/guestagent"
 	"github.com/Andrew05213/applemusic_downloader/internal/nativeauth"
+	"github.com/Andrew05213/applemusic_downloader/internal/nativebatch"
 )
 
 func run() error {
@@ -46,6 +47,16 @@ func run() error {
 	handler, err := guestagent.NewServer(ctx, capability, session, runner.Proxy, cancel)
 	if err != nil {
 		return err
+	}
+	handler.Processing = &runner.Processing
+	if os.Getenv(nativebatch.Environment) == "1" {
+		// Never register Lite's batch routes without the live guest verifier.
+		if gateway, err := guestagent.ListenBatchGateway(ctx, session); err == nil {
+			handler.Batch = gateway
+			runner.EnableBatch = true
+		} else {
+			_, _ = os.Stderr.WriteString("native_batch_gateway_unavailable\n")
+		}
 	}
 	server := &http.Server{Addr: "0.0.0.0:12340", Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 35 * time.Second, WriteTimeout: 90 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 8192}
 	done := make(chan error, 1)

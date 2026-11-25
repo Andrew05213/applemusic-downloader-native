@@ -341,6 +341,30 @@ func TestControllerRejectsOccupiedPortBeforeCreatingState(t *testing.T) {
 }
 
 func TestControllerFailureAndCancellation(t *testing.T) {
+	t.Run("prepare timeout", func(t *testing.T) {
+		c := testController(t)
+		c.port = freePort(t)
+		c.prepareTimeout = 0
+		if err := c.Start(context.Background()); !errors.Is(err, ErrPrepareTimeout) {
+			t.Fatalf("preparation: %v", err)
+		}
+		s := c.Snapshot()
+		if s.Stage != "runtime_bundle" || s.Code != ErrPrepareTimeout.Error() {
+			t.Fatalf("wrong preparation failure: %+v", s)
+		}
+	})
+	t.Run("boot has its own deadline", func(t *testing.T) {
+		c := testController(t)
+		c.port = freePort(t)
+		start := c.start
+		c.start = func(cmd Command) (Process, error) {
+			time.Sleep(c.readyTimeout + 10*time.Millisecond)
+			return start(cmd)
+		}
+		if err := c.Start(context.Background()); err != nil {
+			t.Fatalf("preparation and launch consumed boot readiness budget: %v", err)
+		}
+	})
 	t.Run("timeout", func(t *testing.T) {
 		c := testController(t)
 		c.probe = fakeStatus(func(context.Context) (wrapperlite.Status, error) {
@@ -349,7 +373,7 @@ func TestControllerFailureAndCancellation(t *testing.T) {
 		if err := c.Start(context.Background()); !errors.Is(err, ErrGuestNotReady) {
 			t.Fatalf("got %v", err)
 		}
-		if c.Snapshot().Phase != "failed" {
+		if s := c.Snapshot(); s.Phase != "failed" || s.Stage != "runtime_boot" {
 			t.Fatal("not failed")
 		}
 	})

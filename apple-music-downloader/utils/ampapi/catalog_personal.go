@@ -21,14 +21,14 @@ func normalizeLibraryBrowseTrack(region string, raw browseRawResource) (BrowseRe
 		return BrowseResource{}, ErrBrowseSchema
 	}
 	id := ""
-	if len(raw.Relationships.Catalog.Data) > 0 {
-		entry := raw.Relationships.Catalog.Data[0]
-		if entry.Type == kind && browseID(kind, entry.ID) {
-			id = entry.ID
+	for _, entry := range raw.Relationships.Catalog.Data {
+		if candidate := strings.TrimSpace(entry.ID); entry.Type == kind && ValidCatalogNumericID(candidate) {
+			id = candidate
+			break
 		}
 	}
-	if id == "" && browseID(kind, raw.Attributes.PlayParams.ID) {
-		id = raw.Attributes.PlayParams.ID
+	if id == "" {
+		id = raw.Attributes.PlayParams.CatalogTrackID(kind)
 	}
 	if id == "" && raw.Type == kind && browseID(kind, raw.ID) {
 		id = raw.ID
@@ -48,7 +48,7 @@ func normalizeLibraryBrowseTrack(region string, raw browseRawResource) (BrowseRe
 	raw.Type, raw.ID = kind, id
 	// A library playParam alone never becomes a playback library ID. Only the
 	// validated catalog identity is eligible for the existing download chain.
-	raw.Attributes.PlayParams.ID = id
+	raw.Attributes.PlayParams = TrackPlayParams{ID: id}
 	item, err := normalizeBrowseResource(region, raw)
 	item.SourceID = source
 	return item, err

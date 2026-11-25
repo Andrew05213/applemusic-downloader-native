@@ -18,15 +18,18 @@ import (
 	"time"
 
 	"github.com/Andrew05213/applemusic_downloader/internal/nativeauth"
+	"github.com/Andrew05213/applemusic_downloader/internal/nativebatch"
 )
 
 type LiteRunner struct {
+	Processing             ProcessingHistory
 	mu                     sync.Mutex
 	base, binary, endpoint string
 	client                 *http.Client
 	service                *exec.Cmd
 	done                   chan struct{}
 	env, prefix            []string
+	EnableBatch            bool // set before serving; never used by login helpers
 }
 
 func NewLiteRunner(base string) *LiteRunner {
@@ -81,8 +84,11 @@ func (r *LiteRunner) StartService(ctx context.Context) error {
 		}
 	}
 	cmd := r.command("--native-service", "--base-dir", r.base, "--host", "127.0.0.1", "--port", "12341")
+	if r.EnableBatch {
+		cmd.Env = append(cmd.Env, nativebatch.Environment+"=1")
+	}
 	cmd.Stdout = io.Discard
-	cmd.Stderr = io.Discard
+	cmd.Stderr = &summaryWriter{history: &r.Processing}
 	if cmd.Start() != nil {
 		return nativeauth.ErrUnverified
 	}
@@ -303,7 +309,9 @@ func (r *LiteRunner) loginInput(ctx context.Context, input any, codes <-chan str
 	scanner.Buffer(make([]byte, 4096), nativeauth.MaxInteractionBytes)
 	valid := true
 	var failure nativeauth.StageEvent
+	var tokenFailure *nativeauth.LoginTokenDiagnostic
 	eventCount := 0
+	tokenEventCount := 0
 	for scanner.Scan() {
 		if strings.HasPrefix(scanner.Text(), "AMDL_NATIVE_INTERACTION:") {
 			q, err := nativeauth.DecodeInteraction(strings.TrimPrefix(scanner.Text(), "AMDL_NATIVE_INTERACTION:"))
@@ -357,6 +365,15 @@ func (r *LiteRunner) loginInput(ctx context.Context, input any, codes <-chan str
 		if event, ok := decodeLiteLoginFailure(scanner.Text()); ok && failure.Code == "" {
 			failure = event
 		}
+		if !storeBinding && failure.Code == "" && tokenEventCount < 64 {
+			if detail, ok := decodeLiteTokenDiagnostic(scanner.Text()); ok {
+				tokenEventCount++
+				nativeauth.ReportEvent(ctx, nativeauth.StageEvent{
+					Stage: "device_login", Outcome: "waiting", TokenDiagnostic: &detail,
+				})
+				tokenFailure = updateLiteTokenFailure(tokenFailure, &detail)
+			}
+		}
 		if scanner.Text() != `AMDL_NATIVE_EVENT:{"type":"two_factor_required"}` {
 			continue
 		}
@@ -398,6 +415,9 @@ func (r *LiteRunner) loginInput(ctx context.Context, input any, codes <-chan str
 	if !valid || waitErr != nil {
 		if !valid && failure.Code == "" {
 			failure.Code = "native_login_protocol_failed"
+		}
+		if valid && waitErr != nil && failure.Code == "native_login_token_cache_failed" {
+			failure.TokenDiagnostic = tokenFailure
 		}
 		recordLiteLoginFailure(ctx, failure, waitErr, storeBinding)
 		return nativeauth.ErrLoginFailed

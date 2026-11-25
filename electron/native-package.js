@@ -1,6 +1,6 @@
 'use strict';
 const fs=require('node:fs');const path=require('node:path');const crypto=require('node:crypto');
-const {makeManifest}=require('./build-native-runtime');const {VERSION}=require('./native-version');
+const {makeManifest,guestSourceInventory}=require('./build-native-runtime');const {VERSION}=require('./native-version');
 const ROOT=path.resolve(__dirname,'..');const ELECTRON='45.0.0';
 const UI_FILES=['src/main/native-main.js','src/preload/native-preload.js','src/preload/native-startup-preload.js','src/renderer/native-startup.html','src/renderer/native-startup.js','src/renderer/native-startup.css','src/renderer/native-index.html','src/renderer/native-login.html','src/renderer/native-login.js','src/renderer/native-renderer.js','src/renderer/native-stream.js','src/renderer/native.css','src/renderer/native-shell.css','electron/native-cache.js','electron/native-service.js','electron/native-login.js','electron/native-startup.js','electron/native-version.js','electron/native-diagnostics.js'];
 UI_FILES.push('src/renderer/native-motion.js','src/renderer/native-motion.css');
@@ -12,7 +12,6 @@ const hash=file=>crypto.createHash('sha256').update(fs.readFileSync(file)).diges
 const SOURCE_FIELDS={patchSHA256:'lite-native.patch',recipeSHA256:'Dockerfile',initSHA256:'init',assemblySHA256:'build-guest.sh',
  sessionPatchSHA256:'lite-session.patch',nativeLoginSHA256:'native_login.h',nativeServiceSHA256:'native_service.h',
  storeBridgeSHA256:'native_store_bridge.h',storeBridgePatchSHA256:'lite-store-bridge.patch',networkCheckSHA256:'check-wrapper-network.py',extractionToolsLockSHA256:'build-tools.lock.json'};
-const AGENT_DIRECTORIES=['internal/nativeauth','internal/guestagent','cmd/amdl-guest'];
 
 // A wrapper pin alone cannot distinguish an old guest from the current
 // device-only guest. Compare its native and complete production Go inputs before
@@ -36,15 +35,7 @@ function verifyGuestSources(bundle,repository=ROOT){
   const source=JSON.parse(fs.readFileSync(sourceFile,'utf8'));
   if(agentLock.schemaVersion!==1||agentLock.controlProtocol!==1||typeof source.goVersion!=='string'||!source.goVersion.startsWith('go version '+agentLock.goVersion+' ')||
    !/^[a-f0-9]{64}$/.test(build.guestAgentSHA256)||source.binarySHA256!==build.guestAgentSHA256||!source.sources||typeof source.sources!=='object'||Array.isArray(source.sources))throw new Error();
-  const expected={};
-  for(const directory of AGENT_DIRECTORIES){
-   for(const name of fs.readdirSync(path.join(repository,'apple-music-downloader',directory)).sort()){
-    if(!name.endsWith('.go')||name.endsWith('_test.go'))continue;
-    const file=path.join(repository,'apple-music-downloader',directory,name);
-    if(!fs.lstatSync(file).isFile())throw new Error();
-    expected[directory+'/'+name]=hash(file);
-   }
-  }
+  const expected=guestSourceInventory(repository);
   if(Object.keys(expected).length!==Object.keys(source.sources).length||Object.entries(expected).some(([file,digest])=>source.sources[file]!==digest))throw new Error();
   return build;
  }catch{throw new Error('native_bundle_source_stale');}

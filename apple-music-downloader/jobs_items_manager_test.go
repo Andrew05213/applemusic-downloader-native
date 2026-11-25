@@ -450,7 +450,14 @@ func TestManagerPersistsExplicitOutputEventBeforeJobCompletion(t *testing.T) {
 		t.Fatalf("new manager: %v", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
+	t.Cleanup(func() {
+		cancel()
+		wait, stop := context.WithTimeout(context.Background(), 5*time.Second)
+		defer stop()
+		if err := manager.Wait(wait); err != nil {
+			t.Errorf("wait for job manager before closing store: %v", err)
+		}
+	})
 	if err := manager.Start(ctx); err != nil {
 		t.Fatalf("start manager: %v", err)
 	}

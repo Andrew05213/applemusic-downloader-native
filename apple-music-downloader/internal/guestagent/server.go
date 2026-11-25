@@ -11,10 +11,14 @@ import (
 	"strings"
 
 	"github.com/Andrew05213/applemusic_downloader/internal/nativeauth"
+	"github.com/Andrew05213/applemusic_downloader/internal/nativebatch"
 )
 
 type MediaProxy func(http.ResponseWriter, *http.Request) error
 type Server struct {
+	// Optional, wired before serving. No raw child logs enter the HTTP API.
+	Processing *ProcessingHistory
+	Batch      *BatchGateway
 	ctx        context.Context
 	capability string
 	session    *nativeauth.Manager
@@ -77,6 +81,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch {
+	case r.URL.Path == "/diagnostics/processing" && r.Method == http.MethodGet && r.URL.RawQuery == "" && s.Processing != nil:
+		w.Header().Set("Cache-Control", "no-store")
+		respond(w, 200, s.Processing.Snapshot())
 	case r.URL.Path == "/status" && r.Method == http.MethodGet:
 		state := s.session.Snapshot()
 		regions := []string{}
@@ -148,6 +155,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case r.URL.Path == "/shutdown" && r.Method == http.MethodPost:
 		respond(w, 202, map[string]bool{"accepted": true})
 		go s.shutdown()
+	case s.Batch != nil && r.URL.Path == nativebatch.Path && (r.Method == http.MethodGet || r.Method == http.MethodPost):
+		s.serveBatch(w, r)
 	case (r.Method == http.MethodGet && (r.URL.Path == "/m3u8" || r.URL.Path == "/lyrics" || r.URL.Path == "/webplayback")) ||
 		(r.Method == http.MethodPost && (r.URL.Path == "/decrypt" || r.URL.Path == "/license")) || (r.Method == http.MethodDelete && r.URL.Path == "/decrypt"):
 		// Closing an owned stream must still work when a session expires.

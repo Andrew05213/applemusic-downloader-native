@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -104,6 +105,12 @@ func TestNativeControlReceiptPrecedesPayloadValidationAndFailsClosed(t *testing.
 	if err := os.WriteFile(manifest, raw, 0600); err != nil {
 		t.Fatal(err)
 	}
+	// A file in place of the default Music directory must not prevent the
+	// desktop backend from starting. No replacement directory is created.
+	blocked := filepath.Join(root, "blocked-music")
+	if err := os.WriteFile(blocked, []byte("keep"), 0600); err != nil {
+		t.Fatal(err)
+	}
 	parentRead, parentWrite := io.Pipe()
 	receiptRead, receiptWrite := io.Pipe()
 	guestListener, err := net.Listen("tcp4", "127.0.0.1:0")
@@ -114,7 +121,7 @@ func TestNativeControlReceiptPrecedesPayloadValidationAndFailsClosed(t *testing.
 	_ = guestListener.Close()
 	done := make(chan int, 1)
 	go func() {
-		done <- runNativeDesktop([]string{"--manifest", manifest, "--data-dir", filepath.Join(root, "data"), "--output-dir", filepath.Join(root, "output"), "--guest-port", fmt.Sprint(guestPort)}, parentRead, receiptWrite)
+		done <- runNativeDesktop([]string{"--manifest", manifest, "--data-dir", filepath.Join(root, "data"), "--output-dir", filepath.Join(blocked, "output"), "--guest-port", fmt.Sprint(guestPort)}, parentRead, receiptWrite)
 		_ = receiptWrite.Close()
 	}()
 	t.Cleanup(func() {
@@ -174,7 +181,7 @@ func TestNativeControlReceiptPrecedesPayloadValidationAndFailsClosed(t *testing.
 			t.Fatal(err)
 		}
 		if snapshot.Runtime.Phase == "failed" {
-			if snapshot.Runtime.Code != "native_bundle_invalid" || snapshot.Runtime.SessionVerified {
+			if snapshot.Runtime.Stage != "runtime_bundle" || snapshot.Runtime.Code != "native_bundle_invalid" || snapshot.Runtime.SessionVerified {
 				t.Fatal("invalid payload exposed a usable session")
 			}
 			break
@@ -183,5 +190,38 @@ func TestNativeControlReceiptPrecedesPayloadValidationAndFailsClosed(t *testing.
 			t.Fatal("payload failure was not observable")
 		}
 		time.Sleep(10 * time.Millisecond)
+	}
+	retry, _ := http.NewRequest(http.MethodPost, strings.TrimSuffix(stateURL, "/state")+"/retry", nil)
+	retry.Header.Set("Authorization", "Bearer "+capability)
+	response, err := client.Do(retry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	var failure struct {
+		Error   apiError            `json:"error"`
+		Runtime nativeruntime.State `json:"runtime"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&failure); err != nil || response.StatusCode != http.StatusServiceUnavailable ||
+		failure.Error.Code != "native_session_operation_failed" || failure.Runtime.Phase != "failed" ||
+		failure.Runtime.Stage != "runtime_bundle" || failure.Runtime.Code != "native_bundle_invalid" {
+		t.Fatalf("retry lost startup cause: %+v (HTTP %d, parse %v)", failure, response.StatusCode, err)
+	}
+}
+
+func TestNativeStartupReceiptReportsMissingBundleWithoutPaths(t *testing.T) {
+	root := t.TempDir()
+	var output bytes.Buffer
+	input := strings.NewReader(`{"apiAccessToken":"` + strings.Repeat("b", 64) + `"}` + "\n")
+	code := runNativeDesktop([]string{"--manifest", filepath.Join(root, "PRIVATE-missing.json"), "--data-dir", root, "--output-dir", root}, input, &output)
+	var receipt struct {
+		NativeServer bool   `json:"nativeServer"`
+		Code         string `json:"code"`
+	}
+	if err := json.Unmarshal(output.Bytes(), &receipt); err != nil || receipt.NativeServer || receipt.Code != "native_bundle_missing" || code != 1 {
+		t.Fatalf("startup receipt: %+v (exit %d, parse %v)", receipt, code, err)
+	}
+	if strings.Contains(output.String(), "PRIVATE") || strings.Contains(output.String(), strings.Repeat("b", 64)) {
+		t.Fatal("startup receipt leaked private data")
 	}
 }

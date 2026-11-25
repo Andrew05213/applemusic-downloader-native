@@ -2,10 +2,60 @@ package task
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/Andrew05213/applemusic_downloader/utils/ampapi"
 )
+
+func TestFavoritesWithLibraryOnlyPlayParams(t *testing.T) {
+	var rows []string
+	for i := 1; i <= 20; i++ {
+		rows = append(rows, fmt.Sprintf(`{"id":"i.lib%d","type":"library-songs","attributes":{"playParams":{"id":"i.lib%d","kind":"song","isLibrary":true,"catalogId":"%d","reportingId":"999"}}}`, i, i, 100+i))
+	}
+	var playlist ampapi.PlaylistRespData
+	if err := json.Unmarshal([]byte(`{"relationships":{"tracks":{"data":[`+strings.Join(rows, ",")+`]}}}`), &playlist); err != nil {
+		t.Fatal(err)
+	}
+	tracks, unavailable, err := normalizePlaylistTracks(playlist, "cn")
+	if err != nil || len(tracks) != 20 || len(unavailable) != 0 {
+		t.Fatalf("resolved %d/20, unavailable=%v, err=%v", len(tracks), unavailable, err)
+	}
+	for index, track := range tracks {
+		if track.SourceID != fmt.Sprintf("i.lib%d", index+1) || track.ID != fmt.Sprint(101+index) || track.Resp.Attributes.PlayParams.ID != track.ID || track.Resp.Attributes.PlayParams.IsLibrary {
+			t.Fatalf("wrong identity at row %d: %+v", index, track)
+		}
+	}
+}
+
+func TestMixedLibraryEntriesPreserveReasons(t *testing.T) {
+	var playlist ampapi.PlaylistRespData
+	if err := json.Unmarshal([]byte(`{"relationships":{"tracks":{"data":[
+	  {"id":"i.one","type":"library-songs","attributes":{"playParams":{"catalogId":"101"}},"relationships":{"catalog":{"data":[{"type":"albums","id":"501"},{"type":"songs","id":"201"}]}}},
+	  {"id":"i.two","type":"library-songs","attributes":{"playParams":{"catalogId":"201"}}},
+	  {"id":"i.video","type":"library-music-videos","attributes":{"playParams":{"id":"32","kind":"music-video","catalogId":"301"}}},
+	  {"id":"id.a","type":"library-songs","attributes":{"playParams":{"isLibrary":true,"id":"401","reportingId":"402"}}},
+	  {"id":"id.b","type":"library-songs","attributes":{"playParams":{"kind":"music-video","catalogId":"403"}}},
+	  {"id":"id.c","type":"library-songs","attributes":{"playParams":{"catalogId":"000"}}},
+	  {"id":"i.foo","type":"albums"},{"type":"library-songs"}
+	]}}}`), &playlist); err != nil {
+		t.Fatal(err)
+	}
+	tracks, bad, err := normalizePlaylistTracks(playlist)
+	if err != nil || len(tracks) != 2 || tracks[0].ID != "201" || tracks[1].ID != "301" || tracks[1].Type != "music-videos" {
+		t.Fatalf("tracks=%v err=%v", tracks, err)
+	}
+	want := []string{"duplicate_track", "catalog_track_missing", "catalog_track_missing", "catalog_track_missing", "track_type_unsupported", "track_source_missing"}
+	if len(bad) != len(want) {
+		t.Fatalf("unavailable: %+v", bad)
+	}
+	for i, code := range want {
+		if bad[i].ErrorCode != code {
+			t.Errorf("reason %d = %s; want %s", i, bad[i].ErrorCode, code)
+		}
+	}
+}
 
 func TestNormalizePlaylistTracksUsesCatalogRelationAndPreservesUnavailable(t *testing.T) {
 	var playlist ampapi.PlaylistRespData

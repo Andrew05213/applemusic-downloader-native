@@ -42,6 +42,7 @@ func TestDownloadReportsActualProcessedFragments(t *testing.T) {
 	ctx, stop := transfer.Start(context.Background(), func(value transfer.Snapshot) { last = value })
 	defer stop()
 	ctx, finish := transfer.BeginItem(ctx, "123")
+	ctx, meter := transfer.WithMeter(ctx)
 	defer finish()
 	transfer.SetTotal(ctx, int64(input.Len()), false)
 	reader, closeRead := transfer.Track(ctx, bytes.NewReader(input.Bytes()))
@@ -52,6 +53,9 @@ func TestDownloadReportsActualProcessedFragments(t *testing.T) {
 		t.Fatal(err)
 	}
 	stop()
+	if s := meter.Snapshot(); s == nil || s.Fragments != 3 || s.Requests != 0 {
+		t.Fatalf("fragment timing = %+v", s)
+	}
 	if !last.Valid() || len(last.Items) != 1 || last.Items[0].Bytes != int64(input.Len()) || last.Items[0].ProcessedBytes != int64(input.Len()) || last.Items[0].Progress != .99 {
 		t.Fatalf("real fragment progress not reported: %+v", last)
 	}
