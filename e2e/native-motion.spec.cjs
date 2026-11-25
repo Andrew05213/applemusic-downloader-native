@@ -10,7 +10,7 @@ async function install(page){
   Element.prototype.animate=function(frames,options){const animation=original.call(this,frames,options);f.animations.push({target:this.id||this.className,frames,options,animation});return animation;};
   HTMLMediaElement.prototype.play=function(){return Promise.resolve();};HTMLMediaElement.prototype.pause=function(){};HTMLMediaElement.prototype.load=function(){};
   const albums=['Midnight Sessions','Soft Focus','Blue Hour','Quiet City','Afterglow','Open Skies'].map((title,i)=>({id:String(300+i),type:'albums',title,artist:'Studio Collective',artistId:'42',artwork:'https://is1-ssl.mzstatic.com/fixture/'+i+'.jpg',url:'https://music.apple.com/us/album/'+(300+i),downloadable:true}));
-  window.nativeDesktop={getState:async()=>({state:'authenticated',region:'us'}),onSession(){},onReady:fn=>queueMicrotask(fn),openLogin:async()=>{},
+  window.nativeDesktop={getState:async()=>({state:'authenticated',region:'us',runtimeReady:true}),onSession(){},openLogin:async()=>{},
    artworkURL:url=>{const colors=['#b75e7b','#8b7bb4','#426d96','#b9885d','#6c9384','#b17665'],i=Number(url.match(/(\d+)\.jpg/)?.[1]||0);return 'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500"><rect width="500" height="500" fill="'+colors[i%6]+'"/><circle cx="250" cy="250" r="145" fill="none" stroke="white" stroke-opacity=".24" stroke-width="70"/><text x="35" y="447" font-family="sans-serif" font-size="25" fill="white">'+albums[i%6].title+'</text></svg>');},
    cacheInfo:async()=>({available:true,usedBytes:1048576,entries:5,limitMB:500}),
    api:async(target,options={})=>{f.calls.push({target,method:options.method||'GET'});const u=new URL(target,'http://fixture');

@@ -278,16 +278,22 @@
     const message = state.session === 'runtime_unavailable' ? '本机服务暂不可用，恢复后将自动加载目录。' : '正在连接音乐目录…';
     if ($('notice').textContent !== message) notice(message);
   }
+  function nextCatalogGeneration() {
+    if (pendingCatalog?.groupMore) pendingCatalog.groupMore.disabled = false;
+    pendingCatalog = null;
+    return ++state.generation;
+  }
   function resumeCatalog() {
     if (state.view !== 'browse' || !pendingCatalog || pendingCatalog.generation !== state.generation) return;
     if (!catalogCanBrowse(pendingCatalog.path)) { catalogWaitNotice(); return; }
-    const {path, append, retried} = pendingCatalog;
+    const {path, append, retried, groupMore} = pendingCatalog;
+    pendingCatalog = null;
     const target = new URL(path, 'http://fixture');
     // A saved session can restore a different region while the request waits.
     if (!append && target.searchParams.has('region')) target.searchParams.set('region', $('region').value);
-    void browse(target.pathname + target.search, append, retried);
+    void browse(target.pathname + target.search, append, { retried, groupMore });
   }
-  async function browse(path, append = false, retried = false) {
+  async function browse(path, append = false, { retried = false, groupMore } = {}) {
     const discoveryPage=isDiscover(path);
     if(!append && path!==state.catalogPath && (discoveryPage||isDiscover(state.catalogPath))){
       motion?.cancelTree($('catalog-content'));
@@ -295,10 +301,10 @@
       $('catalog-more').hidden=true;
     }
     if(!append)state.catalogPath=path;
-    const generation = ++state.generation;
-    pendingCatalog = null;
+    const generation = nextCatalogGeneration();
+    if (groupMore) groupMore.disabled = true;
     if (!catalogCanBrowse(path)) {
-      pendingCatalog = { path, append, generation, retried };
+      pendingCatalog = { path, append, generation, retried, groupMore };
       $('refresh-catalog').removeAttribute('aria-busy');
       if (state.view === 'browse') catalogWaitNotice();
       return false;
@@ -340,11 +346,12 @@
           const next=new URL(path,'http://fixture');next.searchParams.set('offset',String(group.nextOffset));
           if(group.recommendationId){next.pathname='/api/v1/catalog/recommendation';next.searchParams.delete('term');next.searchParams.delete('type');next.searchParams.set('id',group.recommendationId);}
           else if(next.pathname.endsWith('/search'))next.searchParams.set('type',group.type);
-          const more=button('加载更多',async()=>{more.disabled=true;const requestGeneration=state.generation+1;const loaded=await browse(next.pathname+next.search,true);if(requestGeneration!==state.generation)return;if(loaded)more.remove();else more.disabled=false;},'加载更多 '+(group.title||group.type));more.dataset.catalogPage='';content.append(more);
+          const more=button('加载更多',()=>browse(next.pathname+next.search,true,{groupMore:more}),'加载更多 '+(group.title||group.type));more.dataset.catalogPage='';content.append(more);
         }
         }
       }
       const next = data.nextOffset; $('catalog-more').hidden = !Number.isInteger(next); $('catalog-more').onclick = () => { const url = new URL(path, 'http://fixture'); url.searchParams.set('offset', String(next)); void browse(url.pathname + url.search, true); };
+      groupMore?.remove();
       if(!append)motion?.content(content);
       notice((data.resource||data.tracks?.length || data.groups?.some(group => group.items?.length)) ? '' : discoveryPage?'当前地区暂无发现内容。':'暂无内容。'); observe({ state: state.session }); return true;
     } catch (error) {
@@ -353,7 +360,7 @@
         // Wait for its next readiness report and retry this navigation once.
         if (!retried && /\bnative_runtime_unavailable$/.test(error?.message || '')) {
           runtimeReady = false;
-          pendingCatalog = { path, append, generation, retried: true };
+          pendingCatalog = { path, append, generation, retried: true, groupMore };
           if (state.view === 'browse') catalogWaitNotice();
           return false;
         }
@@ -363,7 +370,10 @@
       }
       return false;
     }
-    finally {if(generation===state.generation)$('refresh-catalog').removeAttribute('aria-busy');}
+    finally {
+      if (groupMore && pendingCatalog?.groupMore !== groupMore) groupMore.disabled = false;
+      if (generation === state.generation) $('refresh-catalog').removeAttribute('aria-busy');
+    }
   }
   function discardDetail() { state.detail = null; state.browseSnapshot = null;detailHistory.length=0;updateNavigation(); }
   const feedPath = mode => '/api/v1/catalog/' + mode + '?' + new URLSearchParams({region:$('region').value,...(mode==='discover'?{}:{offset:'0'})});
@@ -381,7 +391,7 @@
   function closeDetail() {
     if (!state.detail) return;
     motion?.cancelTree($('catalog-content'));$('refresh-catalog').removeAttribute('aria-busy');
-    ++state.generation;
+    nextCatalogGeneration();
     const snapshot = detailHistory.length?detailHistory.pop():state.browseSnapshot;
     if(snapshot?.detail)state.detail=snapshot.detail;else discardDetail();updateNavigation();
     if (!snapshot || snapshot.region !== $('region').value) { void feed(state.feed); return; }
@@ -691,7 +701,7 @@
   $('choose-download-directory').onclick=async()=>{const control=$('choose-download-directory');if(control.disabled)return;control.disabled=true;try{const result=await desktop.chooseDownloadDirectory();if(result&&!result.canceled){$('download-directory').textContent=result.directory;$('directory-feedback').textContent='下载位置已保存，新任务生效；已有任务保留原位置。';}}catch(error){$('directory-feedback').textContent=/native_directory_denied/.test(error?.message||'')?'该目录不可写入，请重新选择。':'下载位置未更改，请检查目录后重试。';}finally{control.disabled=!desktop.chooseDownloadDirectory;}};
   $('save-cache-limit').onclick=async()=>{const limit=Number($('cache-limit').value);if(!$('cache-limit').value.trim()||!Number.isInteger(limit)||limit<0||limit>10240){$('cache-feedback').textContent='请输入 0–10240 MB，0 为关闭缓存。';return;}const control=$('save-cache-limit');control.disabled=true;try{await desktop.setCacheLimit(limit);prefetched.clear();await cacheSettings();$('cache-feedback').textContent=limit?'缓存上限已调整，超出容量的旧缓存已自动清理。':'缓存已关闭并清理。';}catch{$('cache-feedback').textContent='调整未完成，请重试。';}finally{control.disabled=false;}};
   $('clear-cache').onclick=async()=>{const control=$('clear-cache');control.disabled=true;try{await desktop.clearCache();prefetched.clear();await cacheSettings();$('cache-feedback').textContent='缓存已清理，下载文件与登录会话不受影响。';}catch{$('cache-feedback').textContent='清理未完成，请重试。';}finally{control.disabled=false;}};
-  $('refresh-catalog').onclick=async()=>{const control=$('refresh-catalog');control.disabled=true;try{if(state.view==='tasks'){await Promise.all([jobs(),refreshMonitor()]);return;}if(state.view==='settings'){await settings();return;}++state.generation;await desktop.refreshCatalog?.();prefetched.clear();detailHistory.length=0;void loadSidebarLibrary(true);if(state.detail){state.browseSnapshot=null;await detail(state.detail,true);}else if(searching)await browse(state.catalogPath);else await feed(state.feed);}catch{notice('刷新未完成，请稍后重试。');}finally{control.disabled=false;}};
+  $('refresh-catalog').onclick=async()=>{const control=$('refresh-catalog');control.disabled=true;try{if(state.view==='tasks'){await Promise.all([jobs(),refreshMonitor()]);return;}if(state.view==='settings'){await settings();return;}nextCatalogGeneration();await desktop.refreshCatalog?.();prefetched.clear();detailHistory.length=0;void loadSidebarLibrary(true);if(state.detail){state.browseSnapshot=null;await detail(state.detail,true);}else if(searching)await browse(state.catalogPath);else await feed(state.feed);}catch{notice('刷新未完成，请稍后重试。');}finally{control.disabled=false;}};
   for (const token of ['{tracknum:02d}', '{disk}', '{title}', '{artist}', '{album}', '{album_artist}', '{year}', '{song_id}', ' - ', '. ']) $('filename-tokens').append(button(token, () => { const field = $('filename'); field.setRangeText(token, field.selectionStart, field.selectionEnd, 'end'); field.focus(); }));
   for (const control of document.querySelectorAll('[data-view]')) control.onclick = () => view(control.dataset.view);
   for (const control of document.querySelectorAll('[data-feed]')) control.onclick = () => { view('browse'); void feed(control.dataset.feed); };

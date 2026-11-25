@@ -16,7 +16,7 @@ async function install(page,{authenticated=true,ranked=false}={}){
   const albums=[album,...Array.from({length:5},(_,i)=>({...album,id:String(310+i),title:'Genshin Impact — Original Game Soundtrack '+(i+1)}))];
   const songs=[first,second,...Array.from({length:10},(_,i)=>song(String(710+i),'Soundtrack Song '+(i+1)))];
   window.searchCalls=[];
-  window.nativeDesktop={getState:async()=>({state:authenticated?'authenticated':'needs_login',region:'us'}),onSession(){},onReady(fn){queueMicrotask(fn);},openLogin:async()=>{},prefetchCatalog:async()=>true,
+  window.nativeDesktop={getState:async()=>({state:authenticated?'authenticated':'needs_login',region:'us',runtimeReady:true}),onSession(){},openLogin:async()=>{},prefetchCatalog:async()=>true,
    api:async(target,options={})=>{window.searchCalls.push({target,...options});const u=new URL(target,'http://fixture');
     if(u.pathname==='/api/v1/capabilities')return {queue:{state:'ready'},jobExecutorConfigured:true,qualities:{alac:{available:true},'aac-lc':{available:true}}};
     if(u.pathname==='/api/v1/catalog/home')return {groups:[{type:'albums',items:[album]}]};

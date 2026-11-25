@@ -15,7 +15,7 @@ async function install(page,kind='playlists'){
     tracks[149]={...tracks[149],downloadable:false,url:'',unavailableReason:'catalog_resource_unavailable'};
     const fixture=window.paginationFixture={calls:[],pending:[],holdOffset:null,failNext:false};
     window.nativeDesktop={
-      getState:async()=>({state:'authenticated',region:'us'}),onSession(){},onReady(fn){queueMicrotask(fn);},openLogin:async()=>{},
+      getState:async()=>({state:'authenticated',region:'us',runtimeReady:true}),onSession(){},openLogin:async()=>{},
       api:async(target,options={})=>{
         fixture.calls.push({target,...options});const url=new URL(target,'http://fixture');
         if(url.pathname==='/api/v1/capabilities')return {queue:{state:'ready'},jobExecutorConfigured:true,qualities:{alac:{available:true}}};

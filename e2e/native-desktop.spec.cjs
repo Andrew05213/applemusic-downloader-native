@@ -7,14 +7,24 @@ const root=path.resolve(__dirname,'..');
 const preferences={downloadRegion:'',metadataRegion:'',lyricsRegion:'',language:'',saveLyrics:false,embedLyrics:true,lyricsType:'lyrics',lyricsFormat:'lrc',embedCover:true,coverFormat:'jpg',coverSize:'500x500',saveArtistCover:false,saveAnimatedArtwork:false,useSongInfoForPlaylist:false,alacMax:192000,mvMax:2160,songFileFormat:'{SongNumer}. {SongName}'};
 async function install(page,{session='authenticated',full=false}={}){
   await page.addInitScript(({preferences,session,full})=>{
-    window.calls=[];window.loginOpens=0;window.pendingSearch=[];
+    window.calls=[];window.loginOpens=0;window.pendingSearch=[];window.pageStartupFailures=0;
     const item=(id,title)=>({id,title,artist:'Fixture Artist',type:'songs',url:'https://music.apple.com/us/song/'+id,downloadable:true,duration:60000,previewUrl:'https://audio-ssl.itunes.apple.com/fixture.wav'});
     window.nativeDesktop={
-      getState:async()=>({state:session,region:session==='authenticated'?'us':undefined}),onSession(fn){window.sessionUpdate=fn;},onReady(fn){queueMicrotask(fn);},openLogin:async()=>{window.loginOpens++;},exportDiagnostics:async()=>true,recheck:async()=>({state:session}),
+      getState:async()=>({state:session,region:session==='authenticated'?'us':undefined,runtimeReady:true}),onSession(fn){window.sessionUpdate=fn;},openLogin:async()=>{window.loginOpens++;},exportDiagnostics:async()=>true,recheck:async()=>({state:session}),
       api:async(target,options={})=>{
         window.calls.push({target,...options});
         if(target==='/api/v1/capabilities')return {queue:{state:'ready'},jobExecutorConfigured:true,qualities:{'aac-lc':{available:true},alac:{available:true},atmos:{available:true}}};
-        if(target.startsWith('/api/v1/catalog/search')){const query=new URL(target,'http://fixture').searchParams;const term=query.get('term');if(term==='slow')return new Promise(resolve=>window.pendingSearch.push(()=>resolve({groups:[{type:'songs',items:[item('101','Old result')]}]})));if(term==='pages')return {groups:[{type:'songs',nextOffset:query.get('offset')==='1'?null:1,items:[item(query.get('offset')==='1'?'104':'103',query.get('offset')==='1'?'Second page':'First page')]}]};return {groups:[{type:'songs',items:[item('102',term)]}]};}
+        if(target.startsWith('/api/v1/catalog/search')){
+          const query=new URL(target,'http://fixture').searchParams;
+          const term=query.get('term');
+          if(term==='slow')return new Promise(resolve=>window.pendingSearch.push(()=>resolve({groups:[{type:'songs',items:[item('101','Old result')]}]})));
+          if(term==='pages'){
+            const second=query.get('offset')==='1';
+            if(second&&window.pageStartupFailures>0){window.pageStartupFailures--;throw Error('native_runtime_unavailable');}
+            return {groups:[{type:'songs',nextOffset:second?null:1,items:[second?item('104','Second page'):item('103','First page')]}]};
+          }
+          return {groups:[{type:'songs',items:[item('102',term)]}]};
+        }
         if(target.startsWith('/api/v1/catalog/'))return {groups:[{type:'songs',items:[item('100','Fixture Song')]}]};
         if(target==='/api/native/playback'){if(options.method==='DELETE')return {ok:true};if(full)return {ok:true,mode:'full',mediaURL:'http://127.0.0.1:45678/api/native/playback/'+'a'.repeat(32)};throw new Error('native_playback_unavailable');}
         if(target==='/api/v1/settings/download')return {settings:preferences};
@@ -140,4 +150,40 @@ test('native group pagination consumes the old control and offline session canno
   await install(page,{session:'needs_login'});await expect(page.getByRole('button',{name:'下载 Fixture Song',exact:true})).toBeDisabled();
   await page.getByRole('searchbox').fill('pages');await page.getByRole('searchbox').press('Enter');await page.getByRole('button',{name:'加载更多 songs',exact:true}).click();await expect(page.getByText('First page',{exact:true})).toBeVisible();await expect(page.getByText('Second page',{exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'加载更多 songs',exact:true})).toHaveCount(0);
   expect(await page.evaluate(()=>window.calls.some(call=>call.target==='/api/v1/jobs'&&call.method==='POST'))).toBe(false);
+});
+
+test('automatic catalog retry consumes the original group cursor exactly once',async({page})=>{
+  await install(page);
+  const search=page.getByRole('searchbox');
+  await search.fill('pages');await search.press('Enter');
+  await page.evaluate(()=>window.pageStartupFailures=1);
+  const more=page.getByRole('button',{name:'加载更多 songs',exact:true});
+  await more.click();
+  await expect(page.locator('#notice')).toHaveText('正在连接音乐目录…');
+  await expect(more).toBeDisabled();
+  await expect(page.getByText('First page',{exact:true})).toBeVisible();
+  await page.evaluate(()=>{
+    const ready={state:'authenticated',region:'us',runtimeReady:true};
+    window.sessionUpdate(ready);window.sessionUpdate(ready);
+  });
+  await expect(page.getByText('Second page',{exact:true})).toHaveCount(1);
+  await expect(more).toHaveCount(0);
+  expect(await page.evaluate(()=>window.calls.filter(call=>call.target.includes('term=pages')).map(call=>new URL(call.target,'http://fixture').searchParams.get('offset')))).toEqual(['0','1','1']);
+});
+
+test('failed automatic pagination retry releases the original control for manual retry',async({page})=>{
+  await install(page);
+  const search=page.getByRole('searchbox');
+  await search.fill('pages');await search.press('Enter');
+  await page.evaluate(()=>window.pageStartupFailures=2);
+  const more=page.getByRole('button',{name:'加载更多 songs',exact:true});
+  await more.click();
+  await expect(more).toBeDisabled();
+  await expect(page.locator('#notice')).toHaveText('正在连接音乐目录…');
+  await page.evaluate(()=>window.sessionUpdate({state:'authenticated',region:'us',runtimeReady:true}));
+  await expect(page.locator('#notice')).toContainText('目录暂不可用');
+  await expect(more).toBeEnabled();
+  await more.click();
+  await expect(page.getByText('Second page',{exact:true})).toHaveCount(1);
+  await expect(more).toHaveCount(0);
 });

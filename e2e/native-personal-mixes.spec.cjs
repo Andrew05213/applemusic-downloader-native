@@ -23,7 +23,7 @@ async function install(page, { delayed = false, failed = false, empty = false, m
     window.mixCalls=[]; window.pendingMixes=[];
     window.releaseMixes=()=>window.pendingMixes.splice(0).forEach(resolve=>resolve());
     window.nativeDesktop={
-      getState:async()=>({state:'authenticated',region:'us'}),onSession(){},onReady(fn){queueMicrotask(fn);},openLogin:async()=>{},exportDiagnostics:async()=>true,
+      getState:async()=>({state:'authenticated',region:'us',runtimeReady:true}),onSession(){},openLogin:async()=>{},exportDiagnostics:async()=>true,
       api:async(target,options={})=>{
         window.mixCalls.push({target,...options}); const url=new URL(target,'http://fixture');
         if(url.pathname==='/api/v1/capabilities')return {queue:{state:'ready'},jobExecutorConfigured:true,qualities:{alac:{available:true},'aac-lc':{available:true}}};
