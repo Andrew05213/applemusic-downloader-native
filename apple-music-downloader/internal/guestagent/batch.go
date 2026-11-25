@@ -19,10 +19,11 @@ import (
 )
 
 const (
-	BatchSocket       = "/run/amdl-native-batch.sock"
-	batchGrantHeader  = "X-AMDL-Batch-Grant"
-	batchConcurrency  = 3
-	batchRequestLimit = 35 * time.Second
+	BatchSocket         = "/run/amdl-native-batch.sock"
+	batchGrantHeader    = "X-AMDL-Batch-Grant"
+	batchConcurrency    = 3
+	batchAdmissionLimit = 35 * time.Second
+	batchRequestLimit   = 35 * time.Second
 )
 
 type batchGrantKey struct{}
@@ -117,20 +118,49 @@ func (g *BatchGateway) issue(ctx context.Context) (string, func(), error) {
 	return g.register(ctx, epoch)
 }
 
-func (g *BatchGateway) issueBatch(ctx, renewalParent context.Context) (string, func(), error) {
-	epoch, release, err := g.session.ReserveMediaWindow(ctx, renewalParent, batchRequestLimit)
-	if err != nil {
-		return "", nil, err
+func (s *Server) prepareBatch(admission, request context.Context) (context.Context, string, func(), error) {
+	for {
+		// Do not occupy the media lane while draining older batches or
+		// waiting for the shared session renewal.
+		epoch, releaseWindow, err := s.Batch.session.ReserveMediaWindow(admission, s.ctx, batchRequestLimit)
+		if err != nil {
+			return nil, "", nil, err
+		}
+		releaseLane, err := s.mediaGate.acquire(admission, false)
+		if err != nil {
+			releaseWindow()
+			return nil, "", nil, &proxyFailure{http.StatusServiceUnavailable, "native_batch_queue_timeout"}
+		}
+		// Queueing and verification use the admission deadline. The work,
+		// reply and grant share a fresh budget under the request lifetime.
+		execution, cancel := context.WithTimeout(request, batchRequestLimit)
+		current, enoughTime := s.Batch.session.VerifiedMediaEpochFor(batchRequestLimit)
+		if current != epoch || !enoughTime || admission.Err() != nil {
+			cancel()
+			releaseLane()
+			releaseWindow()
+			if admission.Err() != nil || current != epoch {
+				return nil, "", nil, nativeauth.ErrUnverified
+			}
+			// Lane wait used up the reserved margin. Reserve a fresh window
+			// outside the lane instead of extending the old epoch.
+			continue
+		}
+		key, revoke, err := s.Batch.register(execution, epoch)
+		// The upstream sends headers after all blocks. Give playback the
+		// lane before dispatch; the independent batch slot stays held.
+		releaseLane()
+		if err != nil {
+			cancel()
+			releaseWindow()
+			return nil, "", nil, err
+		}
+		return execution, key, func() {
+			revoke()
+			cancel()
+			releaseWindow()
+		}, nil
 	}
-	key, revoke, err := g.register(ctx, epoch)
-	if err != nil {
-		release()
-		return "", nil, err
-	}
-	return key, func() {
-		revoke()
-		release()
-	}, nil
 }
 
 func (g *BatchGateway) register(ctx context.Context, epoch uint64) (string, func(), error) {
@@ -176,14 +206,16 @@ func (s *Server) serveBatch(w http.ResponseWriter, r *http.Request) {
 		failure(w, http.StatusServiceUnavailable, "native_media_unavailable")
 		return
 	}
-	ctx, cancel := context.WithTimeout(r.Context(), batchRequestLimit)
+	request, cancel := context.WithCancel(r.Context())
 	defer cancel()
 	stop := context.AfterFunc(s.ctx, cancel)
 	defer stop()
+	admission, finishAdmission := context.WithTimeout(request, batchAdmissionLimit)
+	defer finishAdmission()
 	select {
 	case s.Batch.slots <- struct{}{}:
 		defer func() { <-s.Batch.slots }()
-	case <-ctx.Done():
+	case <-admission.Done():
 		failure(w, http.StatusServiceUnavailable, "native_batch_queue_timeout")
 		return
 	}
@@ -195,43 +227,47 @@ func (s *Server) serveBatch(w http.ResponseWriter, r *http.Request) {
 		}
 		r.Body = io.NopCloser(bytes.NewReader(raw))
 	}
+	execution := admission
 	var grant string
 	var revoke func()
 	var err error
 	if r.Method == http.MethodPost {
-		// Wait for the verification window outside the shared media lane;
-		// renewal and draining an older batch must never queue playback here.
-		grant, revoke, err = s.Batch.issueBatch(ctx, s.ctx)
+		execution, grant, revoke, err = s.prepareBatch(admission, request)
+		finishAdmission()
 	} else {
 		// Discovery is passive. Its shorter client deadline must neither start
 		// nor cancel a session renewal.
-		grant, revoke, err = s.Batch.issue(ctx)
+		grant, revoke, err = s.Batch.issue(admission)
+		if err == nil {
+			release, acquireErr := s.mediaGate.acquire(admission, false)
+			if acquireErr != nil {
+				err = &proxyFailure{http.StatusServiceUnavailable, "native_batch_queue_timeout"}
+			} else {
+				release()
+			}
+		}
+	}
+	if revoke != nil {
+		defer revoke()
 	}
 	if err != nil {
-		if errors.Is(err, nativeauth.ErrUnverified) || errors.Is(err, nativeauth.ErrAuthRequired) {
+		var typed *proxyFailure
+		if errors.As(err, &typed) {
+			failure(w, typed.status, typed.code)
+		} else if errors.Is(err, nativeauth.ErrUnverified) || errors.Is(err, nativeauth.ErrAuthRequired) {
 			sessionFailure(w, err)
 		} else {
 			failure(w, http.StatusServiceUnavailable, "native_batch_grant_unavailable")
 		}
 		return
 	}
-	defer revoke()
-	release, err := s.mediaGate.acquire(ctx, false)
-	if err != nil {
-		failure(w, http.StatusServiceUnavailable, "native_batch_queue_timeout")
-		return
-	}
-	allowed := s.Batch.authorized(grant)
-	// Lite holds its response until the last block. Keep the independent
-	// batch slot, but return the exclusive lane before waiting for its reply.
-	release()
-	if !allowed {
+	if !s.Batch.authorized(grant) {
 		// No work was sent: an explicit session change while queued is safe
 		// to handle through the normal verification pause.
 		sessionFailure(w, nativeauth.ErrUnverified)
 		return
 	}
-	if err := s.media(w, r.WithContext(context.WithValue(ctx, batchGrantKey{}, grant))); err != nil {
+	if err := s.media(w, r.WithContext(context.WithValue(execution, batchGrantKey{}, grant))); err != nil {
 		var typed *proxyFailure
 		if errors.As(err, &typed) {
 			failure(w, typed.status, typed.code)

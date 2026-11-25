@@ -97,9 +97,15 @@ func (m *Manager) Snapshot() Snapshot { m.mu.Lock(); defer m.mu.Unlock(); return
 // VerifiedMediaEpoch checks the cached, already-verified session without
 // copying credentials, starting network work, or refreshing its lifetime.
 func (m *Manager) VerifiedMediaEpoch() (uint64, bool) {
+	return m.VerifiedMediaEpochFor(0)
+}
+
+// VerifiedMediaEpochFor also checks whether the cached epoch covers a full
+// execution window after media-lane admission. It never renews the session.
+func (m *Manager) VerifiedMediaEpochFor(window time.Duration) (uint64, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return m.generation, !m.closed && m.state.State == "authenticated" && m.now().Before(m.verifiedUntil)
+	return m.generation, window >= 0 && !m.closed && m.state.State == "authenticated" && m.now().Add(window).Before(m.verifiedUntil)
 }
 
 func (m *Manager) Credentials() (Tokens, error) {

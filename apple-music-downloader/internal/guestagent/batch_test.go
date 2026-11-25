@@ -106,6 +106,106 @@ func TestBatchVerificationFailuresAreClassifiedBeforeDispatch(t *testing.T) {
 	}
 }
 
+func TestBatchExecutionKeepsItsFullBudgetAfterRenewalAndAdmission(t *testing.T) {
+	request, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	verifying := make(chan struct{}, 1)
+	verify := make(chan struct{})
+	m := nativeauth.New(&musicFixtureRunner{}, func(ctx context.Context, _ nativeauth.Tokens) (string, error) {
+		select {
+		case verifying <- struct{}{}:
+		case <-ctx.Done():
+			return "", ctx.Err()
+		}
+		select {
+		case <-verify:
+			return "us", nil
+		case <-ctx.Done():
+			return "", ctx.Err()
+		}
+	})
+	t.Cleanup(m.Close)
+	deadlines := make(chan time.Time, 1)
+	h, err := NewServer(request, strings.Repeat("a", 64), m, func(w http.ResponseWriter, r *http.Request) error {
+		deadline, _ := r.Context().Deadline()
+		deadlines <- deadline
+		w.WriteHeader(http.StatusOK)
+		return nil
+	}, cancel)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.Batch = newBatchGateway(m)
+	unblock, err := h.mediaGate.acquire(request, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer unblock()
+	raw, err := nativebatch.Encode(0, [][]byte{make([]byte, 16), make([]byte, 16)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan int, 1)
+	go func() {
+		out := httptest.NewRecorder()
+		h.ServeHTTP(out, privateBatchRequest("POST", fixtureBatchTarget, raw).WithContext(request))
+		done <- out.Code
+	}()
+	select {
+	case <-verifying:
+	case <-time.After(3 * time.Second):
+		t.Fatal("waiting for the media lane blocked renewal")
+	}
+	// Cross a clock tick so a deadline started before renewal cannot look
+	// like a fresh budget on platforms with coarser time resolution.
+	time.Sleep(20 * time.Millisecond)
+	close(verify)
+	released := time.Now()
+	unblock()
+	select {
+	case deadline := <-deadlines:
+		if deadline.Before(released.Add(batchRequestLimit)) {
+			t.Fatalf("execution lost its own budget: %v remaining at admission, want >= %v", deadline.Sub(released), batchRequestLimit)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("batch never reached the media proxy")
+	}
+	select {
+	case status := <-done:
+		if status != http.StatusOK {
+			t.Fatalf("batch response status = %d", status)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("batch did not complete")
+	}
+}
+
+func TestBatchExecutionOutlivesAdmissionButNotRequest(t *testing.T) {
+	request, stopRequest := context.WithCancel(context.Background())
+	defer stopRequest()
+	admission, finishAdmission := context.WithCancel(request)
+	defer finishAdmission()
+	m := verifiedBatchManager(t)
+	h, err := NewServer(request, strings.Repeat("a", 64), m, nil, stopRequest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.Batch = newBatchGateway(m)
+	exec, grant, release, err := h.prepareBatch(admission, request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release()
+	finishAdmission()
+	if exec.Err() != nil || !h.Batch.authorized(grant) {
+		t.Fatal("finishing admission cancelled an authorized execution")
+	}
+	stopRequest()
+	if exec.Err() == nil || h.Batch.authorized(grant) {
+		t.Fatal("request cancellation did not revoke the execution grant")
+	}
+}
+
 func TestBatchGatewayRevokesOnRenewalAndRequestEnd(t *testing.T) {
 	m := verifiedBatchManager(t)
 	g := newBatchGateway(m)
