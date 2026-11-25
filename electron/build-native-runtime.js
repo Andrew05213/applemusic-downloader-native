@@ -94,6 +94,18 @@ function copyQemu(extracted, output) {
 }
 
 function runtimeOutput(root,id) { return path.join(root, '.artifacts', 'runtime', id); }
+function guestSourceInventory(root) {
+  const sources = {};
+  for (const directory of ['internal/nativeauth', 'internal/nativebatch', 'internal/guestagent', 'internal/processing', 'cmd/amdl-guest']) {
+    for (const name of fs.readdirSync(path.join(root, 'apple-music-downloader', directory)).sort()) {
+      if (!name.endsWith('.go') || name.endsWith('_test.go')) continue;
+      const file = path.join(root, 'apple-music-downloader', directory, name);
+      if (!fs.lstatSync(file).isFile()) throw new Error('native_guest_source_invalid');
+      sources[directory + '/' + name] = digest(file);
+    }
+  }
+  return sources;
+}
 function buildGuest(options = {}) {
   const root = options.repositoryRoot || path.resolve(__dirname, '..');
   const id = crypto.randomUUID();
@@ -116,12 +128,7 @@ function buildGuest(options = {}) {
   const agentBinary = path.join(context, 'amdl-guest');
   run('go', ['build', '-mod=readonly', '-trimpath', '-buildvcs=false', '-ldflags=-s -w -buildid=', '-o', agentBinary, './cmd/amdl-guest'],
     { cwd: path.join(root, 'apple-music-downloader'), env: { ...process.env, GOOS: 'linux', GOARCH: 'amd64', CGO_ENABLED: '0' } });
-  const agentSources = {};
-  for (const directory of ['internal/nativeauth', 'internal/guestagent','internal/processing', 'cmd/amdl-guest']) {
-    for (const name of fs.readdirSync(path.join(root, 'apple-music-downloader', directory)).sort()) {
-      if (name.endsWith('.go') && !name.endsWith('_test.go')) agentSources[directory + '/' + name] = digest(path.join(root, 'apple-music-downloader', directory, name));
-    }
-  }
+  const agentSources = guestSourceInventory(root);
   fs.writeFileSync(path.join(context, 'guest-agent-source.json'), JSON.stringify({ goVersion, binarySHA256: digest(agentBinary), sources: agentSources }, null, 2) + '\n');
   fs.copyFileSync(source, path.join(context, 'wrapper.tar.gz'));
   const image = 'amdl-v2-guest:' + id;
@@ -179,6 +186,8 @@ function buildNativeRuntime(options = {}) {
   return output;
 }
 
+module.exports = { buildNativeRuntime, buildGuest, verifyFile, makeManifest, runtimeOutput, guestSourceInventory };
+
 if (require.main === module) {
   try {
     const args = process.argv.slice(2);const allow=args.includes('--allow-network');const selected=args.filter(value=>value!=='--allow-network');
@@ -186,5 +195,3 @@ if (require.main === module) {
     process.stdout.write(buildNativeRuntime({ output: selected[1],isolated:!allow }) + '\n');
   } catch (error) { process.stderr.write((/^native_[a-z_]+$/.test(error.message) ? error.message : 'native_runtime_build_failed') + '\n'); process.exitCode = 1; }
 }
-
-module.exports = { buildNativeRuntime, buildGuest, verifyFile, makeManifest, runtimeOutput };

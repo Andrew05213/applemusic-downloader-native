@@ -9,9 +9,9 @@ import (
 	"github.com/Andrew05213/applemusic_downloader/internal/processing"
 )
 
-const groupPattern = `requests=([0-9]+) bytes=([0-9]+) completed_bytes=([0-9]+) wait_ns=([0-9]+) create_ns=([0-9]+) copy_ns=([0-9]+) sdk_ns=([0-9]+) held_ns=([0-9]+) bytes_per_second=([0-9]+)`
+const groupPattern = `requests=([0-9]+) bytes=([0-9]+) completed_bytes=([0-9]+)(?: sdk_calls=([0-9]+))? wait_ns=([0-9]+) create_ns=([0-9]+) copy_ns=([0-9]+) sdk_ns=([0-9]+) held_ns=([0-9]+) bytes_per_second=([0-9]+)`
 
-var summaryPattern = regexp.MustCompile(`^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3} \[INFO \] native_stream_summary end=(close|idle|failure|shutdown) first=\{` + groupPattern + `\} reuse=\{` + groupPattern + `\}$`)
+var summaryPattern = regexp.MustCompile(`^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3} \[INFO \] native_stream_summary end=(close|idle|failure|shutdown)(?: transport_requests=([0-9]+))? first=\{` + groupPattern + `\} reuse=\{` + groupPattern + `\}$`)
 
 type ProcessingHistory struct {
 	mu   sync.Mutex
@@ -38,8 +38,14 @@ func (h *ProcessingHistory) accept(line []byte) {
 	if m == nil {
 		return
 	}
-	var values [18]uint64
+	if (len(m[2]) > 0) != (len(m[6]) > 0) || (len(m[2]) > 0) != (len(m[16]) > 0) {
+		return
+	}
+	var values [21]uint64
 	for i := range values {
+		if len(m[i+2]) == 0 {
+			continue
+		}
 		v, err := strconv.ParseUint(string(m[i+2]), 10, 53)
 		if err != nil {
 			return
@@ -47,9 +53,9 @@ func (h *ProcessingHistory) accept(line []byte) {
 		values[i] = v
 	}
 	group := func(v []uint64) processing.Totals {
-		return processing.Totals{Requests: v[0], Bytes: v[1], Completed: v[2], Wait: v[3], Create: v[4], Copy: v[5], SDK: v[6], Held: v[7], Rate: v[8]}
+		return processing.Totals{Requests: v[0], Bytes: v[1], Completed: v[2], SDKCalls: v[3], Wait: v[4], Create: v[5], Copy: v[6], SDK: v[7], Held: v[8], Rate: v[9]}
 	}
-	s := processing.Summary{End: string(m[1]), First: group(values[:9]), Reuse: group(values[9:])}
+	s := processing.Summary{End: string(m[1]), TransportRequests: values[0], First: group(values[1:11]), Reuse: group(values[11:])}
 	if s.First.Completed > s.First.Bytes || s.Reuse.Completed > s.Reuse.Bytes {
 		return
 	}

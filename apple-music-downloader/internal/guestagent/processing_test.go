@@ -52,3 +52,17 @@ func TestProcessingRouteIsPrivateAndPassive(t *testing.T) {
 		}
 	}
 }
+
+func TestProcessingBatchCountersAndLegacyCompatibility(t *testing.T) {
+	h := new(ProcessingHistory)
+	group := strings.Replace(sampleGroup, "completed_bytes=128", "completed_bytes=128 sdk_calls=1", 1)
+	line := "2026-11-23 01:02:03.456 [INFO ] native_stream_summary end=close transport_requests=1 first={" + group + "} reuse={" + group + "}"
+	h.accept([]byte(sampleLine))
+	h.accept([]byte(line))
+	h.accept([]byte(strings.Replace(line, " sdk_calls=1", "", 1)))
+	h.accept([]byte(strings.Replace(line, "transport_requests=1", "transport_requests=SENTINEL", 1)))
+	s := h.Snapshot()
+	if s.Seen != 2 || s.Streams[0].TransportRequests != 0 || s.Streams[1].TransportRequests != 1 || s.Streams[1].First.SDKCalls != 1 || s.Streams[1].Reuse.Rate != 222 {
+		t.Fatal("lost v1 or legacy counters", s)
+	}
+}

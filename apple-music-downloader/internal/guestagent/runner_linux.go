@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/Andrew05213/applemusic_downloader/internal/nativeauth"
+	"github.com/Andrew05213/applemusic_downloader/internal/nativebatch"
 )
 
 type LiteRunner struct {
@@ -28,6 +29,7 @@ type LiteRunner struct {
 	service                *exec.Cmd
 	done                   chan struct{}
 	env, prefix            []string
+	EnableBatch            bool // set before serving; never used by login helpers
 }
 
 func NewLiteRunner(base string) *LiteRunner {
@@ -82,6 +84,9 @@ func (r *LiteRunner) StartService(ctx context.Context) error {
 		}
 	}
 	cmd := r.command("--native-service", "--base-dir", r.base, "--host", "127.0.0.1", "--port", "12341")
+	if r.EnableBatch {
+		cmd.Env = append(cmd.Env, nativebatch.Environment+"=1")
+	}
 	cmd.Stdout = io.Discard
 	cmd.Stderr = &summaryWriter{history: &r.Processing}
 	if cmd.Start() != nil {

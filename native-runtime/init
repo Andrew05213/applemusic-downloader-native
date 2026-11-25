@@ -36,6 +36,9 @@ bootstrap=/sys/firmware/qemu_fw_cfg/by_name/opt/amdl/control/raw
 test -r "$bootstrap" || fail control_capability_missing
 /bin/busybox cp "$bootstrap" /run/control.secret || fail control_capability_copy_failed
 /bin/busybox chmod 600 /run/control.secret || fail control_capability_permissions_failed
+if test -r /sys/firmware/qemu_fw_cfg/by_name/opt/amdl/lite-batch/raw; then
+  export AMDL_EXPERIMENTAL_LITE_BATCH=1
+fi
 echo '[amdl-guest] service_start'
 set +e
 /bin/amdl-guest --base-dir /data --capability-file /run/control.secret

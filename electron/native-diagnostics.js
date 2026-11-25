@@ -91,7 +91,7 @@ class DiagnosticJournal{
 const downloadReasons = new Set(('catalog_track_missing track_source_missing track_type_unsupported duplicate_track playlist_no_downloadable_tracks track_unavailable playlist_access_denied playlist_auth_required playlist_not_found playlist_pagination_failed session_verification_pending session_rejected resource_forbidden resource_not_found catalog_token_failed disk_full permission_denied decryption_failed download_result_missing credentials_failed metadata_failed manifest_failed manifest_queue_timeout_transient manifest_empty_transient manifest_response_invalid quality_unavailable media_failed output_failed lyrics_failed tagging_failed muxing_failed publish_failed validation_failed license_failed interrupted').split(' '));
 const downloadStates = new Set(['queued','running','cancelling','succeeded','partial','failed','cancelled','interrupted']);
 function safeDownloadReason(code) {
-  if (downloadReasons.has(code)) return code;
+  if (downloadReasons.has(code) || ['native_batch_response_unknown','native_batch_grant_revoked','native_batch_stopped'].includes(code)) return code;
   if (typeof code === 'string' && /^(metadata|manifest|media)_(timeout_|dns_|connection_)?transient$/.test(code)) return code;
   return 'unknown';
 }
@@ -109,7 +109,9 @@ function safeDownloadTasks(input) {
       const keys=['fragments','requests','queuedRequests','readMs','queueMs','replyMs','muxWriteMs'];
       if(timing && keys.every(k=>Number.isSafeInteger(timing[k]) && timing[k]>=0) && timing.queuedRequests<=timing.requests) {
         timed++;
-        if(trackTimings.length<1024) trackTimings.push({position:index+1,...Object.fromEntries(keys.map(k=>[k,timing[k]]))});
+        const counts = Number.isSafeInteger(timing.transportRequests) && timing.transportRequests>=0 && timing.transportRequests<=timing.requests
+          ? {transportRequests:timing.transportRequests,...(Number.isSafeInteger(timing.batchRequests) && timing.batchRequests>=0 && timing.batchRequests<=timing.transportRequests ? {batchRequests:timing.batchRequests} : {})} : {};
+        if(trackTimings.length<1024) trackTimings.push({position:index+1,...Object.fromEntries(keys.map(k=>[k,timing[k]])),...counts});
       }
       if (!['failed','unavailable','interrupted'].includes(item?.status) && !(item?.status==='skipped' && item.errorCode)) continue;
       const reason=safeDownloadReason(item.errorCode);
@@ -127,11 +129,12 @@ function safeLiteProcessing(input) {
   const streams = [];
   for (const s of input.streams) {
     if (!['close','idle','failure','shutdown'].includes(s?.end)) return {available:false};
-    const item = {end:s.end};
+    if (s.transport_requests!==undefined && !valid(s.transport_requests)) return {available:false};
+    const item = {end:s.end,...(s.transport_requests===undefined?{}:{transport_requests:s.transport_requests})};
     for (const group of ['first','reuse']) {
       const g=s[group];
-      if (!keys.every(k=>valid(g?.[k])) || g.completed_bytes>g.bytes) return {available:false};
-      item[group]=Object.fromEntries(keys.map(k=>[k,g[k]]));
+      if (!keys.every(k=>valid(g?.[k])) || g.completed_bytes>g.bytes || (g.sdk_calls!==undefined && !valid(g.sdk_calls))) return {available:false};
+      item[group]={...Object.fromEntries(keys.map(k=>[k,g[k]])),...(g.sdk_calls===undefined?{}:{sdk_calls:g.sdk_calls})};
     }
     streams.push(item);
   }

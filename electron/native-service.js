@@ -19,7 +19,8 @@ class NativeService extends EventEmitter {
     super(); this.token = crypto.randomBytes(32).toString('hex'); this.origin = ''; this.closed = false; this.failed = false; this.buffer = ''; this.requests = new Set(); this.catalog = null;this.playbackRequests=new Map();
     this.child = spawnChild(executable, ['__native-desktop', '--manifest', manifest, '--data-dir', dataDirectory, '--output-dir', outputDirectory, '--guest-port', String(guestPort)], {
       shell: false, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'],
-      env: { SystemRoot: process.env.SystemRoot, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP, PATH: toolDirectory || '' },
+      env: { SystemRoot: process.env.SystemRoot, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP, PATH: toolDirectory || '',
+        ...(process.env.AMDL_EXPERIMENTAL_LITE_BATCH === '1' ? { AMDL_EXPERIMENTAL_LITE_BATCH: '1' } : {}) },
     });
     this.child.stderr.resume(); this.child.stdin.on('error', () => {});
     this.completion = new Promise((resolve) => this.child.once('close', (code) => {

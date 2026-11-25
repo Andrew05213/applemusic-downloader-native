@@ -14,9 +14,9 @@ const root = path.resolve(__dirname, '../..');
 test('native guest inputs pin sources, package snapshot and QEMU publisher digest', () => {
   const lock = require('../../native-runtime/inputs.lock.json');
   assert.equal(lock.wrapper.repository, 'https://github.com/Andrew05213/wrapper');
-  assert.equal(lock.wrapper.branch, 'perf/lite-native-stream-metrics');
-  assert.equal(lock.wrapper.commit, 'cf49336933543cb0e2ca6bd63acdfce3ee7aaa0b');
-  assert.equal(lock.wrapper.sha256, '94b0b21671476e8e4877d5b6bb9e4b56a9492c3d2a2db114fc66dec3a4bf64b2');
+  assert.equal(lock.wrapper.branch, 'work');
+  assert.equal(lock.wrapper.commit, 'a8fb29e78e078b4d73c07995af62410b1802fd31');
+  assert.equal(lock.wrapper.sha256, 'b5432266299425d9541977311eb479833111014e326b20af15a9ad6e3992ea0b');
   assert.equal(lock.wrapper.caBundleSHA256, '427c064216761a1e72a8b30f0d954d08cb6e4435a82091fb865afd20c8497285');
   assert.equal(lock.wrapper.url, 'https://codeload.github.com/Andrew05213/wrapper/tar.gz/'+lock.wrapper.commit);
   assert.equal(lock.wrapper.cacheName, 'wrapper-andrew05213-'+lock.wrapper.commit.slice(0,8)+'.tar.gz');

@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Andrew05213/applemusic_downloader/internal/guestclient"
 	"github.com/Andrew05213/applemusic_downloader/internal/nativeauth"
 )
 
@@ -26,6 +27,14 @@ func downloadItemDiagnostic(stage string, err error) (string, string) {
 		return safe.code, safe.message
 	}
 	if err != nil {
+		switch {
+		case errors.Is(err, guestclient.ErrBatchOutcomeUnknown):
+			return "native_batch_response_unknown", "the batch reply could not be verified; this track stopped without replaying the request"
+		case errors.Is(err, guestclient.ErrBatchGrantRevoked):
+			return "native_batch_grant_revoked", "the verified Music session changed during a batch; this track stopped"
+		case errors.Is(err, guestclient.ErrBatchStopped):
+			return "native_batch_stopped", "the batch did not complete; this track stopped without replaying the request"
+		}
 		if errors.Is(err, nativeauth.ErrUnverified) {
 			return downloadSessionWaitCode, "waiting for Music session verification before resuming unfinished tracks"
 		}

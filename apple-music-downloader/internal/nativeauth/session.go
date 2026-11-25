@@ -19,6 +19,8 @@ var (
 	ErrCancelled    = errors.New("native_auth_cancelled")
 )
 
+const verificationLifetime = 90 * time.Second
+
 type Credentials struct {
 	Email    string `json:"appleEmail"`
 	Password string `json:"applePassword"`
@@ -52,6 +54,8 @@ type Manager struct {
 	tokens             Tokens
 	verifiedUntil      time.Time
 	now                func() time.Time
+	mediaReservations  int
+	mediaDrained       chan struct{}
 	retryAfter         time.Time
 	retryFailures      uint8
 	generation         uint64
@@ -72,11 +76,15 @@ type Manager struct {
 func New(runner Runner, verify Verifier) *Manager {
 	return &Manager{runner: runner, verify: verify, now: time.Now, state: Snapshot{State: "checking"}, traceID: newTraceID()}
 }
-func (m *Manager) snapshotLocked() Snapshot {
-	if m.state.State == "authenticated" && !m.now().Before(m.verifiedUntil) {
+func (m *Manager) expireVerificationLocked(now time.Time) {
+	if m.state.State == "authenticated" && !now.Before(m.verifiedUntil) {
 		m.state = Snapshot{State: "unverified", Code: ErrUnverified.Error()}
 		m.tokens = Tokens{}
 	}
+}
+
+func (m *Manager) snapshotLocked() Snapshot {
+	m.expireVerificationLocked(m.now())
 	result := m.state
 	result.Stage = m.currentStage
 	if len(m.history.Events) > 0 {
@@ -85,6 +93,15 @@ func (m *Manager) snapshotLocked() Snapshot {
 	return result
 }
 func (m *Manager) Snapshot() Snapshot { m.mu.Lock(); defer m.mu.Unlock(); return m.snapshotLocked() }
+
+// VerifiedMediaEpoch checks the cached, already-verified session without
+// copying credentials, starting network work, or refreshing its lifetime.
+func (m *Manager) VerifiedMediaEpoch() (uint64, bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.generation, !m.closed && m.state.State == "authenticated" && m.now().Before(m.verifiedUntil)
+}
+
 func (m *Manager) Credentials() (Tokens, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -153,7 +170,7 @@ func (m *Manager) publish(generation uint64, state Snapshot, tokens Tokens) {
 	m.state = state
 	m.tokens = tokens
 	if state.State == "authenticated" {
-		m.verifiedUntil = m.now().Add(90 * time.Second)
+		m.verifiedUntil = m.now().Add(verificationLifetime)
 		m.retryAfter = time.Time{}
 		m.retryFailures = 0
 	} else if state.State == "unverified" {

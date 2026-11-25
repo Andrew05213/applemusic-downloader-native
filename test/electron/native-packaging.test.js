@@ -77,7 +77,7 @@ function freshnessFixture(t){
   sessionPatchSHA256:'lite-session.patch',nativeLoginSHA256:'native_login.h',nativeServiceSHA256:'native_service.h',
   storeBridgeSHA256:'native_store_bridge.h',storeBridgePatchSHA256:'lite-store-bridge.patch',networkCheckSHA256:'check-wrapper-network.py',extractionToolsLockSHA256:'build-tools.lock.json'};
  for(const file of Object.values(sourceFields))write(path.join(repository,'native-runtime',file),'fixture '+file);
- const sources={};for(const part of ['internal/nativeauth','internal/guestagent','internal/processing','cmd/amdl-guest']){
+ const sources={};for(const part of ['internal/nativeauth','internal/nativebatch','internal/guestagent','internal/processing','cmd/amdl-guest']){
   const name=part+'/fixture.go';write(path.join(repository,'apple-music-downloader',name),'package fixture\n');sources[name]=hash(path.join(repository,'apple-music-downloader',name));
   write(path.join(repository,'apple-music-downloader',part,'excluded_test.go'),'not a production source');
  }
@@ -140,7 +140,7 @@ test('native package rejects omitted, forged or extra guest-agent source evidenc
   if(mode==='missing')fs.unlinkSync(file);
   else{
    if(mode==='binary')fixture.guestSource.binarySHA256='d'.repeat(64);
-   if(mode==='omitted-source')delete fixture.guestSource.sources['internal/nativeauth/fixture.go'];
+   if(mode==='omitted-source')delete fixture.guestSource.sources['internal/nativebatch/fixture.go'];
    if(mode==='extra-source')fixture.guestSource.sources['internal/nativeauth/removed.go']='d'.repeat(64);
    fixture.write(file,JSON.stringify(fixture.guestSource));if(mode!=='hash')fixture.evidence.guestAgentSourceSHA256=hash(file);else fixture.evidence.guestAgentSourceSHA256='0'.repeat(64);
    fixture.write(path.join(fixture.bundle,'evidence/build.json'),JSON.stringify(fixture.evidence));

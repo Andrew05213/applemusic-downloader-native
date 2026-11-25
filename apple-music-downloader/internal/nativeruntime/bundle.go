@@ -17,9 +17,11 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/Andrew05213/applemusic_downloader/internal/nativebatch"
 )
 
-const WrapperCommit = "cf49336933543cb0e2ca6bd63acdfce3ee7aaa0b"
+const WrapperCommit = "a8fb29e78e078b4d73c07995af62410b1802fd31"
 
 var (
 	ErrBundleMissing  = errors.New("native_bundle_missing")
@@ -291,6 +293,9 @@ func (b *Bundle) command(stateDir string, port int) Command {
 	}}
 	if b.ControlProtocol == 1 {
 		command.Args = append(command.Args, "-fw_cfg", "name=opt/amdl/control,file=control.secret")
+		if os.Getenv(nativebatch.Environment) == "1" {
+			command.Args = append(command.Args, "-fw_cfg", "name=opt/amdl/lite-batch,string=1")
+		}
 	}
 	return command
 }

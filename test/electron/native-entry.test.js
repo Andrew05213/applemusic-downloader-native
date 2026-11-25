@@ -13,11 +13,11 @@ function ipcFixture(apiOverride,savePath) {
 test('export includes only numeric Lite phase summaries, separate from jobs',async t=>{
  const d=fs.mkdtempSync(path.join(os.tmpdir(),'lite-metrics-'));t.after(()=>fs.rmSync(d,{recursive:true,force:true}));
  const file=path.join(d,'export.txt'),g={requests:2,bytes:128,completed_bytes:128,wait_ns:1,create_ns:2,copy_ns:3,sdk_ns:4,held_ns:10,bytes_per_second:20,raw:'PRIVATE'};
- const data={seen:1,streams:[{end:'close',first:g,reuse:g,streamID:'PRIVATE'}]};
+ const data={seen:1,streams:[{end:'close',first:{...g,sdk_calls:2},reuse:g,transport_requests:1,streamID:'PRIVATE'}]};
  const f=ipcFixture(async target=>target==='/api/native/processing'?data:{jobs:[]},file);
  await f.handlers.get('native:export-diagnostics')(f.event);
  const raw=fs.readFileSync(file,'utf8');assert.doesNotMatch(raw,/PRIVATE/);
- const s=JSON.parse(raw).liteProcessing;assert.equal(s.available,true);assert.equal(s.streams[0].first.sdk_ns,4);assert.equal(s.omitted,0);
+ const s=JSON.parse(raw).liteProcessing;assert.equal(s.available,true);assert.equal(s.streams[0].first.sdk_ns,4);assert.equal(s.streams[0].first.sdk_calls,2);assert.equal(s.streams[0].transport_requests,1);assert.equal(s.omitted,0);
  const {safeLiteProcessing}=require('../../electron/native-diagnostics');
  assert.equal(safeLiteProcessing({seen:0,streams:[]}).available,true);
  assert.equal(safeLiteProcessing(undefined).available,false);
@@ -109,7 +109,7 @@ test('task read failure does not erase the rest of the export or imply zero fail
 
 test('timings include successful tracks, use only aggregate numbers and reject malformed metrics',()=>{
  const {safeDownloadTasks}=require('../../electron/native-diagnostics');
- const metrics={readMs:9,queueMs:50,replyMs:21,muxWriteMs:3,requests:9,queuedRequests:6,fragments:2};
+ const metrics={readMs:9,queueMs:50,replyMs:21,muxWriteMs:3,requests:9,queuedRequests:6,fragments:2,transportRequests:6,batchRequests:1};
  const item={name:'SENTINEL',sourceId:'SENTINEL',status:'succeeded',timing:{...metrics,secret:'SENTINEL'}};
  const [{trackTimings,omittedTimings}]=safeDownloadTasks({jobs:[{items:[item,{...item,timing:{...metrics,requests:-1}},...Array(1024).fill(item)]}]}).jobs;
  assert.deepEqual(trackTimings[0],{position:1,...metrics});assert.equal(trackTimings[1].position,3);

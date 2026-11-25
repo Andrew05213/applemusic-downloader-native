@@ -12,6 +12,7 @@ import (
 
 	runtimeconfig "github.com/Andrew05213/applemusic_downloader/internal/config"
 	"github.com/Andrew05213/applemusic_downloader/internal/guestclient"
+	"github.com/Andrew05213/applemusic_downloader/internal/nativebatch"
 	"github.com/Andrew05213/applemusic_downloader/internal/transfer"
 	"github.com/Andrew05213/applemusic_downloader/utils/runv2"
 	"github.com/grafov/m3u8"
@@ -135,5 +136,11 @@ func selectNativeVariantDetails(masterURL string, raw []byte, requested string, 
 	return "", "", 0, errors.New("native_quality_unavailable")
 }
 func nativeDownloadTrack(ctx context.Context, id, variant, destination string) error {
+	if os.Getenv(nativebatch.Environment) == "1" {
+		if batch := nativeDownloadClient.OpenDownloadBatch(ctx); batch != nil {
+			defer batch.Close()
+			return runv2.RunContext(runv2.WithDownloadBatch(ctx, batch.Decrypt), id, variant, destination, Config)
+		}
+	}
 	return runv2.RunContext(runv2.WithDecryptor(ctx, nativeDownloadClient.DialDecryptor), id, variant, destination, Config)
 }
