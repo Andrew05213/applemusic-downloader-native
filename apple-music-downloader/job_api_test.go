@@ -264,6 +264,12 @@ func TestJobAPIActiveFilterFindsOldJobBeyondRecentHistory(t *testing.T) {
 	if err != nil || len(newer) != 100 {
 		t.Fatalf("create newer history: jobs=%d err=%v", len(newer), err)
 	}
+	// The two Create calls can share the same clock tick, especially on
+	// Windows. Make the fixture older explicitly rather than relying on the
+	// random job ID to break a created_at tie.
+	if _, err := store.db.Exec(`UPDATE jobs SET created_at = ? WHERE id = ?`, unixNano(newer[0].CreatedAt.Add(-time.Hour)), old[0].ID); err != nil {
+		t.Fatalf("age active fixture: %v", err)
+	}
 	if _, err := store.db.Exec(`UPDATE jobs SET status = ? WHERE id != ?`, JobStatusSucceeded, old[0].ID); err != nil {
 		t.Fatalf("mark newer history terminal: %v", err)
 	}
