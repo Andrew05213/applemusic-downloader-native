@@ -14,7 +14,7 @@ async function install(page,options={}){
   window.chunkCalls=[];window.calls=[];window.cancelCalls=[];window.pendingChunks=[];window.previewCalls=0;
   const item=(id,title)=>({id,title,artist:'Fixture Artist',type:'songs',url:'https://music.apple.com/us/song/'+id,downloadable:true,duration:42000,previewUrl:'https://audio-ssl.itunes.apple.com/fixture.wav'});
   window.nativeDesktop={
-   getState:async()=>({state:'authenticated',region:'us'}),onSession(){},onReady(fn){queueMicrotask(fn)},openLogin:async()=>{},
+   getState:async()=>({state:'authenticated',region:'us',runtimeReady:true}),onSession(){},openLogin:async()=>{},
    cancelPlaybackChunks:async base=>{window.cancelCalls.push(base);for(const p of window.pendingChunks)if(p.base===base)p.reject(Error('cancelled'));window.pendingChunks=window.pendingChunks.filter(p=>p.base!==base);},
    playbackChunk:async target=>{
     window.chunkCalls.push(target);const base=target.slice(0,53),key=target.slice(54);

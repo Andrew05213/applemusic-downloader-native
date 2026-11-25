@@ -17,7 +17,7 @@ async function install(page) {
       releaseLists(){this.pendingLists.splice(0).forEach(resolve=>resolve());}
     };
     window.nativeDesktop = {
-      getState:async()=>({state:'needs_login'}), onSession(){}, onReady(fn){queueMicrotask(fn);}, openLogin:async()=>{},
+      getState:async()=>({state:'needs_login',runtimeReady:true}), onSession(){}, openLogin:async()=>{},
       api:async(target, options={})=>{
         const f=window.jobFixture; f.calls.push({target,method:options.method||'GET'});
         if(target.startsWith('/api/v1/catalog/detail'))return f.details[new URL(target,'http://fixture').searchParams.get('id')]||{groups:[]};

@@ -10,7 +10,7 @@ async function install(page,{collaboration=false,missingID=false,missingViews=fa
   const initial=album('300','Initial Album'),latest=album('399','Actual Latest - Single'),albums=Array.from({length:6},(_,i)=>album(String(310+i),'Original Game Soundtrack '+(i+1)));
   const songs=Array.from({length:9},(_,i)=>({id:String(701+i),type:'songs',title:'Top Song '+(i+1),artist:'HOYO-MiX',albumTitle:'Original Game Soundtrack',releaseDate:'2026-10-22',duration:81000,artwork:art,url:'https://music.apple.com/us/song/'+(701+i),downloadable:true}));
   window.artistCalls=[];window.artistPending=[];window.releaseArtist=()=>window.artistPending.splice(0).forEach(fn=>fn());
-  window.nativeDesktop={getState:async()=>({state:'authenticated',region:'us'}),onSession(){},onReady(fn){queueMicrotask(fn);},openLogin:async()=>{},prefetchCatalog:async()=>true,
+  window.nativeDesktop={getState:async()=>({state:'authenticated',region:'us',runtimeReady:true}),onSession(){},openLogin:async()=>{},prefetchCatalog:async()=>true,
    api:async(target,options={})=>{window.artistCalls.push({target,...options});const u=new URL(target,'http://fixture');
     if(u.pathname==='/api/v1/capabilities')return {queue:{state:'ready'},jobExecutorConfigured:true,qualities:{alac:{available:true},'aac-lc':{available:true}}};
     if(u.pathname==='/api/v1/catalog/home')return {groups:[{type:'albums',title:'最近播放',items:[initial]}]};

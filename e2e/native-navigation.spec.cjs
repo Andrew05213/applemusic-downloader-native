@@ -32,8 +32,8 @@ async function install(page, { delayedDetails = false, detailPages = false } = {
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     };
     window.nativeDesktop = {
-      getState: async () => ({ state: 'authenticated', region: 'us' }),
-      onSession(fn) { window.navigationSessionUpdate = fn; }, onReady(fn) { queueMicrotask(fn); },
+      getState: async () => ({ state: 'authenticated', region: 'us', runtimeReady: true }),
+      onSession(fn) { window.navigationSessionUpdate = fn; },
       openLogin: async () => { window.navigationLoginOpens++; }, exportDiagnostics: async () => true,
       recheck: async () => ({ state: 'authenticated', region: 'us' }),
       api: async (target, options = {}) => {
