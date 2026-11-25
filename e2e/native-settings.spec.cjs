@@ -6,7 +6,7 @@ async function install(page,overrides={}){
  await page.addInitScript(({defaults,overrides})=>{
   const f=window.settingsFixture={preferences:{...defaults,...overrides},concurrency:3,calls:[],changes:[]};
   document.addEventListener('change',e=>{if(e.target.matches('#settings-view select'))f.changes.push({id:e.target.id,key:e.target.dataset.preference,value:e.target.value});});
-  window.nativeDesktop={getState:async()=>({state:'authenticated',region:'us'}),onSession(){},onReady:fn=>queueMicrotask(fn),openLogin:async()=>{},
+  window.nativeDesktop={getState:async()=>({state:'authenticated',region:'us',runtimeReady:true}),onSession(){},openLogin:async()=>{},
    cacheInfo:async()=>({available:true,usedBytes:0,limitMB:500,entries:0}),
    api:async(target,options={})=>{f.calls.push({target,...options});const u=new URL(target,'http://fixture');
     if(target==='/api/v1/capabilities')return {queue:{state:'ready'},jobExecutorConfigured:true,qualities:{alac:{available:true},'aac-lc':{available:true},atmos:{available:true},flac:{available:true},mp3:{available:true}}};

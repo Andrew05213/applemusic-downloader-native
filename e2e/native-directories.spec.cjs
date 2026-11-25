@@ -6,7 +6,7 @@ async function install(page,{clock=false}={}){
  await page.addInitScript(()=>{
   const job={id:'11111111-1111-4111-8111-111111111111',title:'测试专辑',url:'https://music.apple.com/us/album/300',status:'succeeded',total:1,succeeded:1,failed:0,skipped:0,unavailable:0,items:[]};
   window.directoryFixture={directory:'D:\\原下载目录',picked:'E:\\音乐下载',canceled:false,error:'',pending:false,release:null,chooseCalls:0,reveals:[],revealError:'',noFiles:false,jobs:[job]};
-  window.nativeDesktop={getState:async()=>({state:'authenticated',region:'us'}),onSession(){},onReady(fn){queueMicrotask(fn);},openLogin:async()=>{},exportDiagnostics:async()=>true,
+  window.nativeDesktop={getState:async()=>({state:'authenticated',region:'us',runtimeReady:true}),onSession(){},openLogin:async()=>{},exportDiagnostics:async()=>true,
    chooseDownloadDirectory:async()=>{const f=window.directoryFixture;f.chooseCalls++;if(f.pending)await new Promise(resolve=>f.release=resolve);if(f.error)throw Error(f.error);if(f.canceled)return {canceled:true};f.directory=f.picked;return {canceled:false,directory:f.directory};},
    revealJobFolder:async id=>{const f=window.directoryFixture;f.reveals.push(id);if(f.revealError)throw Error(f.revealError);return {revealed:!f.noFiles};},
    api:async(target,options={})=>{

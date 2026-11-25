@@ -12,9 +12,13 @@ async function main(){
   await page.route(/^https?:/,route=>{remote.push(route.request().url());return route.abort();});
   await page.addInitScript(()=>{
    window.fixtureRequests=[];
+   let sessionListener;
+   window.fixtureObserve=value=>sessionListener(value);
+   let bootRace=true;
    const album={id:'300',type:'albums',title:'Fixture Album',artist:'Fixture Artist',url:'https://music.apple.com/us/album/300'};
-   window.nativeDesktop={onSession:()=>{},getState:async()=>({state:'authenticated',region:'us'}),openLogin:async()=>{},api:async target=>{
+   window.nativeDesktop={onSession:fn=>{sessionListener=fn;},getState:async()=>({state:'checking',runtimeReady:false}),openLogin:async()=>{},api:async target=>{
     fixtureRequests.push(target);const p=new URL(target,'http://fixture').pathname;
+    if(p==='/api/v1/catalog/home'&&bootRace){bootRace=false;throw Error("Error invoking remote method 'native:api': Error: native_runtime_unavailable");}
     if(p==='/api/v1/catalog/home'||p==='/api/v1/catalog/search'||p==='/api/v1/catalog/discover')return {groups:[{type:'albums',title:'Fixture Albums',items:[album]}]};
     if(p==='/api/v1/catalog/library')return {groups:[]};
     if(p==='/api/v1/jobs')return {jobs:[{id:'fixture',title:'Fixture Album',url:album.url,status:'running',total:3,succeeded:1,failed:0,skipped:0,unavailable:0}]};
@@ -26,7 +30,20 @@ async function main(){
    }};
   });
   await page.goto(pathToFileURL(path.resolve('src/renderer/native-index.html')).href);
+  const homeRequests=()=>page.evaluate(()=>fixtureRequests.filter(p=>p.startsWith('/api/v1/catalog/home?')));
+  await expect(page.locator('#notice')).toHaveText('正在连接音乐目录…');
+  assert.deepEqual(await homeRequests(),[]);
+  await page.evaluate(()=>fixtureObserve({state:'authenticating',runtimeReady:true}));
+  assert.deepEqual(await homeRequests(),[]);
+  await page.evaluate(()=>fixtureObserve({state:'authenticated',region:'cn',runtimeReady:true}));
+  await expect.poll(async()=>(await homeRequests()).length).toBe(1);
+  await expect(page.locator('#notice')).toHaveText('正在连接音乐目录…');
+  await page.evaluate(()=>{
+   fixtureObserve({state:'authenticated',region:'cn',runtimeReady:true});
+   fixtureObserve({state:'authenticated',region:'cn',runtimeReady:true});
+  });
   await expect(page.locator('.catalog-title-action')).toHaveText('Fixture Album');
+  assert.deepEqual(await homeRequests(),Array(2).fill('/api/v1/catalog/home?region=cn&offset=0'));
   async function layout(width,expanded){
    await page.setViewportSize({width,height:900});
    await expect(page.locator('#nav-toggle')).toHaveAttribute('aria-expanded',String(expanded));
@@ -70,6 +87,11 @@ async function main(){
   assert.equal(await page.evaluate(()=>localStorage.getItem('native-v2-sidebar')),'collapsed');
   await page.locator('#nav-toggle').click();await layout(1440,true);
   await layout(700,false);await page.reload();await layout(700,false);await layout(1440,true);
+  await page.locator('[data-feed="discover"]').click();
+  await page.evaluate(()=>fixtureObserve({state:'needs_login',runtimeReady:true}));
+  await expect(page.locator('#page-title')).toHaveText('新发现');
+  await expect.poll(()=>page.evaluate(()=>fixtureRequests.some(p=>p.startsWith('/api/v1/catalog/discover?')))).toBe(true);
+  assert.deepEqual(await homeRequests(),[]);
   await layout(888,false);await page.locator('#sidebar-search-toggle').click();
   await page.locator('#search-input').press('Escape');await expect(page.locator('#compact-search')).toBeHidden();
   await expect(page.locator('#sidebar-search-toggle')).toBeFocused();

@@ -9,6 +9,7 @@
   const releaseStream = () => { segmentPlayer?.dispose(); segmentPlayer = null; };
   const viewHistory = [], detailHistory = [];
   let searching = false, sidebarLibraryRegion = '', sidebarLibraryRequest = 0;
+  let runtimeReady = false, pendingCatalog = null;
   const sessionNames = { checking: '正在恢复会话', needs_login: '未登录', authenticating: '正在登录', needs_2fa: '等待验证码', needs_interaction: '等待账户验证交互', authenticated: '已验证登录', unverified: '会话暂未验证', runtime_unavailable: '本机服务不可用' };
   const statusNames = { queued: '排队中', running: '下载中', cancelling: '正在取消', succeeded: '完成', partial: '部分完成', failed: '失败', cancelled: '已取消', interrupted: '已中断', skipped: '已跳过', unavailable: '不可用' };
   const notice = text => { $('notice').textContent = text; motion?.feedback($('notice'),text); };
@@ -18,6 +19,7 @@
   function observe(session) {
     const previousSession=state.session;
     state.session = sessionNames[session?.state] ? session.state : 'runtime_unavailable';
+    if (typeof session?.runtimeReady === 'boolean') runtimeReady = session.runtimeReady;
     $('account-state').textContent = sessionNames[state.session]; if(state.session !== 'authenticated') state.canDownload=false; $('session-light').dataset.state = state.canDownload ? 'authenticated' : state.session==='authenticated'?'unverified':state.session;
     $('session-light').title = sessionNames[state.session] + ' · 打开登录与状态';
     $('sidebar-session').textContent = sessionNames[state.session];
@@ -30,6 +32,7 @@
     for (const control of document.querySelectorAll('[data-download]')) control.disabled = !state.canDownload || control.dataset.available !== 'true';
     if(session?.region) void gate();
     if(state.session==='authenticated'&&previousSession!=='authenticated'){jobNameAttempts.clear();if(state.view==='tasks')void resolveJobNames();}
+    resumeCatalog();
   }
   async function gate(){const generation=++state.gateGeneration;let ready=false;try{const caps=await api('/api/v1/capabilities');ready=state.session==='authenticated'&&caps.queue?.state==='ready'&&caps.jobExecutorConfigured===true&&caps.qualities?.[$('quality').value]?.available===true;}catch{}if(generation!==state.gateGeneration)return;state.canDownload=ready;$('session-light').dataset.state=ready?'authenticated':state.session==='authenticated'?'unverified':state.session;$('session-light').title=ready?'可提交当前音质的下载任务 · 不保证单曲最终成功':'当前尚不可提交下载 · 打开设置与状态';for(const control of document.querySelectorAll('[data-download]'))control.disabled=!ready||control.dataset.available!=='true';}
   function updateNavigation() {
@@ -41,9 +44,9 @@
   }
   function view(name, remember = true) { const changed=name!==state.view;if(changed)motion?.cancelAll();if(remember&&changed){viewHistory.push(state.view);if(viewHistory.length>20)viewHistory.shift();}state.view = name; for (const value of ['browse', 'tasks', 'settings']) { $(value + '-view').hidden = value !== name; for (const control of document.querySelectorAll('[data-view="' + value + '"]')) { if (value === name) control.setAttribute('aria-current', 'page'); else control.removeAttribute('aria-current'); } }updateNavigation();if(changed)motion?.enter(name==='tasks'?$('page-title'):$(name+'-view'),'page',remember?1:-1);if (name === 'tasks') void jobs(); if (name === 'settings') void settings(); }
   async function loadSidebarLibrary(force = false) {
-    if(state.session!=='authenticated')return;
+    if(!runtimeReady||state.session!=='authenticated')return;
     const region=$('region').value;if(!force&&sidebarLibraryRegion===region)return;sidebarLibraryRegion=region;const request=++sidebarLibraryRequest;
-    try {const data=await api('/api/v1/catalog/library?'+new URLSearchParams({region,offset:'0'}));if(request!==sidebarLibraryRequest||state.session!=='authenticated'||region!==$('region').value)return;const list=$('sidebar-playlists');list.replaceChildren();for(const item of(data.groups||[]).flatMap(group=>group.items||[]).filter(item=>item.type==='library-playlists').slice(0,25)){const control=button('',()=>{view('browse');return detail(item);},'查看 '+item.title+' 详情');control.className='sidebar-playlist';control.dataset.id=item.id;control.append(image(item.artwork),node('span',item.title));list.append(control);}updateNavigation();}catch{/* Library failure never blocks the main catalog. */}
+    try {const data=await desktop.api('/api/v1/catalog/library?'+new URLSearchParams({region,offset:'0'}),{method:'GET',catalogScope:'sidebar'});if(request!==sidebarLibraryRequest||state.session!=='authenticated'||region!==$('region').value)return;const list=$('sidebar-playlists');list.replaceChildren();for(const item of(data.groups||[]).flatMap(group=>group.items||[]).filter(item=>item.type==='library-playlists').slice(0,25)){const control=button('',()=>{view('browse');return detail(item);},'查看 '+item.title+' 详情');control.className='sidebar-playlist';control.dataset.id=item.id;control.append(image(item.artwork),node('span',item.title));list.append(control);}updateNavigation();}catch{/* Library failure never blocks the main catalog. */}
   }
   function detailPath(item, region=$('region').value) { const library=item.type==='library-playlists';return '/api/v1/catalog/'+(library?'library-detail':'detail')+'?'+new URLSearchParams({region,id:item.id,...(library?{}:{type:item.type}),offset:'0'}); }
   let prefetchActive=0;const prefetched=new Set();
@@ -267,7 +270,30 @@
   function syncDiscoveryShelves(){for(const section of $('catalog-content').querySelectorAll('.discover-section'))section.syncDiscoveryShelf();}
   window.addEventListener('resize',syncDiscoveryShelves,{passive:true});
   const isDiscover = path => !!path && new URL(path,'http://fixture').pathname==='/api/v1/catalog/discover';
-  async function browse(path, append = false) {
+  function catalogCanBrowse(path) {
+    const personalFeed = /^\/api\/v1\/catalog\/(home|library)(?:\?|$)/.test(path);
+    return runtimeReady && !(personalFeed && ['checking','authenticating'].includes(state.session));
+  }
+  function catalogWaitNotice() {
+    const message = state.session === 'runtime_unavailable' ? '本机服务暂不可用，恢复后将自动加载目录。' : '正在连接音乐目录…';
+    if ($('notice').textContent !== message) notice(message);
+  }
+  function nextCatalogGeneration() {
+    if (pendingCatalog?.groupMore) pendingCatalog.groupMore.disabled = false;
+    pendingCatalog = null;
+    return ++state.generation;
+  }
+  function resumeCatalog() {
+    if (state.view !== 'browse' || !pendingCatalog || pendingCatalog.generation !== state.generation) return;
+    if (!catalogCanBrowse(pendingCatalog.path)) { catalogWaitNotice(); return; }
+    const {path, append, retried, groupMore} = pendingCatalog;
+    pendingCatalog = null;
+    const target = new URL(path, 'http://fixture');
+    // A saved session can restore a different region while the request waits.
+    if (!append && target.searchParams.has('region')) target.searchParams.set('region', $('region').value);
+    void browse(target.pathname + target.search, append, { retried, groupMore });
+  }
+  async function browse(path, append = false, { retried = false, groupMore } = {}) {
     const discoveryPage=isDiscover(path);
     if(!append && path!==state.catalogPath && (discoveryPage||isDiscover(state.catalogPath))){
       motion?.cancelTree($('catalog-content'));
@@ -275,8 +301,16 @@
       $('catalog-more').hidden=true;
     }
     if(!append)state.catalogPath=path;
+    const generation = nextCatalogGeneration();
+    if (groupMore) groupMore.disabled = true;
+    if (!catalogCanBrowse(path)) {
+      pendingCatalog = { path, append, generation, retried, groupMore };
+      $('refresh-catalog').removeAttribute('aria-busy');
+      if (state.view === 'browse') catalogWaitNotice();
+      return false;
+    }
     motion?.cancelTree($('catalog-content'));$('refresh-catalog').setAttribute('aria-busy','true');
-    const generation = ++state.generation; notice(discoveryPage?'正在读取新发现…':'正在读取目录…');
+    notice(discoveryPage?'正在读取新发现…':'正在读取目录…');
     try {
       const data = await api(path); if (generation !== state.generation) return;
       const content = $('catalog-content'); if (!append) content.replaceChildren();
@@ -312,22 +346,34 @@
           const next=new URL(path,'http://fixture');next.searchParams.set('offset',String(group.nextOffset));
           if(group.recommendationId){next.pathname='/api/v1/catalog/recommendation';next.searchParams.delete('term');next.searchParams.delete('type');next.searchParams.set('id',group.recommendationId);}
           else if(next.pathname.endsWith('/search'))next.searchParams.set('type',group.type);
-          const more=button('加载更多',async()=>{more.disabled=true;const requestGeneration=state.generation+1;const loaded=await browse(next.pathname+next.search,true);if(requestGeneration!==state.generation)return;if(loaded)more.remove();else more.disabled=false;},'加载更多 '+(group.title||group.type));more.dataset.catalogPage='';content.append(more);
+          const more=button('加载更多',()=>browse(next.pathname+next.search,true,{groupMore:more}),'加载更多 '+(group.title||group.type));more.dataset.catalogPage='';content.append(more);
         }
         }
       }
       const next = data.nextOffset; $('catalog-more').hidden = !Number.isInteger(next); $('catalog-more').onclick = () => { const url = new URL(path, 'http://fixture'); url.searchParams.set('offset', String(next)); void browse(url.pathname + url.search, true); };
+      groupMore?.remove();
       if(!append)motion?.content(content);
       notice((data.resource||data.tracks?.length || data.groups?.some(group => group.items?.length)) ? '' : discoveryPage?'当前地区暂无发现内容。':'暂无内容。'); observe({ state: state.session }); return true;
-    } catch {
+    } catch (error) {
       if (generation === state.generation) {
+        // The runtime can restart between the last state poll and this call.
+        // Wait for its next readiness report and retry this navigation once.
+        if (!retried && /\bnative_runtime_unavailable$/.test(error?.message || '')) {
+          runtimeReady = false;
+          pendingCatalog = { path, append, generation, retried: true, groupMore };
+          if (state.view === 'browse') catalogWaitNotice();
+          return false;
+        }
         notice(discoveryPage?'新发现暂时无法载入，请检查网络后重试。':'目录暂不可用，请检查登录与网络后重试。');
         const content=$('catalog-content');
         if(discoveryPage&&!content.querySelector('.discover-section'))content.replaceChildren(button('重新载入',()=>browse(path)));
       }
       return false;
     }
-    finally {if(generation===state.generation)$('refresh-catalog').removeAttribute('aria-busy');}
+    finally {
+      if (groupMore && pendingCatalog?.groupMore !== groupMore) groupMore.disabled = false;
+      if (generation === state.generation) $('refresh-catalog').removeAttribute('aria-busy');
+    }
   }
   function discardDetail() { state.detail = null; state.browseSnapshot = null;detailHistory.length=0;updateNavigation(); }
   const feedPath = mode => '/api/v1/catalog/' + mode + '?' + new URLSearchParams({region:$('region').value,...(mode==='discover'?{}:{offset:'0'})});
@@ -345,7 +391,7 @@
   function closeDetail() {
     if (!state.detail) return;
     motion?.cancelTree($('catalog-content'));$('refresh-catalog').removeAttribute('aria-busy');
-    ++state.generation;
+    nextCatalogGeneration();
     const snapshot = detailHistory.length?detailHistory.pop():state.browseSnapshot;
     if(snapshot?.detail)state.detail=snapshot.detail;else discardDetail();updateNavigation();
     if (!snapshot || snapshot.region !== $('region').value) { void feed(state.feed); return; }
@@ -360,7 +406,7 @@
     motion?.content($('catalog-content'),-1);
     const hero=$('catalog-content').querySelector('.detail-hero'),related=$('catalog-content').querySelector('.detail-related');if(hero?.resource?.artistId&&related&&!related.childElementCount)void relatedWorks(hero.resource,related,state.generation);
   }
-  function goBack(){if(state.view==='browse'&&state.detail){closeDetail();return;}if(viewHistory.length){view(viewHistory.pop(),false);return;}if(searching)void feed(state.feed);}
+  function goBack(){if(state.view==='browse'&&state.detail){closeDetail();return;}if(viewHistory.length){view(viewHistory.pop(),false);resumeCatalog();return;}if(searching)void feed(state.feed);}
   const jobCards = new Map(), jobOperations = new Map(), removedJobs = new Set();
   const jobNames = new Map(), jobNameAttempts = new Set(); let resolvingJobName = false;
   try { for (const [url,title] of Object.entries(JSON.parse(localStorage.getItem('native-v2-job-names') || '{}'))) if (typeof title === 'string') jobNames.set(url,title.slice(0,300)); } catch {}
@@ -655,7 +701,7 @@
   $('choose-download-directory').onclick=async()=>{const control=$('choose-download-directory');if(control.disabled)return;control.disabled=true;try{const result=await desktop.chooseDownloadDirectory();if(result&&!result.canceled){$('download-directory').textContent=result.directory;$('directory-feedback').textContent='下载位置已保存，新任务生效；已有任务保留原位置。';}}catch(error){$('directory-feedback').textContent=/native_directory_denied/.test(error?.message||'')?'该目录不可写入，请重新选择。':'下载位置未更改，请检查目录后重试。';}finally{control.disabled=!desktop.chooseDownloadDirectory;}};
   $('save-cache-limit').onclick=async()=>{const limit=Number($('cache-limit').value);if(!$('cache-limit').value.trim()||!Number.isInteger(limit)||limit<0||limit>10240){$('cache-feedback').textContent='请输入 0–10240 MB，0 为关闭缓存。';return;}const control=$('save-cache-limit');control.disabled=true;try{await desktop.setCacheLimit(limit);prefetched.clear();await cacheSettings();$('cache-feedback').textContent=limit?'缓存上限已调整，超出容量的旧缓存已自动清理。':'缓存已关闭并清理。';}catch{$('cache-feedback').textContent='调整未完成，请重试。';}finally{control.disabled=false;}};
   $('clear-cache').onclick=async()=>{const control=$('clear-cache');control.disabled=true;try{await desktop.clearCache();prefetched.clear();await cacheSettings();$('cache-feedback').textContent='缓存已清理，下载文件与登录会话不受影响。';}catch{$('cache-feedback').textContent='清理未完成，请重试。';}finally{control.disabled=false;}};
-  $('refresh-catalog').onclick=async()=>{const control=$('refresh-catalog');control.disabled=true;++state.generation;try{if(state.view==='tasks'){await Promise.all([jobs(),refreshMonitor()]);return;}if(state.view==='settings'){await settings();return;}await desktop.refreshCatalog?.();prefetched.clear();detailHistory.length=0;void loadSidebarLibrary(true);if(state.detail){state.browseSnapshot=null;await detail(state.detail,true);}else if(searching)await browse(state.catalogPath);else await feed(state.feed);}catch{notice('刷新未完成，请稍后重试。');}finally{control.disabled=false;}};
+  $('refresh-catalog').onclick=async()=>{const control=$('refresh-catalog');control.disabled=true;try{if(state.view==='tasks'){await Promise.all([jobs(),refreshMonitor()]);return;}if(state.view==='settings'){await settings();return;}nextCatalogGeneration();await desktop.refreshCatalog?.();prefetched.clear();detailHistory.length=0;void loadSidebarLibrary(true);if(state.detail){state.browseSnapshot=null;await detail(state.detail,true);}else if(searching)await browse(state.catalogPath);else await feed(state.feed);}catch{notice('刷新未完成，请稍后重试。');}finally{control.disabled=false;}};
   for (const token of ['{tracknum:02d}', '{disk}', '{title}', '{artist}', '{album}', '{album_artist}', '{year}', '{song_id}', ' - ', '. ']) $('filename-tokens').append(button(token, () => { const field = $('filename'); field.setRangeText(token, field.selectionStart, field.selectionEnd, 'end'); field.focus(); }));
   for (const control of document.querySelectorAll('[data-view]')) control.onclick = () => view(control.dataset.view);
   for (const control of document.querySelectorAll('[data-feed]')) control.onclick = () => { view('browse'); void feed(control.dataset.feed); };
@@ -704,9 +750,13 @@
   try { const saved = JSON.parse(localStorage.getItem('native-v2-download-defaults') || '{}'); if (['aac-lc','alac','atmos','flac','mp3'].includes(saved.quality)) $('quality').value = saved.quality; if (['skip','overwrite','fail'].includes(saved.existing)) $('existing').value = saved.existing; } catch {}
   $('save-settings').onclick = async () => { if (!state.preferences) return; const next = { ...state.preferences, songFileFormat: $('filename').value }; for (const control of document.querySelectorAll('[data-preference]')) next[control.dataset.preference] = control.type === 'checkbox' ? control.checked : control.dataset.preference === 'alacMax' ? Number(control.value) : control.value; try { await api('/api/v1/settings/download','PUT',next); await api('/api/v1/settings/download-concurrency','PUT',{downloadConcurrency:Number($('concurrency').value)}); localStorage.setItem('native-v2-download-defaults',JSON.stringify({quality:$('quality').value,existing:$('existing').value})); notice('设置已保存，下一个任务生效。'); } catch { notice('保存失败，请检查设置值。'); } };
   $('reset-settings').onclick = async () => { try { await api('/api/v1/settings/download','DELETE'); await api('/api/v1/settings/download-concurrency','DELETE'); $('quality').value='alac';$('existing').value='skip';localStorage.removeItem('native-v2-download-defaults');await settings();await gate(); } catch {notice('恢复默认未完成，请重试。');} };
-  desktop.onSession(observe); desktop.getState().then(observe).catch(() => observe({state:'runtime_unavailable'}));
+  let receivedSessionEvent = false;
+  desktop.onSession(session => { receivedSessionEvent = true; observe(session); });
+  desktop.getState().then(session => { if (!receivedSessionEvent) observe(session); })
+    .catch(() => { if (!receivedSessionEvent) observe({state:'runtime_unavailable'}); });
   const icons={home:['m3 10 9-7 9 7','M5 9v12h5v-7h4v7h5V9'],grid:['M3 3h7v7H3z','M14 3h7v7h-7z','M3 14h7v7H3z','M14 14h7v7h-7z'],library:['M5 3h14v18H5z','M8 7h8','M8 11h8','m9 16 2 2 4-4'],download:['M12 3v12','m7 10 5 5 5-5','M4 16v5h16v-5'],settings:['M10 2h4l.5 3 1.5 1 3-1 2 3.5-2.5 2v3l2.5 2-2 3.5-3-1-1.5 1-.5 3h-4l-.5-3-1.5-1-3 1-2-3.5 2.5-2v-3L3 8.5 5 5l3 1 1.5-1Z','M15.5 12a3.5 3.5 0 1 1-7 0 3.5 3.5 0 1 1 7 0'],search:['M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14','m15 15 6 6'],sidebar:['M3 4h18v16H3z','M8 4v16'],music:['M9 18V5l10-2v13','m9 9 10-2','M5 16a3 2 0 1 0 0 4 3 2 0 0 0 0-4','M15 14a3 2 0 1 0 0 4 3 2 0 0 0 0-4'],refresh:['M20 11a8 8 0 1 0-2 6','M20 4v7h-7']};
   function icon(name){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');svg.setAttribute('focusable','false');svg.classList.add('ui-icon');for(const d of icons[name]||[]){const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',d);svg.append(path);}return svg;}
   for(const target of document.querySelectorAll('[data-icon]'))target.append(icon(target.dataset.icon));
-  if(desktop.onReady)desktop.onReady(()=>{void feed('home');void loadSidebarLibrary(true);void refreshMonitor();});else {void feed('home');void refreshMonitor();} setInterval(() => {void refreshMonitor();drawMonitor();if (state.view === 'tasks') {void jobs();for(const card of jobCards.values())drawJobTransfer(card);} }, 1000);
+  void feed('home'); void refreshMonitor();
+  setInterval(() => {void refreshMonitor();drawMonitor();if (state.view === 'tasks') {void jobs();for(const card of jobCards.values())drawJobTransfer(card);} }, 1000);
 })();

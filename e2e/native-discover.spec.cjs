@@ -14,7 +14,7 @@ async function install(page,{width=1280,empty=false,failed=false}={}){
   const songs=Array.from({length:12},(_,i)=>item(String(100+i),'songs',['夏日来信','下一站','日落之下'][i%3]+(i>2?' '+(i+1):'')));
   const featured=['城市之间','听见风的声音','夜晚的最后一首歌','早晨第一班车','把心事唱成歌'].map((title,i)=>({...item(String(201+i),'albums',title),editorialLabel:i?'编辑推荐':'全新专辑',description:'跟着新声音出发，听见流行乐里的不同色彩。'}));
   const f=window.discoveryFixture={calls:[],empty,failed};
-  window.nativeDesktop={getState:async()=>({state:'authenticated',region:'us'}),onSession(){},onReady:fn=>queueMicrotask(fn),openLogin:async()=>{},refreshCatalog:async()=>{},
+  window.nativeDesktop={getState:async()=>({state:'authenticated',region:'us',runtimeReady:true}),onSession(){},openLogin:async()=>{},refreshCatalog:async()=>{},
    api:async(target,options={})=>{f.calls.push({target,...options});const u=new URL(target,'http://fixture');
     if(target==='/api/v1/capabilities')return {queue:{state:'ready'},jobExecutorConfigured:true,qualities:{alac:{available:true}}};
     if(u.pathname==='/api/v1/jobs'){if(options.method==='POST')return {jobs:[{id:'a'.repeat(32),url:options.body.urls[0]}]};return {jobs:[]};}
