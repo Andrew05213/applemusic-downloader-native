@@ -70,10 +70,12 @@ class NativeService extends EventEmitter {
     if(target==='/api/native/playback'){this.playbackPrepare?.abort();this.cancelPlaybackChunks();}
     const abort = new AbortController(); this.requests.add(abort);
     if(target==='/api/native/playback'&&method==='POST')this.playbackPrepare=abort;
-    // A region change also refreshes the private sidebar library. It must not
-    // cancel the independent public discovery request (or vice versa).
-    const catalogSlot = method !== 'GET' || !target.startsWith('/api/v1/catalog/') ? null
-      : target.split('?')[0] === '/api/v1/catalog/discover' ? 'discoveryCatalog' : 'catalog';
+    // Only newer requests from the same UI surface supersede earlier ones.
+    // Prefetch is bounded by its caller and must not cancel visible requests.
+    const pathname = target.split('?')[0];
+    const catalogSlot = method !== 'GET' || !pathname.startsWith('/api/v1/catalog/') || options.catalogScope === 'prefetch' ? null
+      : pathname === '/api/v1/catalog/library' && options.catalogScope === 'sidebar' ? 'sidebarCatalog'
+      : pathname === '/api/v1/catalog/discover' ? 'discoveryCatalog' : 'catalog';
     if (catalogSlot) { this[catalogSlot]?.abort(); this[catalogSlot] = abort; }
     const lifecycleRequest = target === '/api/native/state' || target === '/api/native/retry';
     let timedOut = false;

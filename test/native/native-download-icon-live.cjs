@@ -10,7 +10,7 @@ async function main(){
    const song={id:'301',type:'songs',title:'Fixture Song',artist:'Fixture Artist',duration:180000,downloadable:true,url:'https://music.apple.com/us/song/301'};
    window.fixtureJobs=[];
    window.nativeDesktop={
-    onSession:()=>{},getState:async()=>({state:'authenticated',region:'us'}),openLogin:async()=>{},artworkURL:u=>u,
+    onSession:()=>{},getState:async()=>({state:'authenticated',region:'us',runtimeReady:true}),openLogin:async()=>{},artworkURL:u=>u,
     api:async(target,options={})=>{
      const u=new URL(target,'http://fixture'),p=u.pathname;
      if(p==='/api/v1/capabilities')return {queue:{state:'ready'},jobExecutorConfigured:true,qualities:{alac:{available:true},'aac-lc':{available:true}}};

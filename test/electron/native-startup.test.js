@@ -128,6 +128,28 @@ test('actual main presentation gates login and reveals the owner before deliveri
   await vm.runInContext('revealMain()', f.context);
   assert.equal(f.calls.filter(value => value === 'main-show').length, 1);
 });
+test('catalog readiness reflects the guest runtime in both initial snapshots and session events', async () => {
+  const f = mainFixture();
+  const published = [];
+  f.owner.webContents.send = (channel, snapshot) => {
+    assert.equal(channel, 'native:session-state');
+    published.push(snapshot.runtimeReady);
+  };
+  const read = () => f.handlers.get('native:state')(f.event(f.owner));
+  assert.equal((await read()).runtimeReady, false);
+  vm.runInContext('service = { api: async () => fixtureState };', f.context);
+  for (const [phase, session, ready] of [
+    ['starting', { state: 'checking' }, false],
+    ['ready', { state: 'checking' }, true],
+    ['ready', { state: 'authenticated', region: 'cn' }, true],
+    ['failed', { state: 'authenticated', region: 'cn' }, false],
+  ]) {
+    f.context.fixtureState = { runtime: { phase }, session };
+    await vm.runInContext('refresh()', f.context);
+    assert.equal((await read()).runtimeReady, ready);
+  }
+  assert.deepEqual(published, [false, true, true, false]);
+});
 test('closing during the pending main-page load cannot reveal windows later', async () => {
   const f = mainFixture(); let release;
   f.context.fixtureLoaded = new Promise(resolve => { release = resolve; });

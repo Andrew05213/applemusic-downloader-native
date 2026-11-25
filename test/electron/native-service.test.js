@@ -156,6 +156,38 @@ test('changing discovery region supersedes the older discovery request without c
   await older;
   assert.deepEqual(await library,{library:true});
 });
+test('sidebar and prefetch requests do not supersede an in-flight home request', async t => {
+  const { child, service, receipt } = pendingService();
+  t.after(() => child.emit('close', 0));
+  receipt();
+  await service.ready;
+  let completeHome;
+  let homeSignal;
+  t.mock.method(globalThis, 'fetch', async (url, { signal }) => {
+    const pathname = new URL(url).pathname;
+    if (pathname.endsWith('/home')) {
+      homeSignal = signal;
+      return new Promise((resolve, reject) => {
+        completeHome = () => resolve(Response.json({ home: true }));
+        signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+      });
+    }
+    return Response.json({ pathname });
+  });
+  const home = service.api('/api/v1/catalog/home?region=cn');
+  const result = Promise.all([
+    home,
+    service.api('/api/v1/catalog/library?region=cn', { catalogScope: 'sidebar' }),
+    service.api('/api/v1/catalog/detail?id=10&region=cn', { catalogScope: 'prefetch' }),
+  ]);
+  // All three continuations run once the already-resolved service is awaited.
+  await Promise.resolve();
+  assert.ok(homeSignal && !homeSignal.aborted);
+  completeHome();
+  assert.deepEqual(await result, [
+    { home: true }, { pathname: '/api/v1/catalog/library' }, { pathname: '/api/v1/catalog/detail' },
+  ]);
+});
 test('retired SMS control routes are blocked for every method',()=>{
   for(const target of ['/api/native/sms/send','/api/native/sms/code']){
     assert.equal(allowedAPI('POST',target),false);

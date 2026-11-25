@@ -59,6 +59,7 @@ function sessionCopy(value) {
   const region = state === 'authenticated' && /^[a-z]{2}$/.test(value?.region) ? value.region : undefined;
   if (state === 'authenticated' && !region) return { state: 'unverified' };
   const result = { state, ...(region ? { region } : {}), ...(legacyFactor?{code:'native_login_failed'}:codes.has(value?.code) ? { code: value.code } : {}) };
+  if (typeof value?.runtimeReady === 'boolean') result.runtimeReady = value.runtimeReady;
   if(diagnosticStages.has(value?.stage))result.stage=value.stage;
   if(value?.diagnostics){const d=value.diagnostics;const lastFailure=diagnosticEvent(d.lastFailure);result.diagnostics={events:Array.isArray(d.events)?d.events.slice(-128).map(diagnosticEvent).filter(Boolean):[],...(lastFailure?.outcome==='failed'?{lastFailure}:{})};}
   return result;
@@ -84,7 +85,6 @@ contextBridge.exposeInMainWorld('nativeDesktop', Object.freeze({
   recheck: () => ipcRenderer.invoke('native:recheck'),
   getState: () => ipcRenderer.invoke('native:state'),
   exportDiagnostics: () => ipcRenderer.invoke('native:export-diagnostics'),
-  onReady: (callback) => { if(typeof callback !== 'function') return () => {}; const listener=()=>callback();ipcRenderer.on('native:backend-ready',listener);return ()=>ipcRenderer.removeListener('native:backend-ready',listener); },
   onSession: (callback) => {
     if (typeof callback !== 'function') return () => {};
     const listener = (_event, value) => { if (value && typeof value.state === 'string') callback(sessionCopy(value)); };

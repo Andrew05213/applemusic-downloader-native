@@ -37,11 +37,10 @@ if(!process.versions.electron){
    const partition=session.fromPartition('stream-fixture-'+crypto.randomUUID());partition.webRequest.onBeforeRequest({urls:['http://*/*','https://*/*']},(_details,callback)=>callback({cancel:true}));
    win=new BrowserWindow({show:false,width:1280,height:850,webPreferences:{session:partition,preload:path.join(root,'src/preload/native-preload.js'),sandbox:true,contextIsolation:true,nodeIntegration:false,backgroundThrottling:false}});
    const bind=(name,fn)=>ipcMain.handle(name,(event,...args)=>{assert.equal(event.sender,win.webContents);assert.equal(event.senderFrame,win.webContents.mainFrame);return fn(...args)});
-   bind('native:state',()=>({state:'authenticated',region:'us'}));bind('native:api',(target,options)=>target.startsWith('/api/v1/catalog/library')?{groups:[]}:service.api(target,options));bind('native:playback-chunk',target=>service.playbackChunk(target));bind('native:playback-cancel',base=>service.cancelPlaybackChunks(base));
+   bind('native:state',()=>({state:'authenticated',region:'us',runtimeReady:true}));bind('native:api',(target,options)=>target.startsWith('/api/v1/catalog/library')?{groups:[]}:service.api(target,options));bind('native:playback-chunk',target=>service.playbackChunk(target));bind('native:playback-cancel',base=>service.cancelPlaybackChunks(base));
    const evaluate=source=>win.webContents.executeJavaScript(source,true);
    const wait=async source=>{const start=Date.now();while(!await evaluate(source)){if(Date.now()-start>10000)throw Error('fixture wait failed: '+source);await new Promise(resolve=>setTimeout(resolve,25))}};
    await win.loadFile(path.join(root,'src/renderer/native-index.html'));
-   win.webContents.send('native:backend-ready');
    assert.equal(await evaluate(`MediaSource.isTypeSupported('audio/mp4; codecs="mp4a.40.2"')`),true,'shipping Electron has no AAC MSE');
    await wait(`document.querySelector('[aria-label="播放 Streaming Fixture"]')`);await evaluate(`document.querySelector('[aria-label="播放 Streaming Fixture"]').click()`);
    await wait(`document.querySelector('#audio').currentTime>.1`);
