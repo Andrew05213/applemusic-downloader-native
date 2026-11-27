@@ -88,19 +88,32 @@ var jsonLDPlaylistScript = regexp.MustCompile(`(?is)<script\s+[^>]*type\s*=\s*["
 var jsonHydrationScript = regexp.MustCompile(`(?is)<script\s+[^>]*type\s*=\s*["']application/json["'][^>]*>(.*?)</script\s*>`)
 
 func (c *Client) FetchPublicPlaylistDocument(ctx context.Context, rawURL string) (PublicPlaylistDocument, error) {
+	body, storefront, id, err := c.fetchPublicPlaylistPage(ctx, rawURL)
+	if err != nil {
+		return PublicPlaylistDocument{}, err
+	}
+	document, err := parsePublicPlaylistJSONLDForIdentity(body, storefront, id)
+	if err != nil || !document.Complete {
+		// Do not let callers mistake a partial page for a downloadable playlist.
+		return PublicPlaylistDocument{}, ErrPublicPlaylistIncomplete
+	}
+	return document, nil
+}
+
+func (c *Client) fetchPublicPlaylistPage(ctx context.Context, rawURL string) ([]byte, string, string, error) {
 	if c == nil {
 		c = defaultClient
 	}
 	pageURL, err := url.Parse(strings.TrimSpace(rawURL))
 	if err != nil || pageURL == nil || pageURL.User != nil || strings.Contains(strings.TrimSpace(rawURL), "#") || pageURL.Fragment != "" || pageURL.Hostname() == "" || pageURL.ForceQuery {
-		return PublicPlaylistDocument{}, ErrPublicPlaylistIncomplete
+		return nil, "", "", ErrPublicPlaylistIncomplete
 	}
 	base, err := url.Parse(c.webBaseURL())
 	if err != nil || base == nil || base.User != nil || base.Fragment != "" || base.Hostname() == "" || !strings.EqualFold(pageURL.Scheme, base.Scheme) || pageURL.Port() != base.Port() || (!isAppleMusicAPIHost(pageURL.Hostname()) && !strings.EqualFold(pageURL.Hostname(), base.Hostname())) {
-		return PublicPlaylistDocument{}, ErrPublicPlaylistIncomplete
+		return nil, "", "", ErrPublicPlaylistIncomplete
 	}
 	if err := validatePublicPageURL(pageURL, base, rawURL); err != nil {
-		return PublicPlaylistDocument{}, ErrPublicPlaylistIncomplete
+		return nil, "", "", ErrPublicPlaylistIncomplete
 	}
 	client := c.httpClient()
 	clientCopy := *client
@@ -123,7 +136,7 @@ func (c *Client) FetchPublicPlaylistDocument(ctx context.Context, rawURL string)
 	}
 	req, err := c.newRequest(ctx, http.MethodGet, pageURL.String(), nil)
 	if err != nil {
-		return PublicPlaylistDocument{}, ErrPublicPlaylistIncomplete
+		return nil, "", "", ErrPublicPlaylistIncomplete
 	}
 	req.Header.Set("User-Agent", appleMusicUserAgent)
 	req.Header.Del("Authorization")
@@ -131,30 +144,22 @@ func (c *Client) FetchPublicPlaylistDocument(ctx context.Context, rawURL string)
 	req.Header.Del("Cookie")
 	resp, err := clientCopy.Do(req)
 	if err != nil {
-		return PublicPlaylistDocument{}, err
+		return nil, "", "", err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4<<10))
-		return PublicPlaylistDocument{}, &HTTPStatusError{StatusCode: resp.StatusCode}
+		return nil, "", "", &HTTPStatusError{StatusCode: resp.StatusCode}
 	}
 	body, err := c.readBodyWithLimit(resp.Body, minPositive(c.responseLimit(), DefaultPublicPageBytes))
 	if err != nil {
-		return PublicPlaylistDocument{}, err
+		return nil, "", "", err
 	}
 	expectedStorefront, expectedPlaylistID, identityErr := publicPlaylistPathIdentity(pageURL.EscapedPath())
 	if identityErr != nil {
-		return PublicPlaylistDocument{}, ErrPublicPlaylistIncomplete
+		return nil, "", "", ErrPublicPlaylistIncomplete
 	}
-	document, parseErr := parsePublicPlaylistJSONLDForIdentity(body, expectedStorefront, expectedPlaylistID)
-	if parseErr != nil || !document.Complete {
-		// The exported fetch boundary is fail-closed: callers cannot forget to
-		// inspect Complete and accidentally turn a partial hydration into a
-		// downloadable playlist. Low-level parser tests may still inspect the
-		// explicit partial marker for diagnostics.
-		return PublicPlaylistDocument{}, ErrPublicPlaylistIncomplete
-	}
-	return document, nil
+	return body, expectedStorefront, expectedPlaylistID, nil
 }
 
 // publicPageTransport is a final defense at the transport boundary. Callers
