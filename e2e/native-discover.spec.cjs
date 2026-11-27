@@ -65,7 +65,7 @@ test('discovery preserves editorial order, storefront, native details and downlo
  const download=page.getByRole('button',{name:'下载 夏日来信',exact:true});
  await expect(download).toBeEnabled();await download.click();
  await expect(page.locator('#notice')).toHaveText('已加入下载队列。');
- expect(await page.evaluate(()=>window.discoveryFixture.calls.find(call=>call.target==='/api/v1/jobs'&&call.method==='POST').body)).toEqual({urls:['https://music.apple.com/cn/song/100'],titles:['夏日来信'],metadataBrowseRegion:'cn',quality:'alac',existingPolicy:'skip'});
+ expect(await page.evaluate(()=>window.discoveryFixture.calls.find(call=>call.target==='/api/v1/jobs'&&call.method==='POST').body)).toEqual({urls:['https://music.apple.com/cn/song/100'],titles:['夏日来信'],quality:'alac',existingPolicy:'skip'});
  await page.locator('#region').selectOption('us');
  await expect(page.locator('.discover-section h2')).toHaveText(['编辑精选','New This Week','本周新歌']);
  expect(await fetches(page)).toEqual(['/api/v1/catalog/discover?region=cn','/api/v1/catalog/discover?region=us']);

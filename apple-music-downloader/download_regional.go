@@ -36,68 +36,61 @@ func rewriteDownloadStorefront(raw, region string) string {
 	return parsed.String()
 }
 
-type metadataBrowseRegionKey struct{}
-
-func metadataRegionForTrack(ctx context.Context, track *task.Track) string {
-	if Config.MetadataRegion != "" {
-		return Config.MetadataRegion
-	}
-	region, _ := ctx.Value(metadataBrowseRegionKey{}).(string)
-	if strings.EqualFold(region, track.Storefront) {
-		// Original catalog tags already came from the selected storefront.
-		return ""
-	}
-	return region
-}
-
 // resolveTrackRegionalTextPreferences finds metadata/lyrics matches while
 // preserving the track's original catalog ID, media manifest and output identity.
 func resolveTrackRegionalTextPreferences(ctx context.Context, track *task.Track, token string) {
-	resolveTrackRegionalTextPreferencesWithLookup(ctx, track, token, ampapi.GetEquivalentSongsContext)
-	if track.Type == "songs" && metadataRegionForTrack(ctx, track) != "" {
+	if resolveTrackRegionalTextPreferencesWithLookup(ctx, track, token, ampapi.GetEquivalentSongsContext) {
 		if track.RegionalMetadata != nil {
-			fmt.Println("跨区歌曲标签已匹配。")
+			fmt.Println("歌曲标签已匹配。")
 		} else {
-			fmt.Println("跨区歌曲标签未找到可靠匹配，保留原信息。")
+			fmt.Println("歌曲标签未找到可靠匹配，保留原信息。")
 		}
 	}
 }
 
-func resolveTrackRegionalTextPreferencesWithLookup(ctx context.Context, track *task.Track, token string, lookup func(context.Context, string, string, string, string) ([]ampapi.SongRespData, error)) {
+func resolveTrackRegionalTextPreferencesWithLookup(ctx context.Context, track *task.Track, token string, lookup func(context.Context, string, string, string, string) ([]ampapi.SongRespData, error)) bool {
 	track.RegionalMetadata = nil
 	track.RegionalLyricsID = ""
 	track.RegionalLyricsStorefront = ""
-	metadataRegion := metadataRegionForTrack(ctx, track)
-	if track.Type != "songs" || (metadataRegion == "" && (Config.LyricsRegion == "" || (!Config.SaveLrcFile && !Config.EmbedLrc))) {
-		return
+	if track.Type != "songs" {
+		return false
+	}
+	metadataQuery := metadataTagQuery(ctx, track)
+	lyricsQuery := regionalTextQuery{Config.LyricsRegion, Config.Language}
+	if !Config.SaveLrcFile && !Config.EmbedLrc {
+		lyricsQuery = regionalTextQuery{}
+	}
+	if metadataQuery.region == "" && lyricsQuery.region == "" {
+		return false
 	}
 	original := ampapi.SongRespData{ID: track.ID, Type: "songs"}
 	original.Attributes.Isrc = track.Resp.Attributes.Isrc
 	original.Attributes.DurationInMillis = track.Resp.Attributes.DurationInMillis
 	original.Attributes.ContentRating = track.Resp.Attributes.ContentRating
 	// Missing identity is intentionally not replaced by a title/artist guess.
-	matches := make(map[string]*ampapi.SongRespData)
-	for _, region := range []string{metadataRegion, Config.LyricsRegion} {
-		if region == "" {
+	matches := make(map[regionalTextQuery]*ampapi.SongRespData)
+	for _, query := range []regionalTextQuery{metadataQuery, lyricsQuery} {
+		if query.region == "" {
 			continue
 		}
-		if _, seen := matches[region]; seen {
+		if _, seen := matches[query]; seen {
 			continue
 		}
 		probeCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
-		candidates, err := lookup(probeCtx, region, track.ID, Config.Language, token)
+		candidates, err := lookup(probeCtx, query.region, track.ID, query.locale, token)
 		cancel()
 		if err != nil {
-			matches[region] = nil
+			matches[query] = nil
 			continue
 		}
 		match, _ := ampapi.MatchRegionalSong(original, candidates)
-		matches[region] = match
+		matches[query] = match
 	}
-	track.RegionalMetadata = matches[metadataRegion]
-	if match := matches[Config.LyricsRegion]; match != nil {
-		track.RegionalLyricsID, track.RegionalLyricsStorefront = match.ID, Config.LyricsRegion
+	track.RegionalMetadata = matches[metadataQuery]
+	if match := matches[lyricsQuery]; match != nil {
+		track.RegionalLyricsID, track.RegionalLyricsStorefront = match.ID, lyricsQuery.region
 	}
+	return metadataQuery.region != ""
 }
 
 func getTrackLyricsContext(ctx context.Context, track *task.Track, token, mediaUserToken string) (string, error) {

@@ -30,10 +30,7 @@ async function install(page,{session='authenticated',full=false}={}){
         if(target==='/api/v1/settings/download')return {settings:preferences};
         if(target==='/api/v1/settings/download-concurrency')return {downloadConcurrency:3};
         if(target==='/api/native/state')return {runtime:{phase:'ready'},session:{state:session,region:'us'},downloadDirectory:'D:\\Music'};
-        if(target==='/api/v1/browser-download/resolve'){
-          if(window.deferDownloadResolve)return new Promise(resolve=>{window.finishDownloadResolve=()=>resolve({url:options.body.url});});
-          return {url:options.body.url};
-        }
+        if(target==='/api/v1/browser-download/resolve')return {url:options.body.url};
         if(target==='/api/v1/jobs'&&options.method==='POST')return {jobs:[{id:'123',url:options.body.urls[0]}]};
         if(target.startsWith('/api/v1/jobs'))return {jobs:[]};
         throw new Error('unexpected fixture route');
@@ -53,24 +50,6 @@ test('native browse, Enter search supersession, settings and queue receipt',asyn
   await page.getByRole('button',{name:'{title}',exact:true}).click();await expect(page.locator('#filename')).toHaveValue(/\{title\}/);
   await page.getByRole('button',{name:'保存设置',exact:true}).click();await expect(page.locator('#notice')).toHaveText('设置已保存，下一个任务生效。');
   expect(errors).toEqual([]);expect(await page.locator('iframe,webview').count()).toBe(0);
-});
-
-test('automatic tags keep the browse region at submission without rewriting the download URL',async({page})=>{
-  await install(page);
-  await page.getByRole('button',{name:'设置与状态',exact:true}).click();
-  await expect(page.getByLabel('元数据匹配地区').locator('option:checked')).toHaveText('自动 · 跟随顶栏浏览地区');
-  await page.getByRole('button',{name:'主页推荐',exact:true}).click();
-  const region=page.getByRole('combobox',{name:'目录地区'});
-  await region.selectOption('cn');
-  await page.evaluate(()=>{window.deferDownloadResolve=true;});
-  await page.getByRole('button',{name:'下载 Fixture Song',exact:true}).click();
-  await expect.poll(()=>page.evaluate(()=>typeof window.finishDownloadResolve)).toBe('function');
-  await region.selectOption('jp');
-  await page.evaluate(()=>window.finishDownloadResolve());
-  await expect(page.locator('#notice')).toHaveText('已加入下载队列。');
-  const calls=await page.evaluate(()=>window.calls.filter(c=>c.method==='POST'));
-  expect(calls.find(c=>c.target==='/api/v1/browser-download/resolve').body).toEqual({url:'https://music.apple.com/us/song/100'});
-  expect(calls.find(c=>c.target==='/api/v1/jobs').body).toMatchObject({urls:['https://music.apple.com/us/song/100'],metadataBrowseRegion:'cn'});
 });
 
 test('new download default is ALAC, saved choices survive and reset restores ALAC',async({page})=>{

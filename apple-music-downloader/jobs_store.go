@@ -376,15 +376,6 @@ func (s *JobStore) migrate(ctx context.Context) error {
 	if err := s.ensureJobOutputDirectoryColumn(ctx); err != nil {
 		return err
 	}
-	var metadataBrowseRegionColumn int
-	if err := s.db.QueryRowContext(ctx, `SELECT count(*) FROM pragma_table_info('jobs') WHERE name='metadata_browse_region'`).Scan(&metadataBrowseRegionColumn); err != nil {
-		return fmt.Errorf("inspect job metadata browse region column: %w", err)
-	}
-	if metadataBrowseRegionColumn == 0 {
-		if _, err := s.db.ExecContext(ctx, `ALTER TABLE jobs ADD COLUMN metadata_browse_region TEXT NOT NULL DEFAULT ''`); err != nil {
-			return fmt.Errorf("add job metadata browse region column: %w", err)
-		}
-	}
 	if err := s.ensureJobFileIdentityColumns(ctx); err != nil {
 		return err
 	}
@@ -665,22 +656,21 @@ func (s *JobStore) Create(ctx context.Context, request CreateJobsRequest) ([]Job
 			return nil, fmt.Errorf("create job id: %w", err)
 		}
 		job := Job{
-			ID:                   id,
-			URL:                  rawURL,
-			Quality:              request.Quality,
-			ExistingPolicy:       request.ExistingPolicy,
-			Status:               JobStatusQueued,
-			CreatedAt:            now,
-			UpdatedAt:            now,
-			OutputDirectory:      outputDirectory,
-			MetadataBrowseRegion: request.MetadataBrowseRegion,
+			ID:              id,
+			URL:             rawURL,
+			Quality:         request.Quality,
+			ExistingPolicy:  request.ExistingPolicy,
+			Status:          JobStatusQueued,
+			CreatedAt:       now,
+			UpdatedAt:       now,
+			OutputDirectory: outputDirectory,
 		}
 		if index < len(request.Titles) {
 			job.Title = normalizeJobTitle(request.Titles[index])
 		}
 		if _, err := tx.ExecContext(ctx, `INSERT INTO jobs(
-			id, url, quality, existing_policy, status, created_at, updated_at, title, output_directory, metadata_browse_region
-		) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, job.ID, job.URL, job.Quality, job.ExistingPolicy, job.Status, unixNano(job.CreatedAt), unixNano(job.UpdatedAt), job.Title, job.OutputDirectory, job.MetadataBrowseRegion); err != nil {
+			id, url, quality, existing_policy, status, created_at, updated_at, title, output_directory
+		) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`, job.ID, job.URL, job.Quality, job.ExistingPolicy, job.Status, unixNano(job.CreatedAt), unixNano(job.UpdatedAt), job.Title, job.OutputDirectory); err != nil {
 			return nil, fmt.Errorf("insert job: %w", err)
 		}
 		if err := appendEventTx(ctx, tx, job.ID, EventTypeState, map[string]any{"status": job.Status}); err != nil {
@@ -1970,7 +1960,7 @@ func normalizeJobItemInput(input JobItemInput) (JobItemInput, error) {
 	return input, nil
 }
 
-const jobSelect = `SELECT id, url, quality, existing_policy, status, attempt, total, succeeded, failed, skipped, unavailable, error_code, error_message, created_at, updated_at, started_at, finished_at, title, output_directory, metadata_browse_region FROM jobs`
+const jobSelect = `SELECT id, url, quality, existing_policy, status, attempt, total, succeeded, failed, skipped, unavailable, error_code, error_message, created_at, updated_at, started_at, finished_at, title, output_directory FROM jobs`
 
 const jobItemSelect = `SELECT id, job_id, source_id, name, status, attempt, error_code, error_message, relative_path, created_at, updated_at, timing FROM job_items`
 
@@ -1994,7 +1984,7 @@ func scanJob(scanner rowScanner) (Job, error) {
 		&job.ID, &job.URL, &job.Quality, &existingPolicy, &status, &job.Attempt,
 		&job.Total, &job.Succeeded, &job.Failed, &job.Skipped, &job.Unavailable,
 		&job.ErrorCode, &job.ErrorMessage, &createdAt, &updatedAt, &startedAt, &finishedAt,
-		&job.Title, &job.OutputDirectory, &job.MetadataBrowseRegion,
+		&job.Title, &job.OutputDirectory,
 	)
 	if err != nil {
 		return Job{}, err

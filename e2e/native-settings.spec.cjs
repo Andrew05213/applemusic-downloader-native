@@ -55,6 +55,8 @@ for(const target of ['aac-lc','flac','mp3']) test(`keyboard selection of ${targe
 
 test('friendly labels preserve the original API values and numeric sampling rate',async({page})=>{
  await install(page);
+ await expect(page.getByLabel('元数据匹配地区').locator('option:checked')).toHaveText('自动 · 跟随账号地区');
+ await expect(page.getByLabel('元数据语言').locator('option:checked')).toHaveText('自动 · 跟随歌曲语言');
  const choices=[['下载地区','us','美国'],['元数据语言','en-US','英语'],['歌词类型','syllable-lyrics','逐字歌词'],['歌词格式','ttml','TTML'],['封面格式','png','PNG'],['封面尺寸','3000x3000','3000 × 3000 px'],['ALAC 采样率上限','96000','96 kHz']];
  for(const [label,value,text]of choices){const control=page.getByLabel(label);await control.selectOption(value);await expect(control.locator('option:checked')).toHaveText(text);}
  await page.getByRole('button',{name:'保存设置',exact:true}).click();await expect(page.locator('#notice')).toContainText('设置已保存');

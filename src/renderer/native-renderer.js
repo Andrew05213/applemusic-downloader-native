@@ -55,12 +55,11 @@
     if (state.session !== 'authenticated') { await desktop.openLogin(); return; }
     if (!state.canDownload) {notice('下载服务或所选音质尚未就绪，请稍后重试。');return;}
     const key = url + '|' + $('quality').value + '|' + $('existing').value; if (state.pending.has(key)) return; state.pending.add(key);
-    const metadataBrowseRegion = $('region').value;
     notice('正在加入下载队列…');
     try {
       let canonical = url;
       if (!/\/library\/playlists?\//.test(url)) canonical = (await api('/api/v1/browser-download/resolve', 'POST', { url })).url;
-      const result = await api('/api/v1/jobs', 'POST', { urls: [canonical], ...(title ? { titles: [title] } : {}), metadataBrowseRegion, quality: $('quality').value, existingPolicy: $('existing').value });
+      const result = await api('/api/v1/jobs', 'POST', { urls: [canonical], ...(title ? { titles: [title] } : {}), quality: $('quality').value, existingPolicy: $('existing').value });
       if (!Array.isArray(result.jobs) || result.jobs.length !== 1 || !result.jobs[0].id || result.jobs[0].url !== canonical) throw new Error('incomplete_receipt');
       if (title) rememberJobName(canonical, title);
       notice('已加入下载队列。');
@@ -698,7 +697,7 @@
   }
   const fields = [['downloadRegion','下载地区',['','us','cn','hk','tw','jp','gb']],['metadataRegion','元数据匹配地区',['','cn','us','jp']],['lyricsRegion','歌词地区',['','cn','us','jp']],['language','元数据语言',['','zh-CN','zh-TW','en-US','ja']],['lyricsType','歌词类型',['lyrics','syllable-lyrics']],['lyricsFormat','歌词格式',['lrc','ttml']],['coverFormat','封面格式',['jpg','png']],['coverSize','封面尺寸',['500x500','1000x1000','3000x3000','5000x5000']],['alacMax','ALAC 采样率上限',[44100,48000,96000,192000]],['saveLyrics','保存歌词文件'],['embedLyrics','嵌入歌词'],['embedCover','嵌入封面'],['saveArtistCover','保存艺人封面'],['saveAnimatedArtwork','保存动态封面'],['useSongInfoForPlaylist','使用专辑曲序']];
   const regionChoices={'':'自动',us:'美国',cn:'中国大陆',hk:'香港',tw:'台湾',jp:'日本',gb:'英国'};
-  const preferenceChoices={downloadRegion:regionChoices,metadataRegion:{...regionChoices,'':'自动 · 跟随顶栏浏览地区'},lyricsRegion:regionChoices,language:{'':'自动','zh-CN':'简体中文','zh-TW':'繁体中文','en-US':'英语',ja:'日语'},lyricsType:{lyrics:'逐行歌词','syllable-lyrics':'逐字歌词'},lyricsFormat:{lrc:'LRC',ttml:'TTML'},coverFormat:{jpg:'JPG',png:'PNG'},coverSize:{'500x500':'500 × 500 px','1000x1000':'1000 × 1000 px','3000x3000':'3000 × 3000 px','5000x5000':'5000 × 5000 px'},alacMax:{44100:'44.1 kHz',48000:'48 kHz',96000:'96 kHz',192000:'192 kHz'}};
+  const preferenceChoices={downloadRegion:regionChoices,metadataRegion:{...regionChoices,'':'自动 · 跟随账号地区'},lyricsRegion:regionChoices,language:{'':'自动 · 跟随歌曲语言','zh-CN':'简体中文','zh-TW':'繁体中文','en-US':'英语',ja:'日语'},lyricsType:{lyrics:'逐行歌词','syllable-lyrics':'逐字歌词'},lyricsFormat:{lrc:'LRC',ttml:'TTML'},coverFormat:{jpg:'JPG',png:'PNG'},coverSize:{'500x500':'500 × 500 px','1000x1000':'1000 × 1000 px','3000x3000':'3000 × 3000 px','5000x5000':'5000 × 5000 px'},alacMax:{44100:'44.1 kHz',48000:'48 kHz',96000:'96 kHz',192000:'192 kHz'}};
   const preferenceLabel=(key,value)=>Object.hasOwn(preferenceChoices[key]||{},String(value))?preferenceChoices[key][String(value)]:String(value);
   function drawPreferences(value) { state.preferences = value; $('preference-fields').replaceChildren(); for (const [key, label, options] of fields) { const field = node('label', label, options ? '' : 'check'); const control = node(options ? 'select' : 'input'); control.dataset.preference = key; if (options) { for (const choice of options) { const option = node('option', preferenceLabel(key,choice)); option.value = String(choice); control.append(option); } if (![...control.options].some(option => option.value === String(value[key]))) { const option = node('option', preferenceLabel(key,value[key])); option.value = String(value[key]); control.append(option); } control.value = String(value[key]); } else { control.type = 'checkbox'; control.checked = value[key]; } field.append(control); $('preference-fields').append(field); } $('filename').value = value.songFileFormat; }
   async function cacheSettings(){if(!desktop.cacheInfo){$('cache-usage').textContent='缓存设置需要新版桌面服务。';$('save-cache-limit').disabled=true;$('clear-cache').disabled=true;return;}try{const info=await desktop.cacheInfo();$('cache-limit').value=String(info.limitMB);$('cache-usage').textContent=info.available?'已用 '+bytes(info.usedBytes)+' / '+info.limitMB+' MB · '+info.entries+' 项目录与封面缓存':'缓存暂不可用，仍可在线浏览。';}catch{$('cache-usage').textContent='暂时无法读取缓存占用。';}}
