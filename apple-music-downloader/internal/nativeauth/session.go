@@ -283,23 +283,25 @@ func (m *Manager) Refresh(parent context.Context) Snapshot {
 
 // Ensure coalesces revalidation at operation boundaries. Expiry never causes
 // background password login or rejects a long playlist merely for its age.
+// It checks state without building a diagnostic snapshot.
 func (m *Manager) Ensure(ctx context.Context) (Tokens, error) {
 	for {
 		if ctx.Err() != nil {
 			return Tokens{}, ErrUnverified
 		}
 		m.mu.Lock()
-		state := m.snapshotLocked()
+		m.expireVerificationLocked(m.now())
+		state := m.state.State
 		if m.closed {
 			m.mu.Unlock()
 			return Tokens{}, ErrAuthRequired
 		}
-		if state.State == "authenticated" {
+		if state == "authenticated" {
 			tokens := m.tokens
 			m.mu.Unlock()
 			return tokens, nil
 		}
-		if state.State == "needs_login" || state.State == "needs_2fa" || state.State == "needs_interaction" || state.State == "authenticating" {
+		if state == "needs_login" || state == "needs_2fa" || state == "needs_interaction" || state == "authenticating" {
 			m.mu.Unlock()
 			return Tokens{}, ErrAuthRequired
 		}
@@ -334,17 +336,18 @@ func (m *Manager) Ensure(ctx context.Context) (Tokens, error) {
 			// operation slot. Cancel must not silently start a replacement.
 			m.mu.Lock()
 			defer m.mu.Unlock()
-			state = m.snapshotLocked()
+			m.expireVerificationLocked(m.now())
 			if m.closed {
 				return Tokens{}, ErrAuthRequired
 			}
 			if m.generation != generation {
 				return Tokens{}, ErrUnverified
 			}
-			if state.State == "authenticated" {
+			state := m.state.State
+			if state == "authenticated" {
 				return m.tokens, nil
 			}
-			if state.State == "needs_login" || state.State == "needs_2fa" || state.State == "needs_interaction" || state.State == "authenticating" {
+			if state == "needs_login" || state == "needs_2fa" || state == "needs_interaction" || state == "authenticating" {
 				return Tokens{}, ErrAuthRequired
 			}
 			return Tokens{}, ErrUnverified

@@ -79,6 +79,45 @@ func TestRestoreNeverSubmitsPasswords(t *testing.T) {
 	}
 }
 
+func TestEnsureVerifiedSessionDoesNotCopyDiagnostics(t *testing.T) {
+	ctx := context.Background()
+	verifyCalls := 0
+	m := New(&fakeRunner{has: true}, func(ctx context.Context, tokens Tokens) (string, error) {
+		verifyCalls++
+		return verified(ctx, tokens)
+	})
+	defer m.Close()
+	now := time.Now()
+	m.now = func() time.Time { return now }
+	if err := m.Restore(ctx); err != nil {
+		t.Fatal(err)
+	}
+	snapshot := m.Snapshot()
+	if snapshot.Diagnostics == nil || len(snapshot.Diagnostics.Events) == 0 {
+		t.Fatal("expected diagnostic history after restore")
+	}
+	want, err := m.Credentials()
+	if err != nil {
+		t.Fatal(err)
+	}
+	allocs := testing.AllocsPerRun(100, func() {
+		if got, err := m.Ensure(ctx); err != nil || got != want {
+			t.Fatal("Ensure did not return the cached verified session")
+		}
+	})
+	if allocs != 0 {
+		t.Errorf("Ensure allocated %g times per call with a valid session", allocs)
+	}
+	if verifyCalls != 1 {
+		t.Errorf("verifier ran %d times, want 1", verifyCalls)
+	}
+	outcome := snapshot.Diagnostics.Events[0].Outcome
+	snapshot.Diagnostics.Events[0].Outcome = "modified snapshot"
+	if got := m.Snapshot().Diagnostics.Events[0].Outcome; got != outcome {
+		t.Error("diagnostic snapshot shares mutable history")
+	}
+}
+
 func TestLoginChallengeAndCancellation(t *testing.T) {
 	r := &fakeRunner{login: func(ctx context.Context, c Credentials, codes <-chan string, challenge func()) error {
 		challenge()
