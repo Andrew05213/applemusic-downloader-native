@@ -16,6 +16,7 @@ import (
 	runtimeconfig "github.com/Andrew05213/applemusic_downloader/internal/config"
 	"github.com/Andrew05213/applemusic_downloader/internal/service"
 	"github.com/Andrew05213/applemusic_downloader/internal/transfer"
+	"github.com/Andrew05213/applemusic_downloader/utils/ampapi"
 )
 
 // JobStatus is the durable lifecycle of a download request. Interrupted is
@@ -101,15 +102,18 @@ type Job struct {
 	DownloadPreferences *runtimeconfig.DownloadPreferences `json:"-"`
 	// Native-only durable binding; never accepted from public create requests.
 	OutputDirectory string `json:"-"`
+	// Captured at submission and used only for automatic file tags.
+	MetadataBrowseRegion string `json:"-"`
 }
 
 // CreateJobsRequest is the public POST /api/v1/jobs request. Each URL becomes
 // an independently cancellable job.
 type CreateJobsRequest struct {
-	URLs           []string       `json:"urls"`
-	Titles         []string       `json:"titles,omitempty"`
-	Quality        string         `json:"quality"`
-	ExistingPolicy ExistingPolicy `json:"existingPolicy"`
+	URLs                 []string       `json:"urls"`
+	Titles               []string       `json:"titles,omitempty"`
+	Quality              string         `json:"quality"`
+	ExistingPolicy       ExistingPolicy `json:"existingPolicy"`
+	MetadataBrowseRegion string         `json:"metadataBrowseRegion,omitempty"`
 }
 
 // UnmarshalJSON accepts both the v1 camelCase spelling and the conventional
@@ -122,6 +126,7 @@ func (r *CreateJobsRequest) UnmarshalJSON(data []byte) error {
 		Quality                 string         `json:"quality"`
 		ExistingPolicyCamelCase ExistingPolicy `json:"existingPolicy"`
 		ExistingPolicySnakeCase ExistingPolicy `json:"existing_policy"`
+		MetadataBrowseRegion    string         `json:"metadataBrowseRegion"`
 	}
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
@@ -135,6 +140,7 @@ func (r *CreateJobsRequest) UnmarshalJSON(data []byte) error {
 	r.URLs = decoded.URLs
 	r.Titles = decoded.Titles
 	r.Quality = decoded.Quality
+	r.MetadataBrowseRegion = decoded.MetadataBrowseRegion
 	r.ExistingPolicy = decoded.ExistingPolicyCamelCase
 	if r.ExistingPolicy == "" {
 		r.ExistingPolicy = decoded.ExistingPolicySnakeCase
@@ -310,6 +316,9 @@ var (
 )
 
 func validateCreateJobsRequest(request CreateJobsRequest) (CreateJobsRequest, error) {
+	if request.MetadataBrowseRegion != "" && !ampapi.ValidCatalogStorefront(request.MetadataBrowseRegion) {
+		return CreateJobsRequest{}, newInputError("metadataBrowseRegion must be a lowercase two-letter storefront")
+	}
 	if len(request.Titles) != 0 && len(request.Titles) != len(request.URLs) {
 		return CreateJobsRequest{}, newInputError("titles must match urls in order")
 	}

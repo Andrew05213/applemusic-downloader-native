@@ -57,6 +57,41 @@ func TestJobTitleInputValidationAndProtocol(t *testing.T) {
 		}
 	}
 }
+
+func TestJobMetadataBrowseRegionSurvivesReopenAndClaim(t *testing.T) {
+	const originalURL = "https://music.apple.com/us/song/123"
+	var request CreateJobsRequest
+	if err := json.Unmarshal([]byte(`{"urls":["`+originalURL+`"],"metadataBrowseRegion":"cn"}`), &request); err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "jobs.db")
+	store, err := OpenJobStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+	invalid := request
+	invalid.MetadataBrowseRegion = "cn/songs"
+	if _, err := store.Create(ctx, invalid); err == nil {
+		t.Fatal("persisted an invalid metadata region")
+	}
+	jobs, err := store.Create(ctx, request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Close(); err != nil {
+		t.Fatal(err)
+	}
+	store, err = OpenJobStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := store.ClaimNext(ctx)
+	if err != nil || job == nil || job.ID != jobs[0].ID || job.MetadataBrowseRegion != "cn" || job.URL != originalURL {
+		t.Fatalf("unexpected queued job after reopen: %+v, %v", job, err)
+	}
+}
 func TestJobTelemetryExpiresAndNeverRevivesFinishedSpeed(t *testing.T) {
 	m := &JobManager{telemetry: map[string]JobTransfer{"x": {At: time.Now().UnixMilli(), Bytes: 1000, BytesPerSecond: 500, Phase: "downloading"}}}
 	job := Job{ID: "x", Status: JobStatusRunning}

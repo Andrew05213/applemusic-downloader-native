@@ -68,6 +68,9 @@ func (e processJobExecutor) Execute(ctx context.Context, job Job, emit JobEventS
 	arguments := []string{"__run-one", "--quality", job.Quality, "--existing", string(policy)}
 	if e.native {
 		arguments[0] = "__native-run-one"
+		if job.MetadataBrowseRegion != "" {
+			arguments = append(arguments, "--metadata-browse-region", job.MetadataBrowseRegion)
+		}
 	}
 	for _, sourceID := range retrySourceIDs(job) {
 		arguments = append(arguments, "--retry-item", sourceID)

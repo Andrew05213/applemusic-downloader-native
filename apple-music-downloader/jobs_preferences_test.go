@@ -258,3 +258,58 @@ func TestRegionalLookupAndLyricsUseProvenIDWithFallback(t *testing.T) {
 		t.Fatal("disabled feature made requests")
 	}
 }
+
+func TestAutomaticMetadataUsesOnlyBrowseRegionAndPreservesOriginalOnMiss(t *testing.T) {
+	old := Config
+	t.Cleanup(func() { Config = old })
+	const originalURL = "https://music.apple.com/us/song/123"
+	for _, tt := range []struct {
+		name, browseRegion, manualRegion, wantRegion string
+		matched                                      bool
+	}{
+		{name: "automatic cross-region match", browseRegion: "cn", wantRegion: "cn", matched: true},
+		{name: "no equivalent", browseRegion: "cn", wantRegion: "cn"},
+		{name: "explicit region wins", browseRegion: "cn", manualRegion: "jp", wantRegion: "jp", matched: true},
+		{name: "same source region", browseRegion: "us"},
+		{name: "no browse region"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			Config = runtimeconfig.Defaults()
+			Config.MetadataRegion, Config.DownloadRegion = tt.manualRegion, "us"
+			track := &task.Track{ID: "123", SourceID: "original-source", Type: "songs", Storefront: "us", M3u8: "original-manifest"}
+			track.Resp.Attributes.Isrc = "USAAA2400001"
+			track.Resp.Attributes.DurationInMillis = 180000
+			candidate := ampapi.SongRespData{ID: "456", Type: "songs"}
+			candidate.Attributes.Isrc = track.Resp.Attributes.Isrc
+			candidate.Attributes.DurationInMillis = track.Resp.Attributes.DurationInMillis
+			candidate.Attributes.Name, candidate.Attributes.ArtistName, candidate.Attributes.AlbumName = "本地化标题", "本地化艺人", "本地化专辑"
+			lookupRegion := ""
+			ctx := context.WithValue(context.Background(), metadataBrowseRegionKey{}, tt.browseRegion)
+			resolveTrackRegionalTextPreferencesWithLookup(ctx, track, "developer", func(_ context.Context, region, id, _, _ string) ([]ampapi.SongRespData, error) {
+				if lookupRegion != "" || id != "123" {
+					t.Fatal("unexpected metadata lookup")
+				}
+				lookupRegion = region
+				if !tt.matched {
+					return nil, nil
+				}
+				return []ampapi.SongRespData{candidate}, nil
+			})
+			if lookupRegion != tt.wantRegion {
+				t.Fatalf("lookup region = %q, want %q", lookupRegion, tt.wantRegion)
+			}
+			tags := &mp4tag.MP4Tags{Title: "Original Title", Artist: "Original Artist", Album: "Original Album", Custom: map[string]string{}}
+			wantTitle, wantArtist, wantAlbum := tags.Title, tags.Artist, tags.Album
+			if tt.matched {
+				wantTitle, wantArtist, wantAlbum = candidate.Attributes.Name, candidate.Attributes.ArtistName, candidate.Attributes.AlbumName
+			}
+			applyRegionalTextTags(tags, track)
+			if tags.Title != wantTitle || tags.Artist != wantArtist || tags.Album != wantAlbum {
+				t.Fatal("wrong metadata tags")
+			}
+			if track.ID != "123" || track.SourceID != "original-source" || track.Storefront != "us" || track.M3u8 != "original-manifest" || track.RegionalLyricsID != "" || rewriteDownloadStorefront(originalURL, Config.DownloadRegion) != originalURL {
+				t.Fatal("metadata matching changed the download or lyrics identity")
+			}
+		})
+	}
+}

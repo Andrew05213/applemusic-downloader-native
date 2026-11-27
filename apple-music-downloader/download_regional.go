@@ -36,11 +36,25 @@ func rewriteDownloadStorefront(raw, region string) string {
 	return parsed.String()
 }
 
+type metadataBrowseRegionKey struct{}
+
+func metadataRegionForTrack(ctx context.Context, track *task.Track) string {
+	if Config.MetadataRegion != "" {
+		return Config.MetadataRegion
+	}
+	region, _ := ctx.Value(metadataBrowseRegionKey{}).(string)
+	if strings.EqualFold(region, track.Storefront) {
+		// Original catalog tags already came from the selected storefront.
+		return ""
+	}
+	return region
+}
+
 // resolveTrackRegionalTextPreferences finds metadata/lyrics matches while
 // preserving the track's original catalog ID, media manifest and output identity.
 func resolveTrackRegionalTextPreferences(ctx context.Context, track *task.Track, token string) {
 	resolveTrackRegionalTextPreferencesWithLookup(ctx, track, token, ampapi.GetEquivalentSongsContext)
-	if Config.MetadataRegion != "" && track.Type == "songs" {
+	if track.Type == "songs" && metadataRegionForTrack(ctx, track) != "" {
 		if track.RegionalMetadata != nil {
 			fmt.Println("跨区歌曲标签已匹配。")
 		} else {
@@ -53,7 +67,8 @@ func resolveTrackRegionalTextPreferencesWithLookup(ctx context.Context, track *t
 	track.RegionalMetadata = nil
 	track.RegionalLyricsID = ""
 	track.RegionalLyricsStorefront = ""
-	if track.Type != "songs" || (Config.MetadataRegion == "" && (Config.LyricsRegion == "" || (!Config.SaveLrcFile && !Config.EmbedLrc))) {
+	metadataRegion := metadataRegionForTrack(ctx, track)
+	if track.Type != "songs" || (metadataRegion == "" && (Config.LyricsRegion == "" || (!Config.SaveLrcFile && !Config.EmbedLrc))) {
 		return
 	}
 	original := ampapi.SongRespData{ID: track.ID, Type: "songs"}
@@ -62,7 +77,7 @@ func resolveTrackRegionalTextPreferencesWithLookup(ctx context.Context, track *t
 	original.Attributes.ContentRating = track.Resp.Attributes.ContentRating
 	// Missing identity is intentionally not replaced by a title/artist guess.
 	matches := make(map[string]*ampapi.SongRespData)
-	for _, region := range []string{Config.MetadataRegion, Config.LyricsRegion} {
+	for _, region := range []string{metadataRegion, Config.LyricsRegion} {
 		if region == "" {
 			continue
 		}
@@ -79,7 +94,7 @@ func resolveTrackRegionalTextPreferencesWithLookup(ctx context.Context, track *t
 		match, _ := ampapi.MatchRegionalSong(original, candidates)
 		matches[region] = match
 	}
-	track.RegionalMetadata = matches[Config.MetadataRegion]
+	track.RegionalMetadata = matches[metadataRegion]
 	if match := matches[Config.LyricsRegion]; match != nil {
 		track.RegionalLyricsID, track.RegionalLyricsStorefront = match.ID, Config.LyricsRegion
 	}
