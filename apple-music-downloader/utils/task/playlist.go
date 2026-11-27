@@ -142,6 +142,12 @@ func (a *Playlist) GetRespSourceContext(ctx context.Context, kind ampapi.Playlis
 	if err != nil {
 		return fmt.Errorf("error getting playlist response: %w", err)
 	}
+	if kind == ampapi.PlaylistSourceLibrary {
+		a.recoverLibrarySongIDs(ctx, &resp.Data[0], developerToken, mediaUserToken)
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+	}
 	a.Resp = *resp
 	tracks, unavailable, err := normalizePlaylistTracks(a.Resp.Data[0], a.Storefront)
 	if err != nil {
@@ -319,16 +325,7 @@ func normalizePlaylistTracks(playlist ampapi.PlaylistRespData, storefront ...str
 			continue
 		}
 		catalogType := catalogTypeForPlaylistTrack(data.Type)
-		catalogID := ""
-		for _, relation := range data.Relationships.Catalog.Data {
-			if id := strings.TrimSpace(relation.ID); relation.Type == catalogType && ampapi.ValidCatalogNumericID(id) {
-				catalogID = id
-				break
-			}
-		}
-		if catalogID == "" {
-			catalogID = data.Attributes.PlayParams.CatalogTrackID(catalogType)
-		}
+		catalogID := embeddedCatalogTrackID(data, catalogType)
 		if catalogID == "" && data.Type == catalogType && ampapi.ValidCatalogNumericID(sourceID) {
 			catalogID = sourceID
 		}

@@ -623,8 +623,9 @@ type PlaylistRespData struct {
 		AudioTraits          []string `json:"audioTraits"`
 		Copyright            string   `json:"copyright"`
 		PlayParams           struct {
-			ID   string `json:"id"`
-			Kind string `json:"kind"`
+			ID       string `json:"id"`
+			Kind     string `json:"kind"`
+			GlobalID string `json:"globalId"`
 		} `json:"playParams"`
 		IsCompilation  bool           `json:"isCompilation"`
 		EditorialVideo EditorialVideo `json:"editorialVideo"`
