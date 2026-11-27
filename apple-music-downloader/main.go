@@ -2287,6 +2287,9 @@ func runOneJobChildContext(ctx context.Context, args []string) error {
 	}
 	configureJobOutputDirectories(defaultJobOutputDir())
 	resetLegacyJobState()
+	if nativeDownloadClient != nil {
+		ctx = withNativeTagPolicy(ctx, inheritedProcessCredentials.Storefront, Config.MetadataRegion, Config.Language, Config.AuthorizationToken, ampapi.GetStorefrontLanguagesContext)
+	}
 	legacyRetrySourceIDs = make(map[string]struct{}, len(*retryItems))
 	for _, sourceID := range *retryItems {
 		if sourceID = strings.TrimSpace(sourceID); sourceID != "" {

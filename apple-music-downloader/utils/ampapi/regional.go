@@ -13,6 +13,45 @@ import (
 var ErrRegionalMetadata = errors.New("regional_metadata_unavailable")
 var recordingISRC = regexp.MustCompile(`^[A-Z]{2}[A-Z0-9]{3}[0-9]{7}$`)
 
+type StorefrontLanguages struct {
+	Default   string   `json:"defaultLanguageTag"`
+	Supported []string `json:"supportedLanguageTags"`
+}
+
+func GetStorefrontLanguagesContext(ctx context.Context, region, token string) (StorefrontLanguages, error) {
+	return defaultClient.GetStorefrontLanguages(ctx, region, token)
+}
+
+func (c *Client) GetStorefrontLanguages(ctx context.Context, region, token string) (StorefrontLanguages, error) {
+	if !ValidCatalogStorefront(region) || token == "" {
+		return StorefrontLanguages{}, ErrRegionalMetadata
+	}
+	client := c.catalogClient()
+	req, err := client.newAPIRequest(ctx, http.MethodGet, "v1/storefronts/"+region, nil)
+	if err != nil {
+		return StorefrontLanguages{}, ErrRegionalMetadata
+	}
+	setDeveloperHeaders(req, token)
+	var response struct {
+		Data []struct {
+			ID         string              `json:"id"`
+			Type       string              `json:"type"`
+			Attributes StorefrontLanguages `json:"attributes"`
+		} `json:"data"`
+	}
+	if err := client.decodeJSON(req, &response); err != nil {
+		return StorefrontLanguages{}, ErrRegionalMetadata
+	}
+	if len(response.Data) != 1 || response.Data[0].ID != region || response.Data[0].Type != "storefronts" {
+		return StorefrontLanguages{}, ErrRegionalMetadata
+	}
+	langs := response.Data[0].Attributes
+	if langs.Default == "" || len(langs.Supported) == 0 || len(langs.Supported) > 128 {
+		return StorefrontLanguages{}, ErrRegionalMetadata
+	}
+	return langs, nil
+}
+
 func GetEquivalentSongsContext(ctx context.Context, region, id, language, token string) ([]SongRespData, error) {
 	return defaultClient.GetEquivalentSongs(ctx, region, id, language, token)
 }

@@ -16,6 +16,25 @@ func regionalSong(id, isrc string, duration int, rating string) SongRespData {
 	return s
 }
 
+func TestStorefrontLanguagesUsesOnlyDeveloperTokenAndValidatesIdentity(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/storefronts/jp" || r.Header.Get("Authorization") != "Bearer developer" || r.Header.Get("Media-User-Token") != "" || r.Header.Get("Cookie") != "" {
+			t.Error("unexpected storefront language request")
+		}
+		_, _ = w.Write([]byte(`{"data":[{"id":"jp","type":"storefronts","attributes":{"defaultLanguageTag":"ja","supportedLanguageTags":["ja","en-US"]}}]}`))
+	}))
+	defer server.Close()
+	client := NewClient(server.Client())
+	client.APIBaseURL = server.URL
+	langs, err := client.GetStorefrontLanguages(context.Background(), "jp", "developer")
+	if err != nil || langs.Default != "ja" || len(langs.Supported) != 2 || langs.Supported[1] != "en-US" {
+		t.Fatalf("languages = %+v, err = %v", langs, err)
+	}
+	if _, err := client.GetStorefrontLanguages(context.Background(), "jp/another", "developer"); err == nil {
+		t.Fatal("invalid storefront was accepted")
+	}
+}
+
 func TestRegionalMatchRequiresSameRecordingAndUniqueCandidate(t *testing.T) {
 	original := regionalSong("123", "USAAA2400001", 180000, "explicit")
 	good := regionalSong("456", "USAAA2400001", 180100, "explicit")
