@@ -8,13 +8,16 @@ const runtimeCodes = new Set('native_server_failed native_arguments_invalid nati
 for (const stage of runtimeStages) STAGES.add(stage);
 for (const code of runtimeCodes) CODES.add(code);
 const exitCodeValid = code => Number.isInteger(code) && code >= 0 && code <= 0xffffffff;
+const fallbackCodes = new Set(['native_process_start_failed','native_guest_exited','native_guest_not_ready']);
 const guestBootEvents = new Set('init_start modules_ready network_ready state_mounted service_start dev_mount_failed proc_mount_failed sys_mount_failed run_mount_failed module_load_failed loopback_failed network_device_missing network_address_failed network_route_failed state_device_missing data_mount_failed ca_bundle_missing control_capability_missing control_capability_copy_failed control_capability_permissions_failed service_exited'.split(' '));
 function safeRuntime(input) {
  if (!['stopped','starting','ready','stopping','failed','unavailable'].includes(input?.phase)) return undefined;
- const {phase, stage, code, authState, processExitCode, guestBootEvent} = input;
+ const {phase, stage, code, authState, processExitCode, guestBootEvent, accelerator, acceleratorFallback} = input;
  return {phase, ...(runtimeStages.has(stage)||stage==='desktop_service' ? {stage} : {}),
   ...((phase==='failed'||phase==='unavailable')&&runtimeCodes.has(code) ? {code} : {}),
   ...(['checking','needs_login','authenticating','needs_2fa','needs_interaction','authenticated','unverified'].includes(authState) ? {authState} : {}),
+  ...(['whpx','tcg'].includes(accelerator) ? {accelerator} : {}),
+  ...(fallbackCodes.has(acceleratorFallback) ? {acceleratorFallback} : {}),
   ...(phase==='failed'&&stage==='runtime_boot'&&guestBootEvents.has(guestBootEvent) ? {guestBootEvent} : {}),
   ...(phase==='failed'&&((stage==='runtime_boot'&&code==='native_guest_exited')||stage==='desktop_service')&&exitCodeValid(processExitCode) ? {processExitCode} : {})};
 }

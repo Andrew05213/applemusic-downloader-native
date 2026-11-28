@@ -18,6 +18,15 @@ test('diagnostic wire schema rejects unknown stages, codes and identity fields',
  const d=sanitizeDiagnostics({events:[{...event(),token:'SENTINEL'}],lastFailure:event(),body:'SENTINEL'});assert.doesNotMatch(JSON.stringify(d),/SENTINEL/);
 });
 
+test('runtime diagnostics retain only fixed accelerator and fallback values',()=>{
+ const {safeRuntime}=require('../../electron/native-diagnostics');
+ assert.deepEqual(safeRuntime({phase:'ready',accelerator:'whpx'}),{phase:'ready',accelerator:'whpx'});
+ for(const acceleratorFallback of ['native_process_start_failed','native_guest_exited','native_guest_not_ready']){
+  assert.deepEqual(safeRuntime({phase:'ready',accelerator:'tcg',acceleratorFallback,serial:'PRIVATE'}),{phase:'ready',accelerator:'tcg',acceleratorFallback});
+ }
+ assert.deepEqual(safeRuntime({phase:'ready',accelerator:'PRIVATE',acceleratorFallback:'PRIVATE'}),{phase:'ready'});
+});
+
 test('guest boot marker vocabulary stays in sync and cannot carry serial output',()=>{
  const vm=require('node:vm'),{guestBootEvents,safeRuntime,sanitizeDiagnostics}=require('../../electron/native-diagnostics');
  const preload=fs.readFileSync(path.resolve(__dirname,'../../src/preload/native-preload.js'),'utf8');
