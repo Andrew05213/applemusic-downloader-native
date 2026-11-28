@@ -147,7 +147,7 @@ func TestCommandAndStateImage(t *testing.T) {
 	if _, err := prepareState(context.Background(), b, state); !errors.Is(err, ErrStateInUse) {
 		t.Fatalf("second owner: %v", err)
 	}
-	cmd := b.command(state, 12340)
+	cmd := b.command(state, 12340, acceleratorTCG)
 	if cmd.Path != filepath.Join(filepath.Dir(manifest), "bin", "qemu-system-x86_64.exe") {
 		t.Fatal("unexpected executable")
 	}
@@ -156,7 +156,7 @@ func TestCommandAndStateImage(t *testing.T) {
 		t.Fatal("ordinary bundle unexpectedly changed network policy")
 	}
 	b.Isolated = true
-	if !strings.Contains(strings.Join(b.command(state, 12340).Args, " "), "restrict=on") {
+	if !strings.Contains(strings.Join(b.command(state, 12340, acceleratorTCG).Args, " "), "restrict=on") {
 		t.Fatal("isolated bundle permits guest egress")
 	}
 	for _, forbidden := range []string{"wsl.exe", "cmd.exe", "powershell", "--login", "--debug", "whpx", "user:pass"} {
@@ -280,6 +280,7 @@ func (f fakeStatus) Status(ctx context.Context) (wrapperlite.Status, error) { re
 func testController(t *testing.T) *Controller {
 	t.Helper()
 	c := NewController(testBundle(t), filepath.Join(t.TempDir(), "state"), 12340)
+	c.supportsWHPX = func() bool { return false }
 	c.start = func(Command) (Process, error) { return &fakeProcess{done: make(chan struct{})}, nil }
 	c.probe = fakeStatus(func(context.Context) (wrapperlite.Status, error) {
 		return wrapperlite.Status{Regions: []string{"us"}}, nil
