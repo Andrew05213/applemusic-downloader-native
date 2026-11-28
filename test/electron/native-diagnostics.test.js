@@ -88,6 +88,30 @@ test('upstream Apple diagnostic codes are a fixed vocabulary, not response text'
  }
 });
 
+test('Music DNS fallback outcome survives preload and export without query details',t=>{
+ const vm=require('node:vm');const {safeSession}=require('../../electron/native-login');const {DiagnosticJournal}=require('../../electron/native-diagnostics');
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'native-music-dns-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+ let api,listener,copied;
+ vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,'../../src/preload/native-preload.js'),'utf8'),{require(){return {contextBridge:{exposeInMainWorld(_,value){api=value}},ipcRenderer:{on(_,fn){listener=fn},removeListener(){}}}}});
+ api.onSession(value=>{copied=value});
+ for(const outcome of ['ok','failed']){
+  const base={traceId:'a'.repeat(32),attempt:1,at:Date.now()};
+  const code='native_network_dns_failed';
+  const leaf={...base,seq:3,stage:'music_storefront',outcome:'failed',code};
+  listener(null,{state:'unverified',code,stage:'music_storefront',diagnostics:{events:[
+   {...base,seq:1,stage:'music_dns_fallback',outcome:'begin',code,hostname:'SENTINEL_DOMAIN'},
+   {...base,seq:2,stage:'music_dns_fallback',outcome,...(outcome==='failed'?{code:'native_music_dns_fallback_failed'}:{}),ip:'SENTINEL_IP',error:'SENTINEL_ERROR'},
+   ...(outcome==='failed'?[leaf]:[]),
+  ],...(outcome==='failed'?{lastFailure:leaf}:{})}});
+  const file=path.join(dir,outcome+'.json');
+  new DiagnosticJournal(file).observe(safeSession(copied));
+  const snapshot=new DiagnosticJournal(file).snapshot();
+  assert.deepEqual(snapshot.events.slice(0,2).map(e=>[e.stage,e.outcome]),[['music_dns_fallback','begin'],['music_dns_fallback',outcome]]);
+  assert.equal(snapshot.lastFailure?.code,outcome==='failed'?code:undefined);
+  assert.doesNotMatch(fs.readFileSync(file,'utf8'),/SENTINEL/);
+ }
+});
+
 test('Go and desktop Music diagnostic vocabularies stay aligned',()=>{
  const {APPLE_CODES,CODES}=require('../../electron/native-diagnostics');
  const source=fs.readFileSync(path.resolve(__dirname,'../../apple-music-downloader/internal/nativeauth/music_diagnostics.go'),'utf8');

@@ -5,17 +5,22 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/Andrew05213/applemusic_downloader/internal/musicdns"
 	"github.com/Andrew05213/applemusic_downloader/internal/nativeauth"
 )
 
-func NewVerifier() (nativeauth.Verifier, error) {
+const storefrontEndpoint = "https://" + musicdns.Host + "/v1/me/storefront"
+
+func NewVerifier(lookup musicdns.Lookup) (nativeauth.Verifier, error) {
 	pem, err := os.ReadFile("/usr/local/android/cert.pem")
 	if err != nil {
 		return nil, nativeauth.ErrUnverified
@@ -25,9 +30,14 @@ func NewVerifier() (nativeauth.Verifier, error) {
 		return nil, nativeauth.ErrUnverified
 	}
 	client := &http.Client{Timeout: 15 * time.Second, Transport: &http.Transport{Proxy: nil, TLSClientConfig: &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS12}}, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
-	return storefrontVerifier(client, "https://api.music.apple.com/v1/me/storefront"), nil
+	return storefrontVerifierWithDNS(client, storefrontEndpoint, lookup), nil
 }
+
 func storefrontVerifier(client *http.Client, endpoint string) nativeauth.Verifier {
+	return storefrontVerifierWithDNS(client, endpoint, nil)
+}
+
+func storefrontVerifierWithDNS(client *http.Client, endpoint string, lookup musicdns.Lookup) nativeauth.Verifier {
 	// Keep the token on this exact endpoint even for injected/test clients.
 	bounded := *client
 	bounded.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
@@ -46,8 +56,60 @@ func storefrontVerifier(client *http.Client, endpoint string) nativeauth.Verifie
 		req.Header.Set("Origin", "https://music.apple.com")
 		req.Header.Set("Referer", "https://music.apple.com/")
 		response, err := bounded.Do(req)
+		if lookup != nil && ctx.Err() == nil && endpoint == storefrontEndpoint && isStorefrontDNSFailure(err) {
+			if transport, ok := bounded.Transport.(*http.Transport); ok {
+				// One bounded retry, for this idempotent request only. The
+				// original TLS server name, URL, and redirect policy stay intact.
+				fallbackCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+				defer cancel()
+				nativeauth.Report(ctx, "music_dns_fallback", "begin", "native_network_dns_failed", 0)
+				ips, lookupErr := lookup(fallbackCtx)
+				switch {
+				case ctx.Err() != nil:
+					nativeauth.Report(ctx, "music_dns_fallback", "cancelled", "", 0)
+				case lookupErr != nil || len(ips) == 0:
+					nativeauth.Report(ctx, "music_dns_fallback", "failed", "native_music_dns_fallback_failed", 0)
+				default:
+					nativeauth.Report(ctx, "music_dns_fallback", "ok", "", 0)
+					retryTransport := transport.Clone()
+					defer retryTransport.CloseIdleConnections()
+					retryTransport.DisableKeepAlives = true
+					// Dial the resolved IP but leave SNI and certificate checks
+					// tied to the URL. This transport is never reused elsewhere.
+					dial := transport.DialContext
+					if dial == nil {
+						dial = (&net.Dialer{Timeout: time.Second}).DialContext
+					}
+					retryTransport.DialTLSContext = nil
+					retryTransport.DialContext = func(_ context.Context, _, address string) (net.Conn, error) {
+						if address != musicdns.Host+":443" {
+							return nil, nativeauth.ErrUnverified
+						}
+						var lastErr error = nativeauth.ErrUnverified
+						for _, ip := range ips {
+							conn, dialErr := dial(fallbackCtx, "tcp4", net.JoinHostPort(ip.String(), "443"))
+							if dialErr == nil {
+								return conn, nil
+							}
+							lastErr = dialErr
+							if fallbackCtx.Err() != nil {
+								break
+							}
+						}
+						return nil, lastErr
+					}
+					retryClient := bounded
+					retryClient.Transport = retryTransport
+					response, err = retryClient.Do(req.Clone(fallbackCtx))
+				}
+			}
+		}
 		if err != nil {
-			nativeauth.Report(ctx, "music_storefront", "failed", nativeauth.TransportErrorCode(err), 0)
+			code := nativeauth.TransportErrorCode(err)
+			if code == "native_network_dns_failed" {
+				return "", musicVerificationFailure(ctx, code, 0, "")
+			}
+			nativeauth.Report(ctx, "music_storefront", "failed", code, 0)
 			return "", nativeauth.ErrUnverified
 		}
 		defer response.Body.Close()
@@ -88,6 +150,11 @@ func storefrontVerifier(client *http.Client, endpoint string) nativeauth.Verifie
 		}
 		return region, nil
 	}
+}
+
+func isStorefrontDNSFailure(err error) bool {
+	var dnsErr *net.DNSError
+	return errors.As(err, &dnsErr) && strings.EqualFold(strings.TrimSuffix(dnsErr.Name, "."), musicdns.Host)
 }
 
 // The generic Manager still understands errors.Is; the fixed leaf code also

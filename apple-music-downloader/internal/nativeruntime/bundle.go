@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Andrew05213/applemusic_downloader/internal/musicdns"
 	"github.com/Andrew05213/applemusic_downloader/internal/nativebatch"
 )
 
@@ -271,7 +272,7 @@ func prepareState(ctx context.Context, b *Bundle, stateDir string) (io.Closer, e
 	return lease, nil
 }
 
-func (b *Bundle) command(stateDir string, port int) Command {
+func (b *Bundle) command(stateDir string, port, dnsPort int) Command {
 	asset := func(name string) string { return filepath.Join(b.root, filepath.FromSlash(name)) }
 	// This contains service-only, non-secret args. No login input is accepted.
 	guestArgs := "--base-dir\n/data\n--host\n0.0.0.0\n--port\n12340\n"
@@ -293,6 +294,9 @@ func (b *Bundle) command(stateDir string, port int) Command {
 	}}
 	if b.ControlProtocol == 1 {
 		command.Args = append(command.Args, "-fw_cfg", "name=opt/amdl/control,file=control.secret")
+		if !b.Isolated && dnsPort > 0 && dnsPort <= 65535 {
+			command.Args = append(command.Args, "-fw_cfg", "name="+musicdns.FWConfig+",string="+strconv.Itoa(dnsPort))
+		}
 		if os.Getenv(nativebatch.Environment) == "1" {
 			command.Args = append(command.Args, "-fw_cfg", "name=opt/amdl/lite-batch,string=1")
 		}

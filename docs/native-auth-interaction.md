@@ -47,6 +47,16 @@ limit/missing-credential classifications. Neither prompt text nor inputs are
 part of these events. Unknown text remains visible; recognized generic prompts
 and semantic button roles have Chinese labels with the original text available.
 
+On Windows, a DNS error resolving `api.music.apple.com` during Music storefront
+verification can trigger one bounded lookup through the Windows system resolver.
+The loopback bridge accepts only this fixed IPv4 lookup, requires the per-boot
+capability, and is disabled for isolated bundles. It does not receive Apple
+tokens or make HTTPS requests. The guest retries the original URL with its
+original TLS verification. This is not used for Store login, the catalog,
+downloads, or playback requests. Diagnostic export records the
+`music_dns_fallback` start and outcome without DNS answers, raw errors or
+credentials.
+
 Retry preserves the last account explicitly submitted in that login window,
 not the account from the initial form. Passwords are never trimmed, retained for
 UI reuse, or re-submitted automatically. A retry requests fresh credentials;

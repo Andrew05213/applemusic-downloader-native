@@ -56,7 +56,7 @@
     native_music_upstream_failed:'Music 服务暂不可用，请稍后重试。',
     native_music_http_failed:'Music 会话校验请求被拒绝，请导出诊断。',
     native_music_response_invalid:'Music 会话响应格式异常，请导出诊断。',
-    native_network_dns_failed:'无法解析 Music 服务地址，请检查网络后重试。',
+    native_network_dns_failed:'暂时无法验证 Music 会话：无法解析服务地址。请检查网络后重新验证，无需重新登录。',
     native_network_timeout:'Music 会话校验超时，请稍后重试。',
     native_tls_certificate_invalid:'Music 连接证书校验失败，请导出诊断。',
     native_network_connection_failed:'无法连接 Music 服务，请检查网络后重试。',

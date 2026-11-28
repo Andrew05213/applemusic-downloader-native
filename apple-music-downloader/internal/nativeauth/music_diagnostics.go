@@ -6,6 +6,7 @@ var MusicVerificationCodes = []string{
 	"native_music_developer_rejected", "native_music_user_rejected",
 	"native_music_rate_limited", "native_music_upstream_failed",
 	"native_music_http_failed", "native_music_response_invalid",
+	"native_network_dns_failed",
 }
 
 var AppleErrorCodes = []string{"40100", "40101", "40300", "40301", "40302", "40303", "42900", "50000", "50001", "50300"}

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/Andrew05213/applemusic_downloader/internal/guestagent"
+	"github.com/Andrew05213/applemusic_downloader/internal/musicdns"
 	"github.com/Andrew05213/applemusic_downloader/internal/nativeauth"
 	"github.com/Andrew05213/applemusic_downloader/internal/nativebatch"
 )
@@ -35,7 +36,7 @@ func run() error {
 		raw[i] = 0
 	}
 	_ = os.Remove(*capFile)
-	verifier, err := guestagent.NewVerifier()
+	verifier, err := guestagent.NewVerifier(musicdns.GuestLookup(capability))
 	if err != nil {
 		return err
 	}

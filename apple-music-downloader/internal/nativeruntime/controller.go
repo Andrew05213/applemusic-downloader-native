@@ -5,11 +5,13 @@ import (
 	"errors"
 	"io"
 	"net"
+	"runtime"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/Andrew05213/applemusic_downloader/internal/guestclient"
+	"github.com/Andrew05213/applemusic_downloader/internal/musicdns"
 	"github.com/Andrew05213/applemusic_downloader/internal/nativeauth"
 	"github.com/Andrew05213/applemusic_downloader/internal/wrapperlite"
 )
@@ -43,6 +45,7 @@ type Controller struct {
 	process                                    Process
 	agent                                      *guestclient.Client
 	lease                                      io.Closer
+	musicDNS                                   io.Closer
 	cancel                                     context.CancelFunc
 	generation                                 uint64
 	stopEpoch                                  uint64
@@ -116,6 +119,8 @@ func (c *Controller) Start(parent context.Context) (result error) {
 	defer finishPrepare()
 	var process Process
 	var lease io.Closer
+	var dnsBridge io.Closer
+	var dnsPort int
 	var agent *guestclient.Client
 	defer func() {
 		if result != nil {
@@ -128,6 +133,9 @@ func (c *Controller) Start(parent context.Context) (result error) {
 			}
 			if process != nil {
 				_ = process.Stop()
+			}
+			if dnsBridge != nil {
+				_ = dnsBridge.Close()
 			}
 			if lease != nil {
 				_ = lease.Close()
@@ -181,13 +189,21 @@ func (c *Controller) Start(parent context.Context) (result error) {
 			return ErrBundleInvalid
 		}
 		probe = agent
+		if runtime.GOOS == "windows" && !bundle.Isolated {
+			// Optional: the original resolver remains usable if loopback bind fails.
+			dnsPort, dnsBridge, _ = musicdns.Listen(capability)
+			if dnsPort == c.port {
+				_ = dnsBridge.Close()
+				dnsPort, dnsBridge = 0, nil
+			}
+		}
 	}
 	if prepare.Err() != nil {
 		return ErrCancelled
 	}
 	finishPrepare()
 	setStage("runtime_boot")
-	process, err = c.start(bundle.command(c.stateDir, c.port))
+	process, err = c.start(bundle.command(c.stateDir, c.port, dnsPort))
 	if err != nil {
 		return ErrProcessStart
 	}
@@ -218,6 +234,7 @@ func (c *Controller) Start(parent context.Context) (result error) {
 			c.process = process
 			c.agent = agent
 			c.lease = lease
+			c.musicDNS = dnsBridge
 			c.cancel = nil
 			c.state = State{Runtime: "native-lite", Phase: "ready", Regions: append([]string{}, status.Regions...)}
 			c.mu.Unlock()
@@ -257,6 +274,10 @@ func (c *Controller) watch(process Process, generation uint64) {
 		c.agent = nil
 	}
 	c.lease = nil
+	if c.musicDNS != nil {
+		_ = c.musicDNS.Close()
+		c.musicDNS = nil
+	}
 	c.state = State{Runtime: "native-lite", Phase: "failed", Stage: "runtime_boot", Code: ErrGuestExited.Error(), ProcessExitCode: processExitCode(process), GuestBootEvent: processBootEvent(process), Regions: []string{}}
 	c.mu.Unlock()
 }
@@ -272,10 +293,11 @@ func (c *Controller) Stop() error {
 	defer c.opMu.Unlock()
 	c.mu.Lock()
 	c.generation++
-	process, lease, agent := c.process, c.lease, c.agent
+	process, lease, agent, dnsBridge := c.process, c.lease, c.agent, c.musicDNS
 	c.process = nil
 	c.agent = nil
 	c.lease = nil
+	c.musicDNS = nil
 	c.cancel = nil
 	c.state = State{Runtime: "native-lite", Phase: "stopping", Regions: []string{}}
 	c.mu.Unlock()
@@ -298,6 +320,9 @@ func (c *Controller) Stop() error {
 	}
 	if lease != nil {
 		_ = lease.Close()
+	}
+	if dnsBridge != nil {
+		_ = dnsBridge.Close()
 	}
 	c.mu.Lock()
 	c.state = State{Runtime: "native-lite", Phase: "stopped", Regions: []string{}, GracefulStop: graceful}

@@ -84,6 +84,9 @@ func TransportErrorCode(err error) string {
 }
 
 func KnownStage(stage string) bool {
+	if stage == "music_dns_fallback" {
+		return true
+	}
 	for _, s := range DiagnosticStages {
 		if stage == s {
 			return true
@@ -92,6 +95,9 @@ func KnownStage(stage string) bool {
 	return false
 }
 func KnownCode(code string) bool {
+	if code == "native_music_dns_fallback_failed" {
+		return true
+	}
 	if musicVerificationCode(code) {
 		return true
 	}
