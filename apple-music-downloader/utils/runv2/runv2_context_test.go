@@ -296,15 +296,16 @@ func TestRunContextRejectsChunkedOversizedPlaylist(t *testing.T) {
 
 func TestCloseConnOnCancelStopsBlockedDecryptorIO(t *testing.T) {
 	local, remote := net.Pipe()
+	defer local.Close()
 	defer remote.Close()
+	if err := remote.SetReadDeadline(time.Now().Add(time.Second)); err != nil {
+		t.Fatalf("set deadline: %v", err)
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	stop := closeConnOnCancel(ctx, local)
 	defer stop()
 
 	cancel()
-	if err := remote.SetReadDeadline(time.Now().Add(time.Second)); err != nil {
-		t.Fatalf("set deadline: %v", err)
-	}
 	_, err := remote.Read(make([]byte, 1))
 	if !errors.Is(err, io.EOF) {
 		t.Fatalf("blocked decryptor read error = %v, want EOF after cancellation", err)
