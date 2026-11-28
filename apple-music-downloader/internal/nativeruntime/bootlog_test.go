@@ -85,7 +85,7 @@ func TestQEMUGuestBootDiagnosticFixture(t *testing.T) {
 	if _, err := prepareBootCapability(state); err != nil {
 		t.Fatal(err)
 	}
-	params := bundle.command(state, freePort(t), 0)
+	params := bundle.command(state, freePort(t), 0, acceleratorTCG)
 	drive := slices.Index(params.Args, "-drive")
 	if drive < 0 || drive+1 >= len(params.Args) {
 		t.Fatal("fixture is missing the data-drive argument")

@@ -272,7 +272,14 @@ func prepareState(ctx context.Context, b *Bundle, stateDir string) (io.Closer, e
 	return lease, nil
 }
 
-func (b *Bundle) command(stateDir string, port, dnsPort int) Command {
+type qemuAccelerator string
+
+const (
+	acceleratorTCG  qemuAccelerator = "tcg"
+	acceleratorWHPX qemuAccelerator = "whpx"
+)
+
+func (b *Bundle) command(stateDir string, port, dnsPort int, accelerator qemuAccelerator) Command {
 	asset := func(name string) string { return filepath.Join(b.root, filepath.FromSlash(name)) }
 	// This contains service-only, non-secret args. No login input is accepted.
 	guestArgs := "--base-dir\n/data\n--host\n0.0.0.0\n--port\n12340\n"
@@ -284,8 +291,14 @@ func (b *Bundle) command(stateDir string, port, dnsPort int) Command {
 	if b.Isolated {
 		network += ",restrict=on"
 	}
+	accel, cpu := "tcg,tb-size=64", "max"
+	if accelerator == acceleratorWHPX {
+		// Use the configuration verified with this bundle's legacy PC devices.
+		// The Hyper-V in-kernel interrupt controller can stall their boot.
+		accel, cpu = "whpx,kernel-irqchip=off", "host"
+	}
 	command := Command{Path: asset(b.QEMU), Cwd: stateDir, captureBoot: true, Args: []string{
-		"-L", inputs + "/firmware", "-accel", "tcg,tb-size=64", "-cpu", "max", "-m", "512", "-smp", "2",
+		"-L", inputs + "/firmware", "-accel", accel, "-cpu", cpu, "-m", "512", "-smp", "2",
 		"-kernel", inputs + "/kernel", "-initrd", inputs + "/initrd",
 		"-append", "console=ttyS0 quiet net.ifnames=0 biosdevname=0 lite_args_b64=" + base64.StdEncoding.EncodeToString([]byte(guestArgs)),
 		"-display", "none", "-serial", "stdio", "-monitor", "none", "-no-reboot",

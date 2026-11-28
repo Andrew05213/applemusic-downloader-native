@@ -18,6 +18,8 @@
 
 Windows 运行资料路径过深时，QEMU 可能无法读取 BIOS；验收中曾复现 265 字符的 BIOS 路径失败。测试和部署应使用常规长度目录，不绕过文件身份或来源检查。
 
+Windows x64 启动时会检查 Windows Hypervisor Platform。可用时优先尝试带 QEMU 软件中断控制器的 WHPX；未启用或不支持时直接使用 TCG，无需更改 Windows 设置。如果 WHPX 来宾无法启动、提前退出或 20 秒内没有就绪，程序先停止该来宾，再用同一份资料启动一次 TCG。这个切换只发生在启动阶段，不会在已开始的下载或播放过程中重启来宾。导出诊断中的 `runtime.accelerator` 和 `runtime.acceleratorFallback` 可用于确认实际模式及回退原因。
+
 ## 来源
 
 本仓库初始源码来自前身项目快照，来源见[上游清单](../UPSTREAMS.md)。旧仓库分支、标签和 Release 与本仓库独立；当前发布只使用本仓库标签和附件。

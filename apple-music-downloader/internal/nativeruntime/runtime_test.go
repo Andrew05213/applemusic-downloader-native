@@ -147,7 +147,7 @@ func TestCommandAndStateImage(t *testing.T) {
 	if _, err := prepareState(context.Background(), b, state); !errors.Is(err, ErrStateInUse) {
 		t.Fatalf("second owner: %v", err)
 	}
-	cmd := b.command(state, 12340, 0)
+	cmd := b.command(state, 12340, 0, acceleratorTCG)
 	if cmd.Path != filepath.Join(filepath.Dir(manifest), "bin", "qemu-system-x86_64.exe") {
 		t.Fatal("unexpected executable")
 	}
@@ -156,11 +156,11 @@ func TestCommandAndStateImage(t *testing.T) {
 		t.Fatal("ordinary bundle unexpectedly changed network policy")
 	}
 	b.ControlProtocol = 1
-	if args := strings.Join(b.command(state, 12340, 40123).Args, " "); !strings.Contains(args, "-fw_cfg name=opt/amdl/music-dns-port,string=40123") {
+	if args := strings.Join(b.command(state, 12340, 40123, acceleratorWHPX).Args, " "); !strings.Contains(args, "-fw_cfg name=opt/amdl/music-dns-port,string=40123") || !strings.Contains(args, "-accel whpx,kernel-irqchip=off") {
 		t.Fatal("missing private DNS bridge bootstrap")
 	}
 	b.Isolated = true
-	if args := strings.Join(b.command(state, 12340, 40123).Args, " "); !strings.Contains(args, "restrict=on") || strings.Contains(args, "music-dns-port") {
+	if args := strings.Join(b.command(state, 12340, 40123, acceleratorTCG).Args, " "); !strings.Contains(args, "restrict=on") || strings.Contains(args, "music-dns-port") {
 		t.Fatal("isolated bundle unexpectedly enables an egress route")
 	}
 	for _, forbidden := range []string{"wsl.exe", "cmd.exe", "powershell", "--login", "--debug", "whpx", "user:pass"} {
@@ -284,6 +284,7 @@ func (f fakeStatus) Status(ctx context.Context) (wrapperlite.Status, error) { re
 func testController(t *testing.T) *Controller {
 	t.Helper()
 	c := NewController(testBundle(t), filepath.Join(t.TempDir(), "state"), 12340)
+	c.supportsWHPX = func() bool { return false }
 	c.start = func(Command) (Process, error) { return &fakeProcess{done: make(chan struct{})}, nil }
 	c.probe = fakeStatus(func(context.Context) (wrapperlite.Status, error) {
 		return wrapperlite.Status{Regions: []string{"us"}}, nil

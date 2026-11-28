@@ -17,16 +17,18 @@ import (
 )
 
 type State struct {
-	Runtime         string   `json:"runtime"`
-	Phase           string   `json:"phase"`
-	Stage           string   `json:"stage,omitempty"`
-	Code            string   `json:"code,omitempty"`
-	ProcessExitCode *uint32  `json:"processExitCode,omitempty"`
-	GuestBootEvent  string   `json:"guestBootEvent,omitempty"`
-	Regions         []string `json:"regions"`
-	SessionVerified bool     `json:"sessionVerified"`
-	AuthState       string   `json:"authState,omitempty"`
-	GracefulStop    bool     `json:"gracefulStop,omitempty"`
+	Runtime             string          `json:"runtime"`
+	Phase               string          `json:"phase"`
+	Stage               string          `json:"stage,omitempty"`
+	Code                string          `json:"code,omitempty"`
+	ProcessExitCode     *uint32         `json:"processExitCode,omitempty"`
+	GuestBootEvent      string          `json:"guestBootEvent,omitempty"`
+	Regions             []string        `json:"regions"`
+	SessionVerified     bool            `json:"sessionVerified"`
+	AuthState           string          `json:"authState,omitempty"`
+	GracefulStop        bool            `json:"gracefulStop,omitempty"`
+	Accelerator         qemuAccelerator `json:"accelerator,omitempty"`
+	AcceleratorFallback string          `json:"acceleratorFallback,omitempty"`
 }
 
 type statusProbe interface {
@@ -40,7 +42,9 @@ type Controller struct {
 	port                                       int
 	probe                                      statusProbe
 	start                                      func(Command) (Process, error)
+	supportsWHPX                               func() bool
 	prepareTimeout, readyTimeout, pollInterval time.Duration
+	whpxReadyTimeout                           time.Duration
 	state                                      State
 	process                                    Process
 	agent                                      *guestclient.Client
@@ -55,6 +59,7 @@ type Controller struct {
 func NewController(manifestPath, stateDir string, port int) *Controller {
 	probe, _ := wrapperlite.NewClient(port)
 	return &Controller{manifestPath: manifestPath, stateDir: stateDir, port: port, probe: probe, start: startProcess, prepareTimeout: 90 * time.Second, readyTimeout: 60 * time.Second, pollInterval: 100 * time.Millisecond,
+		supportsWHPX: hostSupportsWHPX, whpxReadyTimeout: 20 * time.Second,
 		state: State{Runtime: "native-lite", Phase: "stopped", Regions: []string{}}}
 }
 
@@ -122,6 +127,8 @@ func (c *Controller) Start(parent context.Context) (result error) {
 	var dnsBridge io.Closer
 	var dnsPort int
 	var agent *guestclient.Client
+	var accelerator qemuAccelerator
+	var fallback string
 	defer func() {
 		if result != nil {
 			if stage != "runtime_boot" && errors.Is(result, ErrCancelled) && errors.Is(prepare.Err(), context.DeadlineExceeded) && ctx.Err() == nil {
@@ -145,7 +152,7 @@ func (c *Controller) Start(parent context.Context) (result error) {
 			}
 			c.mu.Lock()
 			c.cancel = nil
-			c.state = State{Runtime: "native-lite", Phase: "failed", Stage: stage, Code: result.Error(), ProcessExitCode: exitCode, GuestBootEvent: processBootEvent(process), Regions: []string{}}
+			c.state = State{Runtime: "native-lite", Phase: "failed", Stage: stage, Code: result.Error(), ProcessExitCode: exitCode, GuestBootEvent: processBootEvent(process), Regions: []string{}, Accelerator: accelerator, AcceleratorFallback: fallback}
 			c.mu.Unlock()
 		}
 	}()
@@ -154,11 +161,17 @@ func (c *Controller) Start(parent context.Context) (result error) {
 	}
 	// Never accept a pre-existing Lite (or another app's status endpoint) as
 	// readiness of the guest we are about to launch.
-	listener, err := net.Listen("tcp4", "127.0.0.1:"+strconv.Itoa(c.port))
-	if err != nil {
-		return ErrPortInUse
+	checkPort := func() error {
+		listener, err := net.Listen("tcp4", "127.0.0.1:"+strconv.Itoa(c.port))
+		if err != nil {
+			return ErrPortInUse
+		}
+		_ = listener.Close()
+		return nil
 	}
-	_ = listener.Close()
+	if err := checkPort(); err != nil {
+		return err
+	}
 	setStage("runtime_bundle")
 	bundle, err := LoadBundle(prepare, c.manifestPath)
 	if err != nil {
@@ -178,17 +191,18 @@ func (c *Controller) Start(parent context.Context) (result error) {
 	if err := prepareRuntimeInputs(prepare, bundle, c.stateDir); err != nil {
 		return err
 	}
-	probe := c.probe
-	if bundle.ControlProtocol == 1 {
+	prepareAgent := func() (statusProbe, error) {
+		if bundle.ControlProtocol != 1 {
+			return c.probe, nil
+		}
 		capability, err := prepareBootCapability(c.stateDir)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		agent, err = guestclient.New(c.port, capability)
 		if err != nil {
-			return ErrBundleInvalid
+			return nil, ErrBundleInvalid
 		}
-		probe = agent
 		if runtime.GOOS == "windows" && !bundle.Isolated {
 			// Optional: the original resolver remains usable if loopback bind fails.
 			dnsPort, dnsBridge, _ = musicdns.Listen(capability)
@@ -197,22 +211,111 @@ func (c *Controller) Start(parent context.Context) (result error) {
 				dnsPort, dnsBridge = 0, nil
 			}
 		}
+		return agent, nil
+	}
+	probe, err := prepareAgent()
+	if err != nil {
+		return err
 	}
 	if prepare.Err() != nil {
 		return ErrCancelled
 	}
 	finishPrepare()
 	setStage("runtime_boot")
-	process, err = c.start(bundle.command(c.stateDir, c.port, dnsPort))
-	if err != nil {
-		return ErrProcessStart
+	preferred := acceleratorTCG
+	if c.supportsWHPX() {
+		preferred = acceleratorWHPX
 	}
-	boot, finishBoot := context.WithTimeout(ctx, c.readyTimeout)
+	for next := preferred; ; next = acceleratorTCG {
+		if ctx.Err() != nil {
+			return ErrCancelled
+		}
+		accelerator = next
+		c.mu.Lock()
+		c.state.Accelerator = accelerator
+		c.state.AcceleratorFallback = fallback
+		c.mu.Unlock()
+		timeout := c.readyTimeout
+		if accelerator == acceleratorWHPX {
+			timeout = min(timeout, c.whpxReadyTimeout)
+		}
+		var status wrapperlite.Status
+		process, err = c.start(bundle.command(c.stateDir, c.port, dnsPort, accelerator))
+		if err != nil {
+			err = ErrProcessStart
+		} else {
+			status, err = c.waitForGuest(ctx, process, probe, timeout)
+		}
+		if ctx.Err() != nil {
+			return ErrCancelled
+		}
+		if err == nil {
+			c.mu.Lock()
+			if ctx.Err() != nil || c.stopEpoch != stopEpoch {
+				c.mu.Unlock()
+				return ErrCancelled
+			}
+			c.process = process
+			c.agent = agent
+			c.lease = lease
+			c.musicDNS = dnsBridge
+			c.cancel = nil
+			c.state = State{Runtime: "native-lite", Phase: "ready", Regions: append([]string{}, status.Regions...), Accelerator: accelerator, AcceleratorFallback: fallback}
+			c.mu.Unlock()
+			go c.watch(process, generation)
+			return nil
+		}
+		if accelerator != acceleratorWHPX || errors.Is(err, ErrCancelled) {
+			return err
+		}
+		fallback = err.Error()
+		if process != nil {
+			// Keep the same state lease throughout. Never have two guests on
+			// the same disk, even if stopping the first one fails.
+			if stopErr := process.Stop(); stopErr != nil {
+				return err
+			}
+			select {
+			case <-process.Done():
+			default:
+				return err
+			}
+			process = nil
+		}
+		if ctx.Err() != nil {
+			return ErrCancelled
+		}
+		if agent != nil {
+			agent.Close()
+			agent = nil
+		}
+		if dnsBridge != nil {
+			if closeErr := dnsBridge.Close(); closeErr != nil {
+				return err
+			}
+			dnsPort, dnsBridge = 0, nil
+		}
+		setStage("runtime_port")
+		if err := checkPort(); err != nil {
+			return err
+		}
+		setStage("runtime_state")
+		// Do not reuse the first guest's HTTP connections or boot capability.
+		probe, err = prepareAgent()
+		if err != nil {
+			return err
+		}
+		setStage("runtime_boot")
+	}
+}
+
+func (c *Controller) waitForGuest(ctx context.Context, process Process, probe statusProbe, timeout time.Duration) (wrapperlite.Status, error) {
+	boot, finishBoot := context.WithTimeout(ctx, timeout)
 	defer finishBoot()
 	for {
 		select {
 		case <-process.Done():
-			return ErrGuestExited
+			return wrapperlite.Status{}, ErrGuestExited
 		default:
 		}
 		attempt, cancelAttempt := context.WithTimeout(boot, 2*time.Second)
@@ -220,38 +323,29 @@ func (c *Controller) Start(parent context.Context) (result error) {
 		cancelAttempt()
 		if boot.Err() != nil {
 			if ctx.Err() != nil {
-				return ErrCancelled
+				return wrapperlite.Status{}, ErrCancelled
 			}
-			return ErrGuestNotReady
+			return wrapperlite.Status{}, ErrGuestNotReady
 		}
 		if err == nil {
 			select {
 			case <-process.Done():
-				return ErrGuestExited
+				return wrapperlite.Status{}, ErrGuestExited
 			default:
 			}
-			c.mu.Lock()
-			c.process = process
-			c.agent = agent
-			c.lease = lease
-			c.musicDNS = dnsBridge
-			c.cancel = nil
-			c.state = State{Runtime: "native-lite", Phase: "ready", Regions: append([]string{}, status.Regions...)}
-			c.mu.Unlock()
-			go c.watch(process, generation)
-			return nil
+			return status, nil
 		}
 		timer := time.NewTimer(c.pollInterval)
 		select {
 		case <-process.Done():
 			timer.Stop()
-			return ErrGuestExited
+			return wrapperlite.Status{}, ErrGuestExited
 		case <-boot.Done():
 			timer.Stop()
 			if ctx.Err() != nil {
-				return ErrCancelled
+				return wrapperlite.Status{}, ErrCancelled
 			}
-			return ErrGuestNotReady
+			return wrapperlite.Status{}, ErrGuestNotReady
 		case <-timer.C:
 		}
 	}
@@ -278,7 +372,7 @@ func (c *Controller) watch(process Process, generation uint64) {
 		_ = c.musicDNS.Close()
 		c.musicDNS = nil
 	}
-	c.state = State{Runtime: "native-lite", Phase: "failed", Stage: "runtime_boot", Code: ErrGuestExited.Error(), ProcessExitCode: processExitCode(process), GuestBootEvent: processBootEvent(process), Regions: []string{}}
+	c.state = State{Runtime: "native-lite", Phase: "failed", Stage: "runtime_boot", Code: ErrGuestExited.Error(), ProcessExitCode: processExitCode(process), GuestBootEvent: processBootEvent(process), Regions: []string{}, Accelerator: c.state.Accelerator, AcceleratorFallback: c.state.AcceleratorFallback}
 	c.mu.Unlock()
 }
 
