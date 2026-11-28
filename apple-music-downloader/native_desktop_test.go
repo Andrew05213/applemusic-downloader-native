@@ -212,8 +212,24 @@ func TestNativeControlReceiptPrecedesPayloadValidationAndFailsClosed(t *testing.
 func TestNativeStartupReceiptReportsMissingBundleWithoutPaths(t *testing.T) {
 	root := t.TempDir()
 	var output bytes.Buffer
-	input := strings.NewReader(`{"apiAccessToken":"` + strings.Repeat("b", 64) + `"}` + "\n")
-	code := runNativeDesktop([]string{"--manifest", filepath.Join(root, "PRIVATE-missing.json"), "--data-dir", root, "--output-dir", root}, input, &output)
+	input, parent := io.Pipe()
+	defer input.Close()
+	defer parent.Close()
+	// The production parent keeps stdin open. EOF also cancels startup, so
+	// sending it with the capability would race the missing-manifest check.
+	done := make(chan int, 1)
+	go func() {
+		done <- runNativeDesktop([]string{"--manifest", filepath.Join(root, "PRIVATE-missing.json"), "--data-dir", root, "--output-dir", root}, input, &output)
+	}()
+	if _, err := fmt.Fprintf(parent, "{\"apiAccessToken\":%q}\n", strings.Repeat("b", 64)); err != nil {
+		t.Fatal(err)
+	}
+	var code int
+	select {
+	case code = <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("missing manifest did not reject startup")
+	}
 	var receipt struct {
 		NativeServer bool   `json:"nativeServer"`
 		Code         string `json:"code"`

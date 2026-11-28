@@ -3,8 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -100,6 +104,36 @@ func TestRestartRecoveryInterruptsInflightAndResumesQueuedJob(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen store after restart: %v", err)
 	}
+	t.Cleanup(func() {
+		if err := afterRestart.Close(); err != nil {
+			t.Errorf("close restarted store: %v", err)
+			return
+		}
+		if open := afterRestart.db.Stats().OpenConnections; open != 0 {
+			t.Errorf("restarted store retained %d driver connections", open)
+			return
+		}
+		if runtime.GOOS == "windows" {
+			// Pool bookkeeping can reach zero before SQLite finishes releasing
+			// OS handles. Wait for actual release before TempDir's RemoveAll.
+			for _, suffix := range []string{"", "-wal", "-shm"} {
+				path := databasePath + suffix
+				deadline := time.Now().Add(3 * time.Second)
+				for {
+					err := os.Remove(path)
+					if err == nil || errors.Is(err, os.ErrNotExist) {
+						break
+					}
+					const sharingViolation = syscall.Errno(32) // ERROR_SHARING_VIOLATION
+					if !errors.Is(err, sharingViolation) || !time.Now().Before(deadline) {
+						t.Errorf("restarted store did not release %s: %v", filepath.Base(path), err)
+						break
+					}
+					time.Sleep(10 * time.Millisecond)
+				}
+			}
+		}
+	})
 
 	executor := &restartRecoveryExecutor{
 		started: make(chan string, 1),
@@ -117,12 +151,6 @@ func TestRestartRecoveryInterruptsInflightAndResumesQueuedJob(t *testing.T) {
 		cancelManager()
 		if err := manager.Wait(context.Background()); err != nil {
 			t.Errorf("wait for restarted manager: %v", err)
-		}
-		if err := afterRestart.Close(); err != nil {
-			t.Errorf("close restarted store: %v", err)
-		}
-		if open := afterRestart.db.Stats().OpenConnections; open != 0 {
-			t.Errorf("restarted store retained %d driver connections", open)
 		}
 	})
 	if err := manager.Start(managerContext); err != nil {

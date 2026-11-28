@@ -21,6 +21,8 @@ function safeRuntime(input) {
   ...(phase==='failed'&&stage==='runtime_boot'&&guestBootEvents.has(guestBootEvent) ? {guestBootEvent} : {}),
   ...(phase==='failed'&&((stage==='runtime_boot'&&code==='native_guest_exited')||stage==='desktop_service')&&exitCodeValid(processExitCode) ? {processExitCode} : {})};
 }
+STAGES.add('music_dns_fallback');
+CODES.add('native_music_dns_fallback_failed');
 for(const code of 'native_music_developer_rejected native_music_user_rejected native_music_rate_limited native_music_upstream_failed native_music_http_failed native_music_response_invalid'.split(' '))CODES.add(code);
 const APPLE_CODES=new Set(['40100','40101','40300','40301','40302','40303','42900','50000','50001','50300']);
 // Keep this fixed vocabulary aligned with nativeauth.ADIResponseCodes and the
